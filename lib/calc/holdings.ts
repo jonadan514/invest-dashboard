@@ -9,6 +9,7 @@ interface TxRow {
   asset_id: string | null
   account_id: string
   date: string
+  created_at?: string | null
   fx_rate?: number | null
   fee?: number | null
   tax?: number | null
@@ -39,7 +40,11 @@ export function buildHoldings(
     avg_cost_krw: number
   }>()
 
-  const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date))
+  const sorted = [...transactions].sort((a, b) => {
+    const dateCmp = a.date.localeCompare(b.date)
+    if (dateCmp !== 0) return dateCmp
+    return (a.created_at ?? '').localeCompare(b.created_at ?? '')
+  })
 
   for (const tx of sorted) {
     if (!tx.asset_id) continue
