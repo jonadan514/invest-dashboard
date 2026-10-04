@@ -24,6 +24,8 @@ interface TxRow {
   quantity: number | null
   price: number | null
   fx_rate?: number | null
+  fee?: number | null
+  tax?: number | null
 }
 
 function transactionFx(currency: string, txFx: number | null | undefined, fallbackUsdKrw: number): number {
@@ -68,13 +70,16 @@ export function buildRealizedPnL(
 
     if (tx.type === 'buy') {
       if (price <= 0) continue
+      const charges = Number(tx.fee ?? 0) + Number(tx.tax ?? 0)
+      const grossCost = price * qty + charges
+      const unitCost = grossCost / qty
       const newQty = s.quantity + qty
       s.avgCost = newQty > 0
-        ? (s.avgCost * s.quantity + price * qty) / newQty
-        : price
+        ? (s.avgCost * s.quantity + unitCost * qty) / newQty
+        : unitCost
       s.avgCostKrw = newQty > 0
-        ? (s.avgCostKrw * s.quantity + price * fx * qty) / newQty
-        : price * fx
+        ? (s.avgCostKrw * s.quantity + unitCost * fx * qty) / newQty
+        : unitCost * fx
       s.quantity = newQty
     } else {
       if (s.quantity <= 0 || price <= 0) {
@@ -84,8 +89,11 @@ export function buildRealizedPnL(
       }
 
       const soldQty = Math.min(qty, s.quantity)
-      const pnl = (price - s.avgCost) * soldQty
-      const proceedsKrw = price * fx * soldQty
+      const sellChargeRatio = qty > 0 ? soldQty / qty : 0
+      const sellCharges = (Number(tx.fee ?? 0) + Number(tx.tax ?? 0)) * sellChargeRatio
+      const netProceeds = price * soldQty - sellCharges
+      const pnl = netProceeds - s.avgCost * soldQty
+      const proceedsKrw = netProceeds * fx
       const costKrw = s.avgCostKrw * soldQty
       const pnlKrw = proceedsKrw - costKrw
 
