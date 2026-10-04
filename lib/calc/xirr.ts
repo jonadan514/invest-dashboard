@@ -68,10 +68,14 @@ export function buildXirrCashflows(
     date: string
     type: string
     amount: number | null
+    quantity?: number | null
+    price?: number | null
+    fee?: number | null
+    tax?: number | null
     currency: string
     fx_rate?: number | null
   }>,
-  finalValueKrw: number,
+  finalSecuritiesValueKrw: number,
   fallbackUsdKrw = 1,
 ): CashFlow[] {
   const cfs: CashFlow[] = []
@@ -94,6 +98,36 @@ export function buildXirrCashflows(
     })
   }
 
+  // 최종가치는 보유증권 평가액 + 계좌 내 미투자 현금이어야 한다.
+  // 외부 입출금만 XIRR 현금흐름으로 쓰므로, 계좌 내부 거래로 남은 현금을 별도 복원한다.
+  let cashBalanceKrw = 0
+
+  for (const tx of transactions) {
+    const rawAmount = Number(
+      tx.amount ??
+      ((tx.quantity ?? 0) && (tx.price ?? 0)
+        ? Number(tx.quantity) * Number(tx.price)
+        : 0)
+    )
+    const fee = Number(tx.fee ?? 0)
+    const tax = Number(tx.tax ?? 0)
+    const fx =
+      tx.currency === 'USD'
+        ? Number(tx.fx_rate && tx.fx_rate > 0 ? tx.fx_rate : fallbackUsdKrw)
+        : 1
+
+    let delta = 0
+    if (tx.type === 'deposit') delta = rawAmount
+    else if (tx.type === 'withdraw') delta = -rawAmount
+    else if (tx.type === 'buy') delta = -(rawAmount + fee + tax)
+    else if (tx.type === 'sell') delta = rawAmount - fee - tax
+    else if (tx.type === 'dividend' || tx.type === 'interest') delta = rawAmount - fee - tax
+    else if (tx.type === 'fee') delta = -(rawAmount || fee || tax)
+
+    cashBalanceKrw += delta * fx
+  }
+
+  const finalValueKrw = finalSecuritiesValueKrw + cashBalanceKrw
   if (finalValueKrw > 0) {
     cfs.push({ amount: finalValueKrw, date: new Date() })
   }
