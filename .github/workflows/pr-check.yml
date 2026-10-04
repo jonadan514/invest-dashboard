@@ -31,9 +31,11 @@ jobs:
           npm audit fix --package-lock-only || true
           npm ci
           npm audit --json > audit-after.json || true
+          npm audit --omit=dev --json > audit-prod.json || true
           node - <<'NODE'
           const fs = require('fs')
           const audit = JSON.parse(fs.readFileSync('audit-after.json', 'utf8'))
+          const prodAudit = JSON.parse(fs.readFileSync('audit-prod.json', 'utf8'))
           const rows = Object.values(audit.vulnerabilities || {}).map(v => ({
             name: v.name,
             severity: v.severity,
@@ -45,16 +47,21 @@ jobs:
             via: (v.via || []).filter(x => typeof x === 'string').join(', ')
           }))
           console.log('AUDIT_AFTER_METADATA', JSON.stringify(audit.metadata?.vulnerabilities || {}))
+          console.log('AUDIT_PROD_METADATA', JSON.stringify(prodAudit.metadata?.vulnerabilities || {}))
           for (const row of rows) console.log('AUDIT_AFTER_ROW', JSON.stringify(row))
+
+          function printFileChunks(marker, path) {
+            const encoded = JSON.stringify(fs.readFileSync(path, 'utf8'))
+            const size = 3000
+            console.log(marker + '_BEGIN')
+            for (let i = 0; i < encoded.length; i += size) {
+              console.log(marker + '_CHUNK ' + encoded.slice(i, i + size))
+            }
+            console.log(marker + '_END')
+          }
+          printFileChunks('PACKAGE_JSON', 'package.json')
+          printFileChunks('PACKAGE_LOCK', 'package-lock.json')
           NODE
-          echo PACKAGE_JSON_B64_BEGIN
-          base64 -w 4000 package.json
-          echo
-          echo PACKAGE_JSON_B64_END
-          echo PACKAGE_LOCK_B64_BEGIN
-          base64 -w 4000 package-lock.json
-          echo
-          echo PACKAGE_LOCK_B64_END
 
       - name: Production build
         run: npm run build
