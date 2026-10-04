@@ -231,6 +231,19 @@ export default function TransactionForm({
         />
       </div>
 
+      {/* Tax */}
+      <div>
+        <label className="block text-xs text-[#9c9484] mb-1">세금</label>
+        <input
+          name="tax"
+          type="number"
+          step="any"
+          min="0"
+          defaultValue="0"
+          className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+        />
+      </div>
+
       {/* Memo */}
       <div>
         <label className="block text-xs text-[#9c9484] mb-1">메모</label>
