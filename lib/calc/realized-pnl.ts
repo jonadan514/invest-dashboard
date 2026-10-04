@@ -19,6 +19,7 @@ export interface RealizedPnLRow {
 interface TxRow {
   id: string
   date: string
+  created_at?: string | null
   account_id: string
   asset_id: string | null
   type: string
