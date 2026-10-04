@@ -10,6 +10,8 @@ interface TxRow {
   account_id: string
   date: string
   fx_rate?: number | null
+  fee?: number | null
+  tax?: number | null
 }
 
 function transactionFx(currency: string, txFx: number | null | undefined, fallbackUsdKrw: number): number {
@@ -57,12 +59,15 @@ export function buildHoldings(
       if (price <= 0) continue
 
       const fx = transactionFx(asset.currency, tx.fx_rate, usdKrw)
-      const unitCostKrw = price * fx
+      const charges = Number(tx.fee ?? 0) + Number(tx.tax ?? 0)
+      const grossCost = price * qty + charges
+      const unitCost = grossCost / qty
+      const unitCostKrw = unitCost * fx
       const newQty = s.quantity + qty
 
       s.avg_cost = newQty > 0
-        ? (s.avg_cost * s.quantity + price * qty) / newQty
-        : price
+        ? (s.avg_cost * s.quantity + unitCost * qty) / newQty
+        : unitCost
       s.avg_cost_krw = newQty > 0
         ? (s.avg_cost_krw * s.quantity + unitCostKrw * qty) / newQty
         : unitCostKrw
