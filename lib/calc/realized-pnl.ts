@@ -3,6 +3,7 @@ import type { Asset } from '@/lib/types'
 export interface RealizedPnLRow {
   tx_id: string
   date: string
+  created_at?: string | null
   asset_id: string
   asset_name: string
   symbol: string | null
@@ -52,7 +53,11 @@ export function buildRealizedPnL(
   }>()
   const result: RealizedPnLRow[] = []
 
-  const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date))
+  const sorted = [...transactions].sort((a, b) => {
+    const dateCmp = a.date.localeCompare(b.date)
+    if (dateCmp !== 0) return dateCmp
+    return (a.created_at ?? '').localeCompare(b.created_at ?? '')
+  })
 
   for (const tx of sorted) {
     if (!tx.asset_id) continue
