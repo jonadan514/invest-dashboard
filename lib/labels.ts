@@ -18,6 +18,7 @@ export const TX_COLOR: Record<string, string> = {
 export const ACCOUNT_TYPE_LABEL: Record<string, string> = {
   general: '일반', pension: '연금저축', irp: 'IRP',
   isa: 'ISA', crypto: '코인', savings: '예적금',
+  debt: '대출/부채', cash: '현금', mmf: 'MMF',
 }
 
 export const CLASS_LABEL: Record<AssetClass, string> = {

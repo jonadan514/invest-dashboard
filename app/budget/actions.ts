@@ -8,7 +8,7 @@ export async function saveBudgetEntry(formData: FormData) {
   if (!user) throw new Error('로그인 필요')
 
   const { error } = await supabase
-    .from('monthly_budgets')
+    .from('invest_monthly_budgets')
     .upsert({
       user_id: user.id,
       month: String(formData.get('month')),

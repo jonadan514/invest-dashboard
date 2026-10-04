@@ -21,6 +21,8 @@ interface Props {
     price: number | null
     amount: number | null
     fee: number
+    tax: number
+    fx_rate: number
     memo: string | null
     currency: string
     accounts: { name: string; owner: string } | null
@@ -167,6 +169,25 @@ export default function EditForm({ tx }: Props) {
         </div>
       )}
 
+      {/* 거래 당시 환율 */}
+      {needsAsset && currency === 'USD' && (
+        <div>
+          <label className="block text-xs text-[#9c9484] mb-1">거래 당시 USD/KRW 환율 *</label>
+          <input
+            name="fx_rate"
+            type="number"
+            step="any"
+            min="1"
+            required
+            defaultValue={tx.fx_rate > 1 ? tx.fx_rate : ''}
+            placeholder="예: 1350.50"
+            className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+          />
+          <p className="text-[10px] text-[#b5aa98] mt-1">기존 해외거래의 환율이 비어 있으면 실제 거래일 환율로 보정하세요.</p>
+        </div>
+      )}
+      {(!needsAsset || currency === 'KRW') && <input type="hidden" name="fx_rate" value="1" />}
+
       {/* 수수료 */}
       <div>
         <label className="block text-xs text-[#9c9484] mb-1">수수료</label>
@@ -176,6 +197,19 @@ export default function EditForm({ tx }: Props) {
           step="any"
           min="0"
           defaultValue={tx.fee ?? 0}
+          className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+        />
+      </div>
+
+      {/* 세금 */}
+      <div>
+        <label className="block text-xs text-[#9c9484] mb-1">세금</label>
+        <input
+          name="tax"
+          type="number"
+          step="any"
+          min="0"
+          defaultValue={tx.tax ?? 0}
           className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
         />
       </div>

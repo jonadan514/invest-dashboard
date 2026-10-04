@@ -7,12 +7,11 @@
 - Supabase 역할: `personal-backend`
 - Project ref: `njigeztkkeuvfltqtrad`
 - Project URL: `https://njigeztkkeuvfltqtrad.supabase.co`
-- 투자용 테이블: `accounts`, `assets`, `transactions`, `prices`, `fx_rates`, `balances`
-- 투자용 6개 테이블은 RLS가 활성화되어 있으며 사용자별 정책이 적용되어 있다.
+- 핵심 투자용 테이블: `accounts`, `assets`, `transactions`, `prices`, `fx_rates`, `balances`, `invest_monthly_budgets`
+- 투자 데이터 테이블은 RLS를 사용하며 사용자별 정책이 적용된다.
 - `apartment-radar`는 별도 Supabase 프로젝트로 유지한다.
 
-기존 `supabase/migrations/001_init.sql`은 최초 단독 프로젝트 구축 당시의 스키마 참고용이다.
-공용 프로젝트에는 투자용 스키마가 이미 생성되어 있으므로 다시 실행할 필요가 없다.
+`supabase/migrations/001_init.sql`은 최초 단독 프로젝트 구축 당시의 스키마이고, `002_shared_backend_sync.sql`은 공용 백엔드 전환 후 필요한 계좌 확장 컬럼과 `invest_monthly_budgets` 구조를 기록한다.\n공용 프로젝트에는 해당 스키마가 이미 존재하므로 운영 DB에 파일을 임의로 재실행하지 않는다.
 
 ## 1. 환경변수 연결
 
@@ -71,7 +70,7 @@ Supabase: personal-backend
             ├── transactions
             ├── prices
             ├── fx_rates
-            └── balances
+            ├── balances\n            └── invest_monthly_budgets
 
 Supabase: apartment-radar
         └── 부동산 전용 데이터

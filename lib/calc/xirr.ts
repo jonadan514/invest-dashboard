@@ -1,6 +1,10 @@
 /**
- * XIRR — 현금흐름 기반 연간 내부수익률
- * amount < 0 = 매수/입금(돈이 나감), amount > 0 = 매도/배당/출금(돈이 들어옴)
+ * XIRR — 포트폴리오 외부 현금흐름 기반 연간 내부수익률
+ *
+ * 계좌 내부의 매수/매도/배당/이자는 포트폴리오 안에서 일어나는 이동이므로
+ * 전체 포트폴리오 XIRR 현금흐름에서 제외한다.
+ * amount < 0 = 외부에서 투자계좌로 들어온 돈(deposit)
+ * amount > 0 = 투자계좌에서 외부로 빠져나간 돈(withdraw) 또는 최종 평가액
  */
 export interface CashFlow {
   amount: number
@@ -50,36 +54,80 @@ export function calcXirr(cashflows: CashFlow[]): number | null {
 }
 
 /**
- * 투자 거래 목록으로 XIRR 현금흐름 배열 생성
- * - buy/deposit → 음수 (돈 나감)
- * - sell/withdraw/dividend/interest → 양수 (돈 들어옴)
+ * 투자 거래 목록으로 포트폴리오 XIRR 현금흐름 배열 생성
+ * - deposit  → 음수: 외부 자금이 투자 포트폴리오로 유입
+ * - withdraw → 양수: 투자 포트폴리오에서 외부로 유출
+ * - buy/sell/dividend/interest/fee → 제외: 포트폴리오 내부 거래
  * - finalValueKrw → 오늘 날짜 기준 포트폴리오 평가금액 (양수)
+ *
+ * 거래 당시 KRW 환산액을 보존할 수 있도록 fx_rate를 우선 사용한다.
+ * 기존 데이터에 fx_rate가 없을 때만 fallbackUsdKrw를 사용한다.
  */
 export function buildXirrCashflows(
   transactions: Array<{
     date: string
     type: string
     amount: number | null
+    quantity?: number | null
+    price?: number | null
+    fee?: number | null
+    tax?: number | null
     currency: string
+    fx_rate?: number | null
   }>,
-  finalValueKrw: number,
-  usdKrw = 1,
+  finalSecuritiesValueKrw: number,
+  fallbackUsdKrw = 1,
 ): CashFlow[] {
   const cfs: CashFlow[] = []
 
   for (const tx of transactions) {
-    const raw = tx.amount ?? 0
+    if (tx.type !== 'deposit' && tx.type !== 'withdraw') continue
+
+    const raw = Number(tx.amount ?? 0)
     if (raw <= 0) continue
-    const krw = tx.currency === 'USD' ? raw * usdKrw : raw
 
-    let sign = 0
-    if (tx.type === 'buy' || tx.type === 'deposit') sign = -1
-    else if (tx.type === 'sell' || tx.type === 'withdraw' || tx.type === 'dividend' || tx.type === 'interest') sign = 1
+    const fx =
+      tx.currency === 'USD'
+        ? Number(tx.fx_rate && tx.fx_rate > 0 ? tx.fx_rate : fallbackUsdKrw)
+        : 1
+    const krw = raw * fx
 
-    if (sign === 0) continue
-    cfs.push({ amount: sign * krw, date: new Date(tx.date) })
+    cfs.push({
+      amount: tx.type === 'deposit' ? -krw : krw,
+      date: new Date(tx.date),
+    })
   }
 
+  // 최종가치는 보유증권 평가액 + 계좌 내 미투자 현금이어야 한다.
+  // 외부 입출금만 XIRR 현금흐름으로 쓰므로, 계좌 내부 거래로 남은 현금을 별도 복원한다.
+  let cashBalanceKrw = 0
+
+  for (const tx of transactions) {
+    const rawAmount = Number(
+      tx.amount ??
+      ((tx.quantity ?? 0) && (tx.price ?? 0)
+        ? Number(tx.quantity) * Number(tx.price)
+        : 0)
+    )
+    const fee = Number(tx.fee ?? 0)
+    const tax = Number(tx.tax ?? 0)
+    const fx =
+      tx.currency === 'USD'
+        ? Number(tx.fx_rate && tx.fx_rate > 0 ? tx.fx_rate : fallbackUsdKrw)
+        : 1
+
+    let delta = 0
+    if (tx.type === 'deposit') delta = rawAmount
+    else if (tx.type === 'withdraw') delta = -rawAmount
+    else if (tx.type === 'buy') delta = -(rawAmount + fee + tax)
+    else if (tx.type === 'sell') delta = rawAmount - fee - tax
+    else if (tx.type === 'dividend' || tx.type === 'interest') delta = rawAmount - fee - tax
+    else if (tx.type === 'fee') delta = -(rawAmount || fee || tax)
+
+    cashBalanceKrw += delta * fx
+  }
+
+  const finalValueKrw = finalSecuritiesValueKrw + cashBalanceKrw
   if (finalValueKrw > 0) {
     cfs.push({ amount: finalValueKrw, date: new Date() })
   }

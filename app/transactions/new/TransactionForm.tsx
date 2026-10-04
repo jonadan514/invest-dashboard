@@ -200,11 +200,42 @@ export default function TransactionForm({
         </div>
       )}
 
+      {/* FX rate */}
+      {needsAsset && currency === 'USD' && (
+        <div>
+          <label className="block text-xs text-[#9c9484] mb-1">거래 당시 USD/KRW 환율 *</label>
+          <input
+            name="fx_rate"
+            type="number"
+            step="any"
+            min="1"
+            required
+            placeholder="예: 1350.50"
+            className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+          />
+          <p className="text-[10px] text-[#b5aa98] mt-1">원화 투자원가와 환차손익 계산에 고정 사용됩니다.</p>
+        </div>
+      )}
+      {(!needsAsset || currency === 'KRW') && <input type="hidden" name="fx_rate" value="1" />}
+
       {/* Fee */}
       <div>
         <label className="block text-xs text-[#9c9484] mb-1">수수료</label>
         <input
           name="fee"
+          type="number"
+          step="any"
+          min="0"
+          defaultValue="0"
+          className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+        />
+      </div>
+
+      {/* Tax */}
+      <div>
+        <label className="block text-xs text-[#9c9484] mb-1">세금</label>
+        <input
+          name="tax"
           type="number"
           step="any"
           min="0"

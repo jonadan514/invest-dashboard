@@ -1,5 +1,5 @@
 export type OwnerType = 'me' | 'spouse'
-export type AccountType = 'general' | 'pension' | 'irp' | 'isa' | 'crypto' | 'savings'
+export type AccountType = 'general' | 'pension' | 'irp' | 'isa' | 'crypto' | 'savings' | 'debt' | 'cash' | 'mmf'
 export type AssetClass = 'kr_stock' | 'us_stock' | 'etf_kr' | 'etf_us' | 'crypto' | 'deposit' | 'other'
 export type TxType = 'buy' | 'sell' | 'dividend' | 'deposit' | 'withdraw' | 'interest' | 'fee'
 
@@ -14,6 +14,10 @@ export interface Account {
   sort_order: number
   is_active: boolean
   created_at: string
+  interest_rate: number | null
+  monthly_payment: number | null
+  maturity_date: string | null
+  is_emergency_fund: boolean
 }
 
 export interface Asset {
@@ -56,6 +60,7 @@ export interface Holding {
   owner: OwnerType
   quantity: number
   avg_cost: number           // 이동평균 원가 (원화폐 기준)
+  avg_cost_krw: number       // 거래시점 환율 기준 주당 원가 (KRW)
   total_cost: number         // 원화폐 기준 투자원금
   total_cost_krw: number     // KRW 환산 투자원금
   current_price: number | null

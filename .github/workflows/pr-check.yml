@@ -1,0 +1,30 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches:
+      - master
+      - fix/accounting-v2
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-key
+      FINNHUB_API_KEY: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: Full repository lint (existing debt is reported but does not block this PR)
+        continue-on-error: true
+        run: npm run lint
