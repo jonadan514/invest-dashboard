@@ -25,7 +25,26 @@ jobs:
       - run: npm ci
       - name: Dependency audit
         continue-on-error: true
-        run: npm audit --json
+        shell: bash
+        run: |
+          npm audit --json > audit.json || true
+          node - <<'NODE'
+          const fs = require('fs')
+          const audit = JSON.parse(fs.readFileSync('audit.json', 'utf8'))
+          const rows = Object.values(audit.vulnerabilities || {}).map(v => ({
+            name: v.name,
+            severity: v.severity,
+            direct: v.isDirect,
+            range: v.range,
+            fix: v.fixAvailable === true ? 'safe' :
+              v.fixAvailable === false ? 'none' :
+              v.fixAvailable ? `${v.fixAvailable.name}@${v.fixAvailable.version} major=${v.fixAvailable.isSemVerMajor}` : 'none',
+            advisories: (v.via || []).filter(x => typeof x === 'object').map(x => `${x.title} [${x.url}]`).join(' | '),
+            via: (v.via || []).filter(x => typeof x === 'string').join(', ')
+          }))
+          console.log('AUDIT_METADATA', JSON.stringify(audit.metadata?.vulnerabilities || {}))
+          for (const row of rows) console.log('AUDIT_ROW', JSON.stringify(row))
+          NODE
       - name: Production build
         run: npm run build
       - name: Full repository lint (existing debt is reported but does not block this PR)
