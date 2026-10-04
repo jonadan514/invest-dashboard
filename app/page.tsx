@@ -41,7 +41,7 @@ export default async function DashboardPage({
   let trendData: { month: string; value: number }[] = []
   let allocActual: { cls: string; pct: number }[] = []
 
-  // 북극성 카드용 저축 데이터 (monthly_budgets 최근 4개월)
+  // 북극성 카드용 저축 데이터 (invest_monthly_budgets 최근 4개월)
   let cashBalance = 0
   let monthlySavings = 0
   let avgSavings3m = 0
@@ -88,9 +88,9 @@ export default async function DashboardPage({
 
     trendData = buildCostTrend(calcTx ?? [], usdKrw)
 
-    // 저축 데이터 (monthly_budgets)
+    // 저축 데이터 (invest_monthly_budgets)
     const { data: budgets } = await supabase
-      .from('monthly_budgets')
+      .from('invest_monthly_budgets')
       .select('month, cash_balance, joint_savings, bonus_to_plan')
       .eq('user_id', user.id)
       .order('month', { ascending: false })
