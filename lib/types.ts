@@ -1,5 +1,5 @@
 export type OwnerType = 'me' | 'spouse'
-export type AccountType = 'general' | 'pension' | 'irp' | 'isa' | 'crypto' | 'savings'
+export type AccountType = 'general' | 'pension' | 'irp' | 'isa' | 'crypto' | 'savings' | 'debt' | 'cash' | 'mmf'
 export type AssetClass = 'kr_stock' | 'us_stock' | 'etf_kr' | 'etf_us' | 'crypto' | 'deposit' | 'other'
 export type TxType = 'buy' | 'sell' | 'dividend' | 'deposit' | 'withdraw' | 'interest' | 'fee'
 
@@ -14,6 +14,10 @@ export interface Account {
   sort_order: number
   is_active: boolean
   created_at: string
+  interest_rate: number | null
+  monthly_payment: number | null
+  maturity_date: string | null
+  is_emergency_fund: boolean
 }
 
 export interface Asset {
