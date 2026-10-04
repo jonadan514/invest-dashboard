@@ -30,6 +30,7 @@ export async function updateTransaction(id: string, formData: FormData) {
       price,
       amount,
       fee: Number(formData.get('fee') ?? 0),
+      tax: Number(formData.get('tax') ?? 0),
       fx_rate: Number(formData.get('fx_rate') || 1),
       memo: (formData.get('memo') as string) || null,
     })
@@ -61,6 +62,7 @@ export async function createTransaction(formData: FormData) {
     price,
     amount,
     fee: Number(formData.get('fee') ?? 0),
+    tax: Number(formData.get('tax') ?? 0),
     fx_rate: Number(formData.get('fx_rate') || 1),
     currency,
     memo: (formData.get('memo') as string) || null,
@@ -119,6 +121,7 @@ export async function createAssetAndTransaction(formData: FormData) {
     price,
     amount: qty * price,
     fee: Number(formData.get('fee') ?? 0),
+    tax: Number(formData.get('tax') ?? 0),
     fx_rate: Number(formData.get('fx_rate') || 1),
     currency: assetCurrency,
     memo: (formData.get('memo') as string) || null,
