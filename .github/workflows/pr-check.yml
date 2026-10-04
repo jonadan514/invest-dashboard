@@ -23,14 +23,17 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Dependency audit
-        continue-on-error: true
+
+      - name: Dependency remediation trial
         shell: bash
         run: |
-          npm audit --json > audit.json || true
+          npm install --save-exact next@16.3.8 eslint-config-next@16.3.8 @tailwindcss/postcss@latest
+          npm audit fix --package-lock-only || true
+          npm ci
+          npm audit --json > audit-after.json || true
           node - <<'NODE'
           const fs = require('fs')
-          const audit = JSON.parse(fs.readFileSync('audit.json', 'utf8'))
+          const audit = JSON.parse(fs.readFileSync('audit-after.json', 'utf8'))
           const rows = Object.values(audit.vulnerabilities || {}).map(v => ({
             name: v.name,
             severity: v.severity,
@@ -39,14 +42,23 @@ jobs:
             fix: v.fixAvailable === true ? 'safe' :
               v.fixAvailable === false ? 'none' :
               v.fixAvailable ? `${v.fixAvailable.name}@${v.fixAvailable.version} major=${v.fixAvailable.isSemVerMajor}` : 'none',
-            advisories: (v.via || []).filter(x => typeof x === 'object').map(x => `${x.title} [${x.url}]`).join(' | '),
             via: (v.via || []).filter(x => typeof x === 'string').join(', ')
           }))
-          console.log('AUDIT_METADATA', JSON.stringify(audit.metadata?.vulnerabilities || {}))
-          for (const row of rows) console.log('AUDIT_ROW', JSON.stringify(row))
+          console.log('AUDIT_AFTER_METADATA', JSON.stringify(audit.metadata?.vulnerabilities || {}))
+          for (const row of rows) console.log('AUDIT_AFTER_ROW', JSON.stringify(row))
           NODE
+          echo PACKAGE_JSON_B64_BEGIN
+          base64 -w 4000 package.json
+          echo
+          echo PACKAGE_JSON_B64_END
+          echo PACKAGE_LOCK_B64_BEGIN
+          base64 -w 4000 package-lock.json
+          echo
+          echo PACKAGE_LOCK_B64_END
+
       - name: Production build
         run: npm run build
+
       - name: Full repository lint (existing debt is reported but does not block this PR)
         continue-on-error: true
         run: npm run lint
