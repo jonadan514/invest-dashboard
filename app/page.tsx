@@ -60,7 +60,7 @@ export default async function DashboardPage({
         .from('transactions')
         .select('id, type, date, quantity, price, amount, asset_id, account_id, currency, fx_rate, fee, tax, created_at')
         .in('account_id', accountIds)
-        .in('type', ['buy', 'sell', 'deposit', 'withdraw']),
+        .in('type', ['buy', 'sell', 'deposit', 'withdraw', 'dividend', 'interest', 'fee']),
       supabase
         .from('transactions')
         .select('id, type, date, amount, assets(name), accounts(name)')
