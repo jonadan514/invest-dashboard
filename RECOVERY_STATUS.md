@@ -21,7 +21,7 @@ Production `samhunho.vercel.app` was verified through Vercel deployment lookup t
 
 Complete, untruncated base64 responses were decoded and checked against Vercel source UIDs. Historical Git blobs were used only when their raw-byte SHA-1 exactly matched the canonical deployment UID. No source was reconstructed from snippets or rewritten.
 
-The contents connector truncates long base64 values. In 114 inspected source/artifact responses, 74 were truncated. The Dashboard Source viewer also did not yield a complete usable export during this attempt. Direct REST responds that an authentication token is required. Vercel CLI 62.2.0 was installed; its device login is still pending, and no CLI credential has been obtained. Complete direct API recovery is blocked on that authentication.
+The contents connector truncates long base64 values. In 114 inspected source/artifact responses, 74 were truncated. The Dashboard Source viewer also did not yield a complete usable export during this attempt. Direct REST responds that an authentication token is required. Vercel CLI 62.2.0 was installed. The first device code expired. After the user approved a new device code, the CLI process failed with an explicit execution-policy block on https://api.vercel.com:443. No CLI credential was saved. Repeating authentication will not fix this environment network restriction. Complete direct API recovery must run in a local environment with Vercel API access; recovery/download-canonical-source.mjs prepares the exact verified archive without changing Git, deployments or Supabase. Offline verification passed for deep paths, CRLF, binary and empty files, tar.gz extraction, and rejection of hash mismatches. Live retrieval remains unverified.
 
 ### Exact restorations
 
@@ -122,7 +122,7 @@ Invest routes and calculation modules are retained, including transactions, hold
 
 ## Continuation
 
-1. Finish Vercel CLI device authentication without sharing credentials in chat.
+1. On a local PC with Node.js, run the read-only downloader described in recovery/LOCAL_DOWNLOAD.md and attach the resulting original-source archive. Do not repeat CLI authentication in this network-blocked workspace.
 2. Fetch the complete deployment files tree directly, then fetch every source file by UID. Decode original bytes and validate SHA-1 before restoring.
 3. Re-audit all paths, including deep API/transaction/account paths, migrations and logo binaries. Preserve source exactly; do not run database migrations.
 4. Run npm ci, production build, lint and original tests after exact source recovery.
