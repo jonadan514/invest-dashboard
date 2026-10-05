@@ -42,7 +42,7 @@ export default function Sidebar() {
     <aside className="w-52 flex flex-col h-screen bg-[#15271d]">
       {/* Logo */}
       <div className="px-5 py-4 border-b border-[#243d2b] flex items-center justify-between">
-        <span className="text-white font-bold text-sm">🌿 우리집 투자</span>
+        <span className="text-white font-bold text-sm">🌿 Asset Management</span>
         {/* Mobile close */}
         <button
           className="md:hidden text-[#6b7f73] hover:text-white p-1 -mr-1"
