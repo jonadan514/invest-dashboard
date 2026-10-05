@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "우리집 투자 대시보드",
-  description: "부부 자산·수익률·연금 통합 관리",
+  title: "Asset Management Dashboard",
+  description: "가계 순자산·투자·부채·저축·연금 통합 관리",
 };
 
 export default function RootLayout({
