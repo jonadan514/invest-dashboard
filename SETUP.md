@@ -1,94 +1,93 @@
-# 🌿 우리집 투자 대시보드 — 셋업 가이드
+# Asset Management Dashboard — Setup
 
-## 현재 백엔드 구조
+## 1. 운영 백엔드
 
-이 앱은 별도 Supabase 프로젝트를 만들지 않고 기존 공용 프로젝트를 사용한다.
+이 앱은 **Asset Management Dashboard 전용 Supabase 프로젝트만 사용**합니다.
 
-- Supabase 역할: `personal-backend`
-- Project ref: `njigeztkkeuvfltqtrad`
-- Project URL: `https://njigeztkkeuvfltqtrad.supabase.co`
-- 핵심 투자용 테이블: `accounts`, `assets`, `transactions`, `prices`, `fx_rates`, `balances`, `invest_monthly_budgets`
-- 투자 데이터 테이블은 RLS를 사용하며 사용자별 정책이 적용된다.
-- `apartment-radar`는 별도 Supabase 프로젝트로 유지한다.
+- Project ref: `hibkysovkhcehfalzdag`
+- Project URL: `https://hibkysovkhcehfalzdag.supabase.co`
 
-`supabase/migrations/001_init.sql`은 최초 단독 프로젝트 구축 당시의 스키마이고, `002_shared_backend_sync.sql`은 공용 백엔드 전환 후 필요한 계좌 확장 컬럼과 `invest_monthly_budgets` 구조를 기록한다.\n공용 프로젝트에는 해당 스키마가 이미 존재하므로 운영 DB에 파일을 임의로 재실행하지 않는다.
+공용 `personal-backend (njigeztkkeuvfltqtrad)`는 이 앱과 분리합니다.
 
-## 1. 환경변수 연결
+## 2. 환경변수
 
-프로젝트 루트의 `.env.local`에 다음 값을 넣는다.
+프로젝트 루트의 `.env.local`:
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://njigeztkkeuvfltqtrad.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://hibkysovkhcehfalzdag.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=Supabase_Dashboard에서_복사한_publishable_key
+
+FINNHUB_API_KEY=
+KIS_APP_KEY=
+KIS_APP_SECRET=
+EXIM_API_KEY=
 ```
 
 Publishable key 위치:
 
-`Supabase Dashboard → personal-backend 프로젝트 → Settings → API Keys → Publishable key`
+`Supabase Dashboard → Asset Management Dashboard → Settings → API Keys`
 
-최신 Supabase 권장 방식에 맞춰 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`를 사용한다.
-기존 로컬 환경에 `NEXT_PUBLIC_SUPABASE_ANON_KEY`가 남아 있어도 현재 코드는 임시 호환한다.
+> `.env.local`은 Git에 커밋하지 않습니다.
 
-> `.env.local`은 Git에 커밋하지 않는다.
+## 3. 로그인
 
-## 2. 로그인 계정
+로그인은 Asset Management Dashboard 프로젝트의 Supabase Auth 사용자를 사용합니다.
 
-이 앱의 로그인은 공용 Supabase 프로젝트의 Authentication 사용자를 사용한다.
+다른 Supabase 프로젝트의 Auth 사용자는 별개입니다.
 
-예전에 별도 `Asset Management Dashboard` 프로젝트에서만 사용하던 로그인 계정은
-공용 프로젝트와 별개의 Auth 사용자다. 공용 프로젝트에 존재하는 계정으로 로그인해야 한다.
-
-투자 데이터는 각 로그인 사용자의 `auth.uid()` 기준으로 분리된다.
-
-## 3. 실행
+## 4. 로컬 실행
 
 ```bash
-cd C:\Users\JYH\projects\invest-dashboard
 npm install
 npm run dev
 ```
 
-브라우저에서:
-
-`http://localhost:3000`
-
-접속 후 로그인한다.
-
-## 4. 현재 구성
+브라우저:
 
 ```text
-GitHub: invest-dashboard
-        │
-        ▼
-Supabase: personal-backend
-        │
-        ├── family / schedule tables
-        │
-        └── investment
-            ├── accounts
-            ├── assets
-            ├── transactions
-            ├── prices
-            ├── fx_rates
-            ├── balances\n            └── invest_monthly_budgets
-
-Supabase: apartment-radar
-        └── 부동산 전용 데이터
+http://localhost:3000
 ```
 
-## 5. 배포
+## 5. DB 구조
 
-현재 연결된 Vercel 계정에는 `invest-dashboard` 프로젝트가 아직 없다.
-추후 Vercel에 배포할 때도 동일한 두 환경변수를 Production / Preview에 등록한다.
+초기 핵심 원장:
 
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://njigeztkkeuvfltqtrad.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+```text
+accounts
+assets
+transactions
+prices
+fx_rates
+balances
 ```
 
-## 보안 메모
+Asset Management 확장:
 
-투자용 테이블은 RLS가 활성화되어 있다.
+```text
+monthly_budgets
+financial_plan_settings
+net_worth_items
+net_worth_snapshots
+household_settings
+household_goals
+portfolio_snapshots
+account_monthly_snapshots
+children
+child_accounts
+child_gift_deposits
+child_account_monthly_snapshots
+```
 
-공용 프로젝트의 기존 family/schedule 테이블 중 일부는 앱 동작을 위해 현재 RLS가 비활성화된 상태다.
-따라서 publishable key를 공개 저장소에 하드코딩하지 않고 환경변수로 관리한다.
+## 6. Migration
+
+- `001_init.sql`: 투자 원장 초기 구조
+- `002_asset_management_sync.sql`: Asset Management 운영 구조 동기화
+
+운영 DB에 이미 존재하는 객체를 임의로 삭제하거나 재생성하지 않습니다.
+
+## 7. 보안
+
+- public 데이터 테이블은 RLS 사용
+- 사용자 데이터는 `auth.uid()` 기준 분리
+- 프론트에는 publishable key만 사용
+- service role / secret key는 브라우저에 노출하지 않음
