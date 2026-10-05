@@ -39,13 +39,13 @@ export default async function BudgetPage({
   // 현재 월 entry + 전체 히스토리
   const [{ data: entryData }, { data: historyData }] = await Promise.all([
     supabase
-      .from('invest_monthly_budgets')
+      .from('monthly_budgets')
       .select('*')
       .eq('user_id', user.id)
       .eq('month', month)
       .maybeSingle(),
     supabase
-      .from('invest_monthly_budgets')
+      .from('monthly_budgets')
       .select('*')
       .eq('user_id', user.id)
       .order('month', { ascending: false })
