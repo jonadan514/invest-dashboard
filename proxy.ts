@@ -1,50 +1,37 @@
-import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from 'next/server'
+import { ACCESS_COOKIE_NAME, isAccessConfigured, verifyAccessToken } from '@/lib/access/session'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const PUBLIC_PATHS = new Set(['/access', '/api/access/unlock'])
 
-export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+function safeNextPath(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/'
+  return value
+}
 
-  const supabase = createServerClient(supabaseUrl, supabaseKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) =>
-          request.cookies.set(name, value)
-        );
-        response = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options)
-        );
-      },
-    },
-  });
+export function proxy(request: NextRequest) {
+  const { pathname, search } = request.nextUrl
+  const token = request.cookies.get(ACCESS_COOKIE_NAME)?.value
+  const hasAccess = verifyAccessToken(token)
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const isLoginPage = request.nextUrl.pathname.startsWith("/login");
-  if (!user && !isLoginPage) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
-  }
-  if (user && isLoginPage) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
+  if (PUBLIC_PATHS.has(pathname)) {
+    if (pathname === '/access' && hasAccess) {
+      return NextResponse.redirect(new URL(safeNextPath(request.nextUrl.searchParams.get('next')), request.url))
+    }
+    return NextResponse.next()
   }
 
-  return response;
+  if (hasAccess) return NextResponse.next()
+
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.json({ error: '접근 비밀번호가 필요합니다.' }, { status: 401 })
+  }
+
+  const accessUrl = new URL('/access', request.url)
+  accessUrl.searchParams.set('next', `${pathname}${search}`)
+  if (!isAccessConfigured()) accessUrl.searchParams.set('error', 'config')
+  return NextResponse.redirect(accessUrl)
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
-};
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
+}

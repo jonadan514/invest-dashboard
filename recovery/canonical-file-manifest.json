@@ -1,0 +1,687 @@
+{
+  "deployment": "dpl_CaDft12jiovHiYNoV5Be7aUkoCxc",
+  "complete_tree": false,
+  "hash_algorithm": "sha1-raw-bytes",
+  "known_source_entries": 118,
+  "known_tracked_source_files": 113,
+  "files": [
+    {
+      "path": ".env.example",
+      "uid": "18db79a147e9799d620c48a2d83af7b5f903775c",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "AGENTS.md",
+      "uid": "b402af8a6533dfc73cc5af9164ae5e0c366af9cc",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "CLAUDE.md",
+      "uid": "c140473a3a5fbe89301c99d9d0d1b76c5971f2c3",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "README.md",
+      "uid": "34dfcb7707ab049ed1181576f7c7cf29e8c2783d",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "SETUP.md",
+      "uid": "3764cd5b9334365e9055c6f3e6782b52b7baa0fd",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "USER_GUIDE.md",
+      "uid": "a5b4bb65f8e06dab34e019c130b3dc180e705eab",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/access/page.tsx",
+      "uid": "23a0a103aea709645198623f10ee5f0a848fe859",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/accounts/AccountForm.tsx",
+      "uid": "b6e0bfe849d0b19676b21e24d6bd25637c5f4ae9",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "app/accounts/DeleteButton.tsx",
+      "uid": "89cbd9f0e068e60f5def96840dab2c89a694da59",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "app/accounts/actions.ts",
+      "uid": "0ef2a2bd5d156db62d306280585952bd8dff0d58",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "app/accounts/page.tsx",
+      "uid": "820b35003c30575f2d928cfc090e063701a42325",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "app/assets/AssetRow.tsx",
+      "uid": "50f939e198374f065767588700f02f91248b33fb",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/assets/actions.ts",
+      "uid": "ba2231b03ab6c9caebfd699c0a11e129b203c348",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "app/assets/page.tsx",
+      "uid": "962eb3fe52b6432a9e0fe63131d31758f76572f0",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/budget/MonthlyForm.tsx",
+      "uid": "c74432bcda3cceb4e80ffbe30e9d3d399f24606c",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "app/budget/PlanSettingsForm.tsx",
+      "uid": "54fc0f622e8e1e0d00cc75345516e07988d2f0d0",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/budget/actions.ts",
+      "uid": "fe6584026e6b1f7fe98feed73a14259177ec87b0",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "app/budget/page.tsx",
+      "uid": "aee96414b7ed059d0f05b64cb88195cba609167b",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "app/children/ChildAssetManager.tsx",
+      "uid": "4722c2d1e61b5cde15655ea1a3f189ef3161c0a0",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/children/ChildGiftManager.tsx",
+      "uid": "a674d514d9cfde5043ed88dc4968e8118c124877",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/children/ChildGiftWorkspace.tsx",
+      "uid": "d0a3e1907e0f05f8656ae1c296d1fffe30c7b19f",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/children/actions.ts",
+      "uid": "874fa597acc435009660922582dc34801170d3ee",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/children/page.tsx",
+      "uid": "6e0f95d366775a1be728ccf4f703a7c70d247280",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "app/dividends/page.tsx",
+      "uid": "670b25b3e8219d122c1e6f3aa406b952621b5273",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/error.tsx",
+      "uid": "adfcaf4777297984c286b87492b2c9a7faf4b80d",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "app/favicon.ico",
+      "uid": "9ecfcc8f0ead0bf3d2d7c39e084b88f41cc89a2e",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "app/globals.css",
+      "uid": "b8a190f92f0b1fb5feaed0ccdc695f1a83ac7fdb",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "app/guide/page.tsx",
+      "uid": "0692ae9dee4e44986f97a6596c8326a4385a0f84",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/holdings/page.tsx",
+      "uid": "9d932cde96cd3fef3a9f3886c6d466d1f8d1b2c2",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/layout.tsx",
+      "uid": "14e09d7cbbf2717272f1069486e9663a0451b8b6",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "app/loading.tsx",
+      "uid": "bf8e3fe6d2766286e8df23d5d13c4cdeccf2583e",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/net-worth/NetWorthChart.tsx",
+      "uid": "8da3c49c3b0889c83bf4b1aa7bf1089e096ee49f",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/net-worth/NetWorthItemEditor.tsx",
+      "uid": "e4e9d4442ca94c8dcdd4531a607fe6325c4e0724",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/net-worth/NetWorthManager.tsx",
+      "uid": "4457029d3d81d3cf653e897c3963b54815a3c607",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/net-worth/actions.ts",
+      "uid": "62ed6bbfb56bebdac39b794c0f2b8b4c568e94db",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/net-worth/page.tsx",
+      "uid": "204d380a4324acd923c2c4a6b56309ae846ce92d",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "app/page.tsx",
+      "uid": "e28b31dabf4db0481f093f3a9b3bba61fd7c6cf0",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "app/pension/page.tsx",
+      "uid": "e03ff470e6e18cfa344e159533eaeb55cf46f6cf",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "app/settings/SettingsClient.tsx",
+      "uid": "10cac20b3d63d97d3e60a26e0a10876f009dbd29",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/settings/actions.ts",
+      "uid": "de1e23e410ddebf47550e1cdffb437cb6f48847e",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "app/settings/page.tsx",
+      "uid": "cb6997514562a81d545a6bdee33bdd5bced47a83",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "app/transactions/DeleteTxButton.tsx",
+      "uid": "6676d48890ed6e08cf609a7c3fc59f7130cd3a20",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "app/transactions/actions.ts",
+      "uid": "782f61026cc44c0004107063e0e322f816c79de1",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "app/transactions/page.tsx",
+      "uid": "beeefecb49b0a01d0e4b3752e16bf7540dca817d",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "components/AppShell.tsx",
+      "uid": "191f1d76bf1e8f434ee131ab3fcec968cb1cd068",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "components/BrandLockup.tsx",
+      "uid": "eef74aa24a3a4158d94668d52a1ba53abb591ce6",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "components/DashboardOverview.tsx",
+      "uid": "391a6a042bfc6eeede516c54644f57a06dcd5482",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "components/FinancialPlanProgress.tsx",
+      "uid": "e4380337434dd70c2042acf945ad64328ddd20be",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "components/PolarisCard.tsx",
+      "uid": "c1bbcf5bfd645972d505854dac43840927f8a7b1",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "components/RebalancingAlert.tsx",
+      "uid": "e55dc4ec26d9f7328ef148485886be5925000dc9",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "components/Sidebar.tsx",
+      "uid": "6853895c0da7de707d5b5d93ba2cf923db7bef37",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "components/TrendChart.tsx",
+      "uid": "435b224eb1ba803ffcef8b24baf1b20d4e98a681",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "eslint.config.mjs",
+      "uid": "44d5bed565a8dd284af3e17f3b16a1c752008d0e",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "lib/access/server.ts",
+      "uid": "b46a895a9ac5d227baa2cbbe40b8c5bc98569c80",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "lib/access/session.ts",
+      "uid": "9314742e3a761cb9c31228475095286654e0e065",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "lib/calc/account-snapshots.ts",
+      "uid": "091da5125fb6a0c21eeb2f83bc55fe766ad3e3b9",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "lib/calc/budget.ts",
+      "uid": "2babec318129bb304d94cad69bedf8f5a03736fb",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "lib/calc/child-gifts.ts",
+      "uid": "c9bde2980134b54553d0a0aa7a5d394ee819606b",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "lib/calc/child-valuation.ts",
+      "uid": "895af12f77873c008ce6bbb8dddd14ccfe093ace",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "lib/calc/cost-trend.ts",
+      "uid": "36024fb6dc8c19f73d54b72bf9c48d5c3a9f16fd",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "lib/calc/holdings.ts",
+      "uid": "dfef55de900a6e45c1aa8700ce3a114f14fe3296",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "lib/calc/pension.ts",
+      "uid": "8d653a6eec04a617ffcf7d8c188e2337883e2fe3",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "lib/calc/realized-pnl.ts",
+      "uid": "71b2027201397394728d6b89c99ec92a15e1c08b",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "lib/calc/xirr.ts",
+      "uid": "1e66c18cb13145b1b4aa308b03cdb6f4957af57d",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "lib/labels.ts",
+      "uid": "8390f871c495a29bd7872c0450eec36c7060f2b5",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "lib/prices/finnhub.ts",
+      "uid": "ae6594a1f6db174677e97f46939ff930105a7d73",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "lib/prices/fx.ts",
+      "uid": "502944763b3f17cc9fc9c239aab9f602f4682761",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "lib/prices/refresh.ts",
+      "uid": "d0c553363f62dba5042bed28497d27feb3791874",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "lib/prices/upbit.ts",
+      "uid": "4b4874d02e23dc604afc1c3d514935230dae2a01",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "lib/prices/yahoo.ts",
+      "uid": "8fce990b7845162e1a65de9fc4f412416cbbb6ff",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "lib/settings.ts",
+      "uid": "4f122faf8412cce048e283c06e467047b5556b3d",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "lib/supabase/server.ts",
+      "uid": "e283a2e56514fd155aac057affadde0ea4087d6d",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "lib/types.ts",
+      "uid": "71943a33364c93bbe653de728075281f3993394c",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "next-env.d.ts",
+      "uid": "9bfff799abb9a4d30186f7a8b68f91ac35157611",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "next.config.ts",
+      "uid": "89327ac52fc9a00fb8b885afd6654f18e58b3156",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "package-lock.json",
+      "uid": "13e0cc2d6f9c0a7e0208603d1330a31490285bcd",
+      "mode": 33206,
+      "status": "different"
+    },
+    {
+      "path": "package.json",
+      "uid": "fd87169f7d3f29011c75a186850b911170cd7805",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "uid": "b856407b970a3453f6ba0e5835d4885607a2bd4e",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "uid": "d4df64d51b3f535fe5823a31ec757826bc4e5ffa",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "postcss.config.mjs",
+      "uid": "8f8be689e9af58f80351df6e6b551146822f42a4",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "proxy.ts",
+      "uid": "f493bda084682ec2de0c0c528fcd80bf28a95a0e",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "public/file.svg",
+      "uid": "fb380eeffe87d50b597383664c02982964d0d28c",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "public/globe.svg",
+      "uid": "2eba23b01a46733bb8423e6d38ebf5f7e95abec5",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "public/next.svg",
+      "uid": "3f3e95622612b989c5bd6a03299a308c6f3c7e6b",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "public/saemhunho-logo-transparent.png",
+      "uid": "07c9bd419e2cdeb8c167d6f2e83858e01e636947",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "public/saemhunho-logo.jpg",
+      "uid": "39cac930c0d364e712ae92a696ead2afd8dc21d6",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "public/saemhunho-logo.png",
+      "uid": "0e2208e2de09c410c36078fd8961d4b60f6c0779",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "public/vercel.svg",
+      "uid": "cebb8852d58c8886be3e9051a26957f42bb82f1a",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "public/window.svg",
+      "uid": "54c48e0daa6caa317fe1b4c419007fd93e948db9",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "scripts/launch-local.mjs",
+      "uid": "3f507fdf141f35f3ea34b648af4246b315524a02",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "scripts/remove_logo_background.py",
+      "uid": "b7683f51aed770df36b68d29f8ccb55562ed5247",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "scripts/start-local.ps1",
+      "uid": "2096d307e822db5356e47bcd8db4b36bc82205f2",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "scripts/stop-local.ps1",
+      "uid": "c36c91e80cefd6f3d7a9e5b089e0eca7302a50bc",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "supabase/migrations/001_init.sql",
+      "uid": "2a803b0a6c6783fddb5744d1dc44e4bec2ba5584",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "supabase/migrations/002_complete_finance_features.sql",
+      "uid": "c32a62e7fc1ec94477f6fccdf7dbe95a5f3edb71",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "supabase/migrations/003_financial_plan_settings.sql",
+      "uid": "818c4b3ef57449e12ae7fe0e6d454432c566df2e",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "supabase/migrations/004_optimize_financial_plan_rls.sql",
+      "uid": "bd7e98a21a5bef2a1ec82604ac97ffb846d37384",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "supabase/migrations/005_document_financial_plan_semantics.sql",
+      "uid": "97c0aeb150d482970d2700db652ba7cd23ed5725",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "supabase/migrations/006_household_net_worth.sql",
+      "uid": "c666ea284cde10a3a04c13abddbe0ecf8f30cc6e",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "supabase/migrations/007_net_worth_item_terms.sql",
+      "uid": "71952087db399a1fc05a39443027853bd2ea351d",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "supabase/migrations/008_data_stability.sql",
+      "uid": "096afb12e61ec7ba31cc81c183fef946604223c7",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "supabase/migrations/009_account_monthly_snapshots.sql",
+      "uid": "3816c651d3240add0f7b6934fb4e7b56885b2520",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "supabase/migrations/010_balance_sheet_account_flow.sql",
+      "uid": "a62ba18f8ed1e77083a95d3e706ef015fc9e8d93",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "supabase/migrations/20260902022903_child_gift_tracking.sql",
+      "uid": "3669dac211702bf73e2706781fbef5d80176ff75",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "supabase/migrations/20260902023702_child_gift_tracking_fk_index.sql",
+      "uid": "a79b3a097412134c9b1442c70a29419ab5a86609",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "supabase/migrations/20260902033839_classify_child_gift_deposits.sql",
+      "uid": "b521f497f28a63eeed9107e180474b2ffb32723a",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "supabase/migrations/20260902133902_child_account_monthly_valuation.sql",
+      "uid": "15e61e57f6a82c02d6bf4dfac8024bf5621e7e33",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "supabase/migrations/20260902134838_index_child_gift_account_fk.sql",
+      "uid": "5f37ce76cd80438afa2cd66546206a682bbb79e9",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "supabase/migrations/20260908150040_household_data_integrity.sql",
+      "uid": "68be755353486b5de72cc4a3d74128932f804dc2",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "supabase/migrations/20260909004844_optimize_existing_rls_indexes.sql",
+      "uid": "62c81e7d972d6bb732db373520345cfe768e06c6",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "tests/child-valuation.test.ts",
+      "uid": "5a91d9083e504c4a6bc8db8fcc3e3ef2040150c4",
+      "mode": 33206,
+      "status": "verified"
+    },
+    {
+      "path": "tests/finance-calculations.test.ts",
+      "uid": "33f955118fde5630f42d866f1ae8718e8c86e532",
+      "mode": 33206,
+      "status": "missing"
+    },
+    {
+      "path": "tsconfig.json",
+      "uid": "4da62be0e704696eef00d326069b548b6a087822",
+      "mode": 33206,
+      "status": "verified"
+    }
+  ]
+}
