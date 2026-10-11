@@ -33,21 +33,21 @@ function ManualForm({ onSelect, onCancel }: {
   const [currency, setCurrency] = useState('KRW')
 
   return (
-    <div className="space-y-2 bg-[#f4eee0] rounded-xl p-3 mt-2">
-      <p className="text-[10px] font-semibold text-[#9c9484] mb-2">직접 입력</p>
+    <div className="space-y-2 bg-[#f3f7fb] rounded-xl p-3 mt-2">
+      <p className="text-[10px] font-semibold text-[#65758a] mb-2">직접 입력</p>
       <input
         value={name}
         onChange={e => setName(e.target.value)}
         placeholder="종목명 * (예: 삼성전자)"
         autoFocus
-        className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+        className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
       />
       <div className="grid grid-cols-2 gap-2">
         <input
           value={symbol}
           onChange={e => setSymbol(e.target.value.toUpperCase())}
           placeholder="티커 (예: 005930, AAPL)"
-          className="text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+          className="text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
         />
         <select
           value={assetClass}
@@ -55,7 +55,7 @@ function ManualForm({ onSelect, onCancel }: {
             setAssetClass(e.target.value)
             setCurrency(['us_stock', 'etf_us'].includes(e.target.value) ? 'USD' : 'KRW')
           }}
-          className="text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+          className="text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
         >
           {ASSET_CLASSES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
@@ -63,7 +63,7 @@ function ManualForm({ onSelect, onCancel }: {
       <select
         value={currency}
         onChange={e => setCurrency(e.target.value)}
-        className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+        className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
       >
         <option value="KRW">KRW (원화)</option>
         <option value="USD">USD (달러)</option>
@@ -75,14 +75,14 @@ function ManualForm({ onSelect, onCancel }: {
             if (!name.trim()) return
             onSelect({ mode: 'new', symbol, name: name.trim(), assetClass, currency })
           }}
-          className="flex-1 bg-[#1c6b4a] text-white text-xs font-semibold rounded-lg py-2 hover:bg-[#165638]"
+          className="flex-1 bg-[#3f7fc3] text-white text-xs font-semibold rounded-lg py-2 hover:bg-[#326ba6]"
         >
           선택
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="text-xs text-[#9c9484] hover:text-[#34322b] px-3"
+          className="text-xs text-[#65758a] hover:text-[#172233] px-3"
         >
           취소
         </button>
@@ -115,10 +115,7 @@ export default function AssetSearch({
     : existing.slice(0, 5)
 
   useEffect(() => {
-    if (query.length < 2) {
-      setResults([])
-      return
-    }
+    if (query.length < 2) return
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(async () => {
       setLoading(true)
@@ -141,6 +138,9 @@ export default function AssetSearch({
         setLoading(false)
       }
     }, 400)
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
   }, [query, existing])
 
   useEffect(() => {
@@ -175,9 +175,9 @@ export default function AssetSearch({
 
   if (selected) {
     return (
-      <div className="flex items-center justify-between bg-[#e8f4ee] border border-[#c5dece] rounded-xl px-3 py-2.5">
+      <div className="flex items-center justify-between bg-[#eaf3fb] border border-[#cbddec] rounded-xl px-3 py-2.5">
         <div>
-          <p className="text-sm font-medium text-[#1c6b4a]">{selected.name}</p>
+          <p className="text-sm font-medium text-[#3f7fc3]">{selected.name}</p>
           <p className="text-[10px] text-[#3d9970]">
             {selected.mode === 'existing'
               ? `기존 종목 · ${selected.currency}`
@@ -185,7 +185,7 @@ export default function AssetSearch({
             }
           </p>
         </div>
-        <button type="button" onClick={clear} className="text-xs text-[#1c6b4a] hover:text-[#0d4a33] ml-3 shrink-0">
+        <button type="button" onClick={clear} className="text-xs text-[#3f7fc3] hover:text-[#285a8d] ml-3 shrink-0">
           변경
         </button>
       </div>
@@ -198,35 +198,41 @@ export default function AssetSearch({
         <input
           type="text"
           value={query}
-          onChange={e => { setQuery(e.target.value); setOpen(true); setShowManual(false) }}
+          onChange={e => {
+            const nextQuery = e.target.value
+            setQuery(nextQuery)
+            if (nextQuery.length < 2) setResults([])
+            setOpen(true)
+            setShowManual(false)
+          }}
           onFocus={() => setOpen(true)}
           placeholder="종목명 또는 티커 검색 (예: 삼성전자, AAPL, BTC)"
           autoComplete="off"
-          className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+          className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
         />
         {loading && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[#9c9484] animate-pulse">검색 중</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[#65758a] animate-pulse">검색 중</span>
         )}
       </div>
 
       {showDropdown && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#e3d9c4] rounded-xl shadow-lg z-20 overflow-hidden max-h-72 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#d7e1eb] rounded-xl shadow-lg z-20 overflow-hidden max-h-72 overflow-y-auto">
           {filteredExisting.length > 0 && (
             <>
-              <p className="text-[10px] font-semibold text-[#9c9484] px-3 pt-2.5 pb-1 uppercase tracking-wide">보유 종목</p>
+              <p className="text-[10px] font-semibold text-[#65758a] px-3 pt-2.5 pb-1 uppercase tracking-wide">보유 종목</p>
               {filteredExisting.map(a => (
                 <button
                   key={a.id}
                   type="button"
                   onClick={() => pick({ mode: 'existing', id: a.id, name: a.name, currency: a.currency })}
-                  className="w-full text-left flex items-center justify-between px-3 py-2 hover:bg-[#f4eee0] transition-colors"
+                  className="w-full text-left flex items-center justify-between px-3 py-2 hover:bg-[#f3f7fb] transition-colors"
                 >
                   <div>
-                    <p className="text-sm font-medium text-[#34322b]">{a.name}</p>
-                    <p className="text-[10px] text-[#9c9484]">{CLASS_LABEL[a.asset_class] ?? a.asset_class} · {a.currency}</p>
+                    <p className="text-sm font-medium text-[#172233]">{a.name}</p>
+                    <p className="text-[10px] text-[#65758a]">{CLASS_LABEL[a.asset_class] ?? a.asset_class} · {a.currency}</p>
                   </div>
                   {a.symbol && (
-                    <span className="text-[10px] font-mono text-[#1c6b4a] bg-[#e8f4ee] px-1.5 py-0.5 rounded ml-2 shrink-0">
+                    <span className="text-[10px] font-mono text-[#3f7fc3] bg-[#eaf3fb] px-1.5 py-0.5 rounded ml-2 shrink-0">
                       {a.symbol}
                     </span>
                   )}
@@ -237,20 +243,20 @@ export default function AssetSearch({
 
           {results.length > 0 && (
             <>
-              {filteredExisting.length > 0 && <div className="border-t border-[#f0ead8] my-1" />}
-              <p className="text-[10px] font-semibold text-[#9c9484] px-3 pt-1 pb-1 uppercase tracking-wide">Yahoo Finance</p>
+              {filteredExisting.length > 0 && <div className="border-t border-[#edf3f8] my-1" />}
+              <p className="text-[10px] font-semibold text-[#65758a] px-3 pt-1 pb-1 uppercase tracking-wide">Yahoo Finance</p>
               {results.map(r => (
                 <button
                   key={r.yahooSymbol}
                   type="button"
                   onClick={() => pick({ mode: 'new', symbol: r.symbol, name: r.name, assetClass: r.assetClass, currency: r.currency })}
-                  className="w-full text-left flex items-center justify-between px-3 py-2 hover:bg-[#f4eee0] transition-colors"
+                  className="w-full text-left flex items-center justify-between px-3 py-2 hover:bg-[#f3f7fb] transition-colors"
                 >
                   <div>
-                    <p className="text-sm font-medium text-[#34322b]">{r.name}</p>
-                    <p className="text-[10px] text-[#9c9484]">{CLASS_LABEL[r.assetClass] ?? r.assetClass} · {r.exchange} · {r.currency}</p>
+                    <p className="text-sm font-medium text-[#172233]">{r.name}</p>
+                    <p className="text-[10px] text-[#65758a]">{CLASS_LABEL[r.assetClass] ?? r.assetClass} · {r.exchange} · {r.currency}</p>
                   </div>
-                  <span className="text-[10px] font-mono text-[#9c9484] bg-[#f0ead8] px-1.5 py-0.5 rounded ml-2 shrink-0">
+                  <span className="text-[10px] font-mono text-[#65758a] bg-[#edf3f8] px-1.5 py-0.5 rounded ml-2 shrink-0">
                     {r.symbol}
                   </span>
                 </button>
@@ -261,15 +267,15 @@ export default function AssetSearch({
           {/* 검색 결과 없음 + 직접 입력 버튼 */}
           {!loading && query.length >= 2 && results.length === 0 && filteredExisting.length === 0 && (
             <div className="text-center py-3">
-              <p className="text-xs text-[#9c9484]">검색 결과가 없습니다</p>
+              <p className="text-xs text-[#65758a]">검색 결과가 없습니다</p>
             </div>
           )}
 
-          <div className="border-t border-[#f0ead8] mt-1 px-3 py-2">
+          <div className="border-t border-[#edf3f8] mt-1 px-3 py-2">
             <button
               type="button"
               onClick={() => { setOpen(false); setShowManual(true) }}
-              className="text-xs text-[#9c9484] hover:text-[#1c6b4a] transition-colors"
+              className="text-xs text-[#65758a] hover:text-[#3f7fc3] transition-colors"
             >
               + 직접 입력하기
             </button>

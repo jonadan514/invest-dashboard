@@ -1,87 +1,116 @@
-export interface BudgetRatios {
-  stage1CashReserve: number    // default 0.85
-  stage1FamilyExpense: number  // default 0.15
-  stage2FamilyExpense: number  // default 0.15
-  stage2GrowthCapital: number  // default 0.85
-  growthMoveUp: number         // default 0.5
-  growthInvestment: number     // default 0.5
+export interface FinancialPlanSettings {
+  monthlyFixedCost: number
+  mortgageInterest: number
+  mortgagePrincipal: number
+  monthlyJointContribution: number
+  currentEmergencyFund: number
+  stage1Target: number
+  stage2Target: number
+  stage2EmergencyRatio: number
+  stage2InvestmentRatio: number
+  completedInvestmentRatio: number
+  completedPropertyRatio: number
 }
 
-export const DEFAULT_RATIOS: BudgetRatios = {
-  stage1CashReserve: 0.85,
-  stage1FamilyExpense: 0.15,
-  stage2FamilyExpense: 0.15,
-  stage2GrowthCapital: 0.85,
-  growthMoveUp: 0.5,
-  growthInvestment: 0.5,
-}
-
-export interface HouseholdSettings {
-  monthlyLivingCost: number  // default 4_000_000
-  cashTarget: number         // default 30_000_000
-}
-
-export const DEFAULT_HOUSEHOLD: HouseholdSettings = {
-  monthlyLivingCost: 4_000_000,
-  cashTarget: 30_000_000,
+export const DEFAULT_FINANCIAL_PLAN: FinancialPlanSettings = {
+  monthlyFixedCost: 3_700_000,
+  mortgageInterest: 2_500_000,
+  mortgagePrincipal: 450_000,
+  monthlyJointContribution: 7_000_000,
+  currentEmergencyFund: 13_000_000,
+  stage1Target: 30_000_000,
+  stage2Target: 50_000_000,
+  stage2EmergencyRatio: 0.8,
+  stage2InvestmentRatio: 0.2,
+  completedInvestmentRatio: 0.5,
+  completedPropertyRatio: 0.5,
 }
 
 export interface AllocationInput {
-  jointSavings: number
+  jointContribution: number
   bonusToPlan: number
-  cashBalance: number
+  emergencyFund: number
 }
 
 export interface AllocationResult {
-  stage: 1 | 2
+  phase: 1 | 2 | 3
+  regularSurplus: number
   totalAllocatable: number
-  cashReserve: number
-  familyExpense: number
-  growthCapital: number
-  moveUpCapital: number
-  financialInvestment: number
-  expectedCashBalance: number
-  cashShortfall: number
+  emergencyFund: number
+  investmentAssets: number
+  propertyFund: number
+  expectedEmergencyFund: number
+  remainingToStage1: number
+  remainingToStage2: number
+}
+
+export function getPlanPhase(
+  emergencyFund: number,
+  settings: FinancialPlanSettings,
+): 1 | 2 | 3 {
+  if (emergencyFund < settings.stage1Target) return 1
+  if (emergencyFund < settings.stage2Target) return 2
+  return 3
 }
 
 export function calcAllocation(
   input: AllocationInput,
-  household: HouseholdSettings,
-  ratios: BudgetRatios,
+  settings: FinancialPlanSettings,
 ): AllocationResult {
-  const total = input.jointSavings + input.bonusToPlan
-  const cashShortfall = Math.max(household.cashTarget - input.cashBalance, 0)
+  const regularSurplus = Math.max(
+    input.jointContribution - settings.monthlyFixedCost,
+    0,
+  )
+  const totalAllocatable = regularSurplus + Math.max(input.bonusToPlan, 0)
+  const phase = getPlanPhase(input.emergencyFund, settings)
+  let remaining = totalAllocatable
+  let expectedEmergencyFund = Math.max(0, input.emergencyFund)
+  let emergencyFund = 0
+  let investmentAssets = 0
+  let propertyFund = 0
 
-  if (input.cashBalance < household.cashTarget) {
-    const calcReserve = total * ratios.stage1CashReserve
-    const cashReserve = Math.min(calcReserve, cashShortfall)
-    const overflow = calcReserve - cashReserve
-    const familyExpense = total * ratios.stage1FamilyExpense
-    const growthCapital = overflow
-    return {
-      stage: 1,
-      totalAllocatable: total,
-      cashReserve,
-      familyExpense,
-      growthCapital,
-      moveUpCapital: growthCapital * ratios.growthMoveUp,
-      financialInvestment: growthCapital * ratios.growthInvestment,
-      expectedCashBalance: input.cashBalance + cashReserve,
-      cashShortfall,
-    }
+  // 1단계: 3천만 원까지 배분 가능액 전부를 비상금으로 보낸다.
+  if (remaining > 0 && expectedEmergencyFund < settings.stage1Target) {
+    const stage1Amount = Math.min(
+      remaining,
+      settings.stage1Target - expectedEmergencyFund,
+    )
+    emergencyFund += stage1Amount
+    expectedEmergencyFund += stage1Amount
+    remaining -= stage1Amount
   }
 
-  const familyExpense = total * ratios.stage2FamilyExpense
-  const growthCapital = total * ratios.stage2GrowthCapital
+  // 2단계: 5천만 원까지 비상금 80%, 투자자산 20%로 배분한다.
+  if (remaining > 0 && expectedEmergencyFund < settings.stage2Target) {
+    const emergencyRatio = settings.stage2EmergencyRatio
+    const emergencyShortfall = settings.stage2Target - expectedEmergencyFund
+    const amountToCompleteStage = emergencyRatio > 0
+      ? emergencyShortfall / emergencyRatio
+      : Number.POSITIVE_INFINITY
+    const stage2Amount = Math.min(remaining, amountToCompleteStage)
+
+    const stage2Emergency = stage2Amount * emergencyRatio
+    emergencyFund += stage2Emergency
+    investmentAssets += stage2Amount * settings.stage2InvestmentRatio
+    expectedEmergencyFund += stage2Emergency
+    remaining -= stage2Amount
+  }
+
+  // 비상금 5천만 원 완료 후: 투자자산과 부동산 비용을 절반씩 적립한다.
+  if (remaining > 0) {
+    investmentAssets += remaining * settings.completedInvestmentRatio
+    propertyFund += remaining * settings.completedPropertyRatio
+  }
+
   return {
-    stage: 2,
-    totalAllocatable: total,
-    cashReserve: 0,
-    familyExpense,
-    growthCapital,
-    moveUpCapital: growthCapital * ratios.growthMoveUp,
-    financialInvestment: growthCapital * ratios.growthInvestment,
-    expectedCashBalance: input.cashBalance,
-    cashShortfall: 0,
+    phase,
+    regularSurplus,
+    totalAllocatable,
+    emergencyFund,
+    investmentAssets,
+    propertyFund,
+    expectedEmergencyFund,
+    remainingToStage1: Math.max(settings.stage1Target - expectedEmergencyFund, 0),
+    remainingToStage2: Math.max(settings.stage2Target - expectedEmergencyFund, 0),
   }
 }

@@ -34,17 +34,15 @@ export default function AssetRow({ asset }: {
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-b border-[#f0ead8] last:border-0">
-      <div className="flex items-center gap-3 min-w-0">
-        <div>
-          <p className="text-sm font-medium text-[#34322b]">{asset.name}</p>
-          <p className="text-[10px] text-[#9c9484]">
+    <div className="flex min-w-0 flex-col gap-3 border-b border-[var(--color-border)] px-4 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-[var(--color-ink)]">{asset.name}</p>
+          <p className="text-[10px] text-[var(--color-muted)]">
             {CLASS_LABEL[asset.asset_class] ?? asset.asset_class} · {asset.currency}
           </p>
-        </div>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex min-w-0 flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
         {editing ? (
           <>
             <input
@@ -53,44 +51,49 @@ export default function AssetRow({ asset }: {
               onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false) }}
               placeholder={SYMBOL_HINT[asset.asset_class] ?? ''}
               autoFocus
-              className="w-28 text-xs bg-white border border-[#1c6b4a] rounded-lg px-2 py-1.5 focus:outline-none"
+              className="min-w-28 flex-1 rounded-lg border border-[var(--color-primary)] bg-white px-2 py-1.5 text-xs focus:outline-none sm:w-28 sm:flex-none"
             />
             <button
               onClick={save}
               disabled={pending}
-              className="text-xs bg-[#1c6b4a] text-white rounded-lg px-3 py-1.5 hover:bg-[#165638] disabled:opacity-50"
+              type="button"
+              className="rounded-lg bg-[var(--color-primary)] px-3 py-1.5 text-xs text-white hover:bg-[var(--color-primary-strong)] disabled:opacity-50"
             >
               저장
             </button>
             <button
               onClick={() => { setSymbol(asset.symbol ?? ''); setEditing(false) }}
-              className="text-xs text-[#9c9484] hover:text-[#34322b]"
+              type="button"
+              className="text-xs text-[var(--color-muted)] hover:text-[var(--color-ink)]"
             >
               취소
             </button>
           </>
         ) : (
           <>
-            <span
+            <button
+              type="button"
               onClick={() => setEditing(true)}
-              className={`text-xs px-2 py-1 rounded cursor-pointer ${
+              className={`max-w-full truncate rounded px-2 py-1 text-xs ${
                 asset.symbol
-                  ? 'bg-[#e8f4ee] text-[#1c6b4a] font-mono font-medium'
-                  : 'bg-[#f0ead8] text-[#b5aa98] italic'
+                  ? 'bg-[#eaf3fb] text-[#3f7fc3] font-mono font-medium'
+                  : 'bg-[#edf3f8] text-[#93a2b5] italic'
               }`}
             >
               {asset.symbol ?? '심볼 없음'}
-            </span>
+            </button>
             <button
+              type="button"
               onClick={() => setEditing(true)}
-              className="text-[10px] text-[#9c9484] hover:text-[#1c6b4a]"
+              className="text-[10px] text-[#65758a] hover:text-[#3f7fc3]"
             >
               수정
             </button>
             <button
+              type="button"
               onClick={handleDelete}
               disabled={pending}
-              className="text-[10px] text-[#b5aa98] hover:text-red-500 disabled:opacity-40"
+              className="text-[10px] text-[#93a2b5] hover:text-red-500 disabled:opacity-40"
             >
               삭제
             </button>

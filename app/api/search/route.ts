@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { hasHouseholdAccess } from '@/lib/access/server'
 
 export interface SearchResult {
   symbol: string
@@ -7,6 +8,21 @@ export interface SearchResult {
   assetClass: string
   currency: string
   exchange: string
+}
+
+interface NaverStockItem {
+  code?: string
+  name?: string
+  typeCode?: string
+}
+
+interface YahooQuote {
+  symbol?: string
+  shortname?: string
+  longname?: string
+  exchDisp?: string
+  exchange?: string
+  quoteType?: string
 }
 
 const YAHOO_HEADERS = {
@@ -39,10 +55,10 @@ async function naverStockSearch(q: string): Promise<SearchResult[] | null> {
     const url = `https://ac.stock.naver.com/ac?q=${encodeURIComponent(q)}&target=stock%2Cindex%2Cetf%2Cetc`
     const res = await fetch(url, { cache: 'no-store', headers: NAVER_HEADERS })
     if (!res.ok) return null
-    const data = await res.json()
+    const data = await res.json() as { items?: NaverStockItem[] }
     if (!Array.isArray(data.items)) return null
 
-    return data.items.map((item: any) => {
+    return data.items.map(item => {
       const code: string = item.code ?? ''
       const name: string = item.name ?? ''
       const typeCode: string = item.typeCode ?? ''   // "KOSPI" | "KOSDAQ"
@@ -69,16 +85,16 @@ async function naverFinanceSearch(q: string): Promise<SearchResult[] | null> {
     const url = `https://ac.finance.naver.com/ac?q=${encodeURIComponent(q)}&q_enc=UTF-8&t_aid=stock&st=111&r_format=json&r_enc=UTF-8&r_unicode=0&t_tab=0`
     const res = await fetch(url, { cache: 'no-store', headers: NAVER_HEADERS })
     if (!res.ok) return null
-    const data = await res.json()
-    const rows: any[][] = (data.items ?? []).flat()
+    const data = await res.json() as { items?: unknown[] }
+    const rows = (data.items ?? []).flat().filter(Array.isArray) as unknown[][]
     if (rows.length === 0) return null
 
     return rows
-      .filter((r: any[]) => r[1])
-      .map((r: any[]) => {
-        const name: string = r[0]
-        const code: string = r[1]
-        const market: string = r[2] ?? ''
+      .filter(row => typeof row[1] === 'string')
+      .map(row => {
+        const name = String(row[0] ?? '')
+        const code = String(row[1])
+        const market = String(row[2] ?? '')
         const isKosdaq = /코스닥|KOSDAQ/i.test(market)
         const symbol = isKosdaq ? `${code}.KQ` : code
         return {
@@ -96,13 +112,13 @@ async function naverFinanceSearch(q: string): Promise<SearchResult[] | null> {
 }
 
 // 영문/티커 입력 → Yahoo Finance
-async function yahooSearch(q: string): Promise<any[]> {
+async function yahooSearch(q: string): Promise<YahooQuote[]> {
   for (const host of ['query2', 'query1']) {
     try {
       const url = `https://${host}.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=8&newsCount=0&listsCount=0`
       const res = await fetch(url, { cache: 'no-store', headers: YAHOO_HEADERS })
       if (!res.ok) continue
-      const data = await res.json()
+      const data = await res.json() as { quotes?: YahooQuote[] }
       if (Array.isArray(data?.quotes) && data.quotes.length > 0) return data.quotes
     } catch {
       // try next host
@@ -111,7 +127,7 @@ async function yahooSearch(q: string): Promise<any[]> {
   return []
 }
 
-function mapYahooQuote(q: any): SearchResult | null {
+function mapYahooQuote(q: YahooQuote): SearchResult | null {
   const yahooSymbol: string = q.symbol ?? ''
   if (!yahooSymbol) return null
   const name: string = q.shortname || q.longname || yahooSymbol
@@ -144,6 +160,10 @@ function mapYahooQuote(q: any): SearchResult | null {
 }
 
 export async function GET(request: NextRequest) {
+  if (!(await hasHouseholdAccess())) {
+    return NextResponse.json({ error: '접근 비밀번호가 필요합니다.' }, { status: 401 })
+  }
+
   const q = request.nextUrl.searchParams.get('q') ?? ''
   const debug = request.nextUrl.searchParams.get('debug') === '1'
   if (q.length < 1) return NextResponse.json({ results: [] })
@@ -166,7 +186,7 @@ export async function GET(request: NextRequest) {
 
   const quotes = await yahooSearch(q)
   const results = quotes
-    .filter((q: any) => !BAD_TYPES.has(q.quoteType ?? ''))
+    .filter(quote => !BAD_TYPES.has(quote.quoteType ?? ''))
     .map(mapYahooQuote)
     .filter((r): r is SearchResult => r !== null)
 

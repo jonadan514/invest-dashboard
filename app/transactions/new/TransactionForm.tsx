@@ -66,23 +66,23 @@ export default function TransactionForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Date */}
       <div>
-        <label className="block text-xs text-[#9c9484] mb-1">날짜 *</label>
+        <label className="block text-xs text-[#65758a] mb-1">날짜 *</label>
         <input
           name="date"
           type="date"
           defaultValue={new Date().toISOString().split('T')[0]}
           required
-          className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+          className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
         />
       </div>
 
       {/* Account */}
       <div>
-        <label className="block text-xs text-[#9c9484] mb-1">계좌 *</label>
+        <label className="block text-xs text-[#65758a] mb-1">계좌 *</label>
         <select
           name="account_id"
           required
-          className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+          className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
         >
           <option value="">계좌 선택</option>
           {accounts.map(a => (
@@ -95,7 +95,7 @@ export default function TransactionForm({
 
       {/* Transaction type */}
       <div>
-        <label className="block text-xs text-[#9c9484] mb-1.5">거래 유형 *</label>
+        <label className="block text-xs text-[#65758a] mb-1.5">거래 유형 *</label>
         <div className="flex flex-wrap gap-1.5">
           {TX_TYPES.map(t => (
             <button
@@ -104,8 +104,8 @@ export default function TransactionForm({
               onClick={() => setTxType(t.value)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 txType === t.value
-                  ? 'bg-[#1c6b4a] text-white'
-                  : 'bg-white border border-[#e3d9c4] text-[#34322b] hover:border-[#1c6b4a]'
+                  ? 'bg-[#3f7fc3] text-white'
+                  : 'bg-white border border-[#d7e1eb] text-[#172233] hover:border-[#3f7fc3]'
               }`}
             >
               {t.label}
@@ -118,7 +118,7 @@ export default function TransactionForm({
       {/* Asset search */}
       {needsAsset && (
         <div>
-          <label className="block text-xs text-[#9c9484] mb-1">종목 *</label>
+          <label className="block text-xs text-[#65758a] mb-1">종목 *</label>
           <AssetSearch existing={assets} onSelect={setSelectedAsset} />
 
           {/* Hidden fields for form submission */}
@@ -144,7 +144,7 @@ export default function TransactionForm({
       {needsAsset && (
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-[#9c9484] mb-1">수량 *</label>
+            <label className="block text-xs text-[#65758a] mb-1">수량 *</label>
             <input
               name="quantity"
               type="number"
@@ -154,12 +154,12 @@ export default function TransactionForm({
               value={qty}
               onChange={e => setQty(e.target.value)}
               placeholder="0"
-              className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+              className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
             />
           </div>
           <div>
-            <label className="block text-xs text-[#9c9484] mb-1">
-              단가 * {currency !== 'KRW' && <span className="text-[#1c6b4a]">({currency})</span>}
+            <label className="block text-xs text-[#65758a] mb-1">
+              단가 * {currency !== 'KRW' && <span className="text-[#3f7fc3]">({currency})</span>}
             </label>
             <input
               name="price"
@@ -170,7 +170,7 @@ export default function TransactionForm({
               value={price}
               onChange={e => setPrice(e.target.value)}
               placeholder="0"
-              className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+              className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
             />
           </div>
         </div>
@@ -178,7 +178,7 @@ export default function TransactionForm({
 
       {/* Total preview */}
       {showTotal && (
-        <div className="bg-[#e8f4ee] border border-[#c5dece] rounded-lg px-3 py-2 text-xs text-[#1c6b4a] font-medium">
+        <div className="bg-[#eaf3fb] border border-[#cbddec] rounded-lg px-3 py-2 text-xs text-[#3f7fc3] font-medium">
           예상 총액: {currency === 'KRW' ? '₩' : '$'}{total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
           <span className="text-[#3d9970] ml-1">({qty}주 × {Number(price).toLocaleString()})</span>
         </div>
@@ -187,7 +187,7 @@ export default function TransactionForm({
       {/* Cash amount (for non-asset transactions) */}
       {!needsAsset && (
         <div>
-          <label className="block text-xs text-[#9c9484] mb-1">금액 (원) *</label>
+          <label className="block text-xs text-[#65758a] mb-1">금액 (원) *</label>
           <input
             name="cash_amount"
             type="number"
@@ -195,32 +195,21 @@ export default function TransactionForm({
             min="0"
             required
             placeholder="0"
-            className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+            className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
           />
         </div>
       )}
 
       {/* Fee */}
       <div>
-        <label className="block text-xs text-[#9c9484] mb-1">수수료</label>
+        <label className="block text-xs text-[#65758a] mb-1">수수료</label>
         <input
           name="fee"
           type="number"
           step="any"
           min="0"
           defaultValue="0"
-          className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
-        />
-      </div>
-
-      {/* Memo */}
-      <div>
-        <label className="block text-xs text-[#9c9484] mb-1">메모</label>
-        <textarea
-          name="memo"
-          placeholder="매매 이유, 감상 등..."
-          rows={2}
-          className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a] resize-none"
+          className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
         />
       </div>
 
@@ -233,7 +222,7 @@ export default function TransactionForm({
       <button
         type="submit"
         disabled={pending}
-        className="w-full bg-[#1c6b4a] hover:bg-[#165638] disabled:opacity-50 text-white font-semibold rounded-lg py-2.5 transition-colors"
+        className="w-full bg-[#3f7fc3] hover:bg-[#326ba6] disabled:opacity-50 text-white font-semibold rounded-lg py-2.5 transition-colors"
       >
         {pending ? '저장 중…' : '거래 저장'}
       </button>

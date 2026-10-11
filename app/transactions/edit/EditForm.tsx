@@ -21,7 +21,6 @@ interface Props {
     price: number | null
     amount: number | null
     fee: number
-    memo: string | null
     currency: string
     accounts: { name: string; owner: string } | null
     assets: { name: string; symbol: string | null } | null
@@ -58,17 +57,17 @@ export default function EditForm({ tx }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* 계좌 + 종목 (읽기 전용 표시) */}
-      <div className="bg-[#f4eee0] rounded-xl px-4 py-3 text-xs space-y-1">
+      <div className="bg-[#f3f7fb] rounded-xl px-4 py-3 text-xs space-y-1">
         <div className="flex justify-between">
-          <span className="text-[#9c9484]">계좌</span>
-          <span className="text-[#34322b] font-medium">
+          <span className="text-[#65758a]">계좌</span>
+          <span className="text-[#172233] font-medium">
             {tx.accounts?.owner === 'spouse' ? '[아내] ' : '[나] '}{tx.accounts?.name ?? '-'}
           </span>
         </div>
         {tx.assets && (
           <div className="flex justify-between">
-            <span className="text-[#9c9484]">종목</span>
-            <span className="text-[#34322b] font-medium">
+            <span className="text-[#65758a]">종목</span>
+            <span className="text-[#172233] font-medium">
               {tx.assets.symbol ? `${tx.assets.symbol} — ` : ''}{tx.assets.name}
             </span>
           </div>
@@ -77,19 +76,19 @@ export default function EditForm({ tx }: Props) {
 
       {/* 날짜 */}
       <div>
-        <label className="block text-xs text-[#9c9484] mb-1">날짜 *</label>
+        <label className="block text-xs text-[#65758a] mb-1">날짜 *</label>
         <input
           name="date"
           type="date"
           defaultValue={tx.date}
           required
-          className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+          className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
         />
       </div>
 
       {/* 거래 유형 */}
       <div>
-        <label className="block text-xs text-[#9c9484] mb-1.5">거래 유형 *</label>
+        <label className="block text-xs text-[#65758a] mb-1.5">거래 유형 *</label>
         <div className="flex flex-wrap gap-1.5">
           {TX_TYPES.map(t => (
             <button
@@ -98,8 +97,8 @@ export default function EditForm({ tx }: Props) {
               onClick={() => setTxType(t.value)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 txType === t.value
-                  ? 'bg-[#1c6b4a] text-white'
-                  : 'bg-white border border-[#e3d9c4] text-[#34322b] hover:border-[#1c6b4a]'
+                  ? 'bg-[#3f7fc3] text-white'
+                  : 'bg-white border border-[#d7e1eb] text-[#172233] hover:border-[#3f7fc3]'
               }`}
             >
               {t.label}
@@ -113,7 +112,7 @@ export default function EditForm({ tx }: Props) {
       {needsAsset && (
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-[#9c9484] mb-1">수량 *</label>
+            <label className="block text-xs text-[#65758a] mb-1">수량 *</label>
             <input
               name="quantity"
               type="number"
@@ -122,12 +121,12 @@ export default function EditForm({ tx }: Props) {
               required
               value={qty}
               onChange={e => setQty(e.target.value)}
-              className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+              className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
             />
           </div>
           <div>
-            <label className="block text-xs text-[#9c9484] mb-1">
-              단가 * {currency !== 'KRW' && <span className="text-[#1c6b4a]">({currency})</span>}
+            <label className="block text-xs text-[#65758a] mb-1">
+              단가 * {currency !== 'KRW' && <span className="text-[#3f7fc3]">({currency})</span>}
             </label>
             <input
               name="price"
@@ -137,7 +136,7 @@ export default function EditForm({ tx }: Props) {
               required
               value={price}
               onChange={e => setPrice(e.target.value)}
-              className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+              className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
             />
           </div>
         </div>
@@ -145,7 +144,7 @@ export default function EditForm({ tx }: Props) {
 
       {/* 총액 미리보기 */}
       {needsAsset && total > 0 && (
-        <div className="bg-[#e8f4ee] border border-[#c5dece] rounded-lg px-3 py-2 text-xs text-[#1c6b4a] font-medium">
+        <div className="bg-[#eaf3fb] border border-[#cbddec] rounded-lg px-3 py-2 text-xs text-[#3f7fc3] font-medium">
           총액: {currency === 'KRW' ? '₩' : '$'}{total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
           <span className="text-[#3d9970] ml-1">({qty}주 × {Number(price).toLocaleString()})</span>
         </div>
@@ -154,7 +153,7 @@ export default function EditForm({ tx }: Props) {
       {/* 현금 금액 (비자산 거래) */}
       {!needsAsset && (
         <div>
-          <label className="block text-xs text-[#9c9484] mb-1">금액 (원) *</label>
+          <label className="block text-xs text-[#65758a] mb-1">금액 (원) *</label>
           <input
             name="cash_amount"
             type="number"
@@ -162,32 +161,21 @@ export default function EditForm({ tx }: Props) {
             min="0"
             required
             defaultValue={tx.amount ?? ''}
-            className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
+            className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
           />
         </div>
       )}
 
       {/* 수수료 */}
       <div>
-        <label className="block text-xs text-[#9c9484] mb-1">수수료</label>
+        <label className="block text-xs text-[#65758a] mb-1">수수료</label>
         <input
           name="fee"
           type="number"
           step="any"
           min="0"
           defaultValue={tx.fee ?? 0}
-          className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a]"
-        />
-      </div>
-
-      {/* 메모 */}
-      <div>
-        <label className="block text-xs text-[#9c9484] mb-1">메모</label>
-        <textarea
-          name="memo"
-          defaultValue={tx.memo ?? ''}
-          rows={2}
-          className="w-full text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1c6b4a] resize-none"
+          className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
         />
       </div>
 
@@ -201,14 +189,14 @@ export default function EditForm({ tx }: Props) {
         <button
           type="submit"
           disabled={pending}
-          className="flex-1 bg-[#1c6b4a] hover:bg-[#165638] disabled:opacity-50 text-white font-semibold rounded-lg py-2.5 transition-colors"
+          className="flex-1 bg-[#3f7fc3] hover:bg-[#326ba6] disabled:opacity-50 text-white font-semibold rounded-lg py-2.5 transition-colors"
         >
           {pending ? '저장 중…' : '수정 저장'}
         </button>
         <button
           type="button"
           onClick={() => router.back()}
-          className="px-4 py-2.5 text-sm text-[#9c9484] hover:text-[#34322b] border border-[#e3d9c4] rounded-lg transition-colors"
+          className="px-4 py-2.5 text-sm text-[#65758a] hover:text-[#172233] border border-[#d7e1eb] rounded-lg transition-colors"
         >
           취소
         </button>

@@ -1,51 +1,51 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import AppShell from '@/components/AppShell'
+import { getHouseholdContext } from '@/lib/supabase/server'
 import AssetRow from './AssetRow'
+import type { Asset } from '@/lib/types'
 
 export default async function AssetsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { supabase, userId } = await getHouseholdContext()
 
   const { data: assets = [] } = await supabase
     .from('assets')
     .select('*')
+    .eq('user_id', userId)
     .order('asset_class')
     .order('name')
+    .throwOnError()
 
-  const noSymbol = (assets ?? []).filter((a: any) => !a.symbol)
+  const typedAssets = (assets ?? []) as Asset[]
+  const noSymbol = typedAssets.filter(asset => !asset.symbol)
 
   return (
-    <AppShell>
-      <div className="p-6 max-w-2xl">
-        <h1 className="text-lg font-bold text-[#34322b] mb-1">종목 관리</h1>
-        <p className="text-xs text-[#9c9484] mb-6">심볼을 입력해야 시세가 자동으로 조회됩니다</p>
+    <>
+      <div className="page-container max-w-2xl">
+        <h1 className="page-title">종목 관리</h1>
+        <p className="page-subtitle mb-6">거래에 사용한 종목과 자동 시세 조회용 심볼을 관리합니다.</p>
 
         {noSymbol.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 text-xs text-amber-700">
-            ⚠ 심볼 미입력 종목 {noSymbol.length}개 — 아래에서 클릭해서 입력하세요
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+            심볼 미입력 종목 {noSymbol.length}개 · 아래 목록에서 심볼을 입력해 주세요.
           </div>
         )}
 
-        <div className="bg-[#faf6ec] border border-[#e3d9c4] rounded-2xl overflow-hidden">
-          {(assets ?? []).length === 0 ? (
-            <p className="text-sm text-[#9c9484] text-center py-10">등록된 종목이 없습니다</p>
+        <div className="app-card overflow-hidden">
+          {typedAssets.length === 0 ? (
+            <p className="py-10 text-center text-sm text-[var(--color-muted)]">등록된 종목이 없습니다</p>
           ) : (
-            (assets as any[]).map((asset: any) => (
+            typedAssets.map(asset => (
               <AssetRow key={asset.id} asset={asset} />
             ))
           )}
         </div>
 
-        <div className="mt-4 bg-[#faf6ec] border border-[#e3d9c4] rounded-xl p-4 text-xs text-[#9c9484] space-y-1">
-          <p className="font-semibold text-[#34322b] mb-2">심볼 입력 가이드</p>
-          <p>🇰🇷 국내주식/ETF → 6자리 종목코드 (예: <span className="font-mono text-[#34322b]">005930</span>)</p>
-          <p className="ml-3 text-[#b5aa98]">KOSDAQ 종목은 <span className="font-mono">종목코드.KQ</span> 형태로 입력</p>
-          <p>🇺🇸 미국주식/ETF → 티커 (예: <span className="font-mono text-[#34322b]">AAPL</span>, <span className="font-mono text-[#34322b]">QQQ</span>)</p>
-          <p>🪙 코인 → 업비트 기준 (예: <span className="font-mono text-[#34322b]">BTC</span>, <span className="font-mono text-[#34322b]">ETH</span>)</p>
+        <div className="app-card mt-4 space-y-1 p-4 text-xs text-[var(--color-muted)]">
+          <p className="mb-2 font-semibold text-[var(--color-ink)]">심볼 입력 가이드</p>
+          <p><span className="font-semibold text-[var(--color-ink)]">국내</span> · 6자리 종목코드 (예: <span className="font-mono text-[var(--color-ink)]">005930</span>)</p>
+          <p className="pl-9 text-[var(--color-subtle)]">KOSDAQ은 <span className="font-mono">종목코드.KQ</span> 형태로 입력</p>
+          <p><span className="font-semibold text-[var(--color-ink)]">미국</span> · 티커 (예: <span className="font-mono text-[var(--color-ink)]">AAPL</span>, <span className="font-mono text-[var(--color-ink)]">QQQ</span>)</p>
+          <p><span className="font-semibold text-[var(--color-ink)]">코인</span> · 업비트 기준 (예: <span className="font-mono text-[var(--color-ink)]">BTC</span>, <span className="font-mono text-[var(--color-ink)]">ETH</span>)</p>
         </div>
       </div>
-    </AppShell>
+    </>
   )
 }

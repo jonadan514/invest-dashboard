@@ -1,6 +1,3 @@
-'use client'
-import { useEffect, useState } from 'react'
-
 const CLASS_LABEL: Record<string, string> = {
   kr_stock: '국내주식', us_stock: '미국주식',
   etf_kr: '국내ETF', etf_us: '미국ETF',
@@ -9,28 +6,15 @@ const CLASS_LABEL: Record<string, string> = {
 
 type ActualItem = { cls: string; pct: number }
 
-export default function RebalancingAlert({ actual }: { actual: ActualItem[] }) {
-  const [alerts, setAlerts] = useState<
-    { cls: string; label: string; actual: number; target: number; diff: number }[]
-  >([])
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('target_allocation')
-      if (!raw) return
-      const target = JSON.parse(raw) as Record<string, number>
-
-      const out: typeof alerts = []
-      for (const item of actual) {
-        const t = target[item.cls] ?? 0
-        const diff = item.pct - t
-        if (Math.abs(diff) >= 5) {
-          out.push({ cls: item.cls, label: CLASS_LABEL[item.cls] ?? item.cls, actual: item.pct, target: t, diff })
-        }
-      }
-      setAlerts(out)
-    } catch {}
-  }, [actual])
+export default function RebalancingAlert({ actual, target }: { actual: ActualItem[]; target: Record<string, number> }) {
+  const alerts: { cls: string; label: string; actual: number; target: number; diff: number }[] = []
+  for (const item of actual) {
+    const targetRatio = target[item.cls] ?? 0
+    const diff = item.pct - targetRatio
+    if (Math.abs(diff) >= 5) {
+      alerts.push({ cls: item.cls, label: CLASS_LABEL[item.cls] ?? item.cls, actual: item.pct, target: targetRatio, diff })
+    }
+  }
 
   if (alerts.length === 0) return null
 

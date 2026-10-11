@@ -25,16 +25,16 @@ export default function TrendChart({ data }: { data: TrendPoint[] }) {
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
       <defs>
         <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1c6b4a" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="#1c6b4a" stopOpacity="0.02" />
+          <stop offset="0%" stopColor="#3f7fc3" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#3f7fc3" stopOpacity="0.02" />
         </linearGradient>
       </defs>
       <polygon
         points={`${pts} ${lastX.toFixed(1)},${bottom} ${PL.toFixed(1)},${bottom}`}
         fill="url(#cg)"
       />
-      <polyline points={pts} fill="none" stroke="#1c6b4a" strokeWidth="1.8" strokeLinejoin="round" />
-      <circle cx={lastX} cy={lastY} r="3.5" fill="#1c6b4a" />
+      <polyline points={pts} fill="none" stroke="#3f7fc3" strokeWidth="1.8" strokeLinejoin="round" />
+      <circle cx={lastX} cy={lastY} r="3.5" fill="#3f7fc3" />
       {labelIdxs.map(i => {
         const [, m] = data[i].month.split('-')
         return (
@@ -43,7 +43,7 @@ export default function TrendChart({ data }: { data: TrendPoint[] }) {
             x={x(i)}
             y={H - 4}
             textAnchor={i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle'}
-            className="fill-[#b5aa98]"
+            className="fill-[var(--color-subtle)]"
             style={{ fontSize: 9 }}
           >
             {parseInt(m)}월

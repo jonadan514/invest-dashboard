@@ -3,14 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H 127.0.0.1",
     "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "start": "next start -H 127.0.0.1",
+    "lint": "eslint",
+    "test": "node --test --no-warnings --experimental-strip-types tests/finance-calculations.test.ts tests/child-valuation.test.ts"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.49.0",
+    "lucide-react": "^1.41.0",
     "next": "16.2.9",
     "react": "19.2.4",
     "react-dom": "19.2.4"

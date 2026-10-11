@@ -1,11 +1,9 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
-import AppShell from '@/components/AppShell'
+import { getHouseholdContext } from '@/lib/supabase/server'
 import { buildRealizedPnL } from '@/lib/calc/realized-pnl'
 import DeleteTxButton from './DeleteTxButton'
 import { TX_LABEL, TX_COLOR } from '@/lib/labels'
-import type { OwnerType } from '@/lib/types'
+import type { Account, Asset, OwnerType, Transaction } from '@/lib/types'
 
 const TYPE_FILTERS: { value: string; label: string }[] = [
   { value: '', label: '전체' },
@@ -22,7 +20,7 @@ function krw(n: number, currency = 'KRW') {
 }
 
 function pnlClass(v: number) {
-  return v > 0 ? 'text-[#d31f47]' : v < 0 ? 'text-[#1763c9]' : 'text-[#9c9484]'
+  return v > 0 ? 'text-[#d31f47]' : v < 0 ? 'text-[#1763c9]' : 'text-[#65758a]'
 }
 
 function sign(v: number) { return v > 0 ? '+' : v < 0 ? '-' : '' }
@@ -35,24 +33,22 @@ export default async function TransactionsPage({
   const { owner, type: typeFilter } = await searchParams
   const ownerFilter = (owner === 'me' || owner === 'spouse') ? owner as OwnerType : null
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { supabase, userId } = await getHouseholdContext()
 
   // 계좌 조회 (owner 필터 반영)
-  let accountsQuery = supabase.from('accounts').select('id, name, owner').eq('is_active', true)
+  let accountsQuery = supabase.from('accounts').select('id, name, owner').eq('user_id', userId).eq('is_active', true)
   if (ownerFilter) accountsQuery = accountsQuery.eq('owner', ownerFilter)
-  const { data: accounts = [] } = await accountsQuery
-  const accountIds = (accounts ?? []).map((a: any) => a.id)
+  const { data: accounts = [] } = await accountsQuery.throwOnError()
+  const accountIds = ((accounts ?? []) as Pick<Account, 'id' | 'name' | 'owner'>[]).map(account => account.id)
 
   if (accountIds.length === 0) {
     return (
-      <AppShell>
-        <div className="p-6">
-          <h1 className="text-lg font-bold text-[#34322b] mb-4">거래 내역</h1>
-          <p className="text-sm text-[#9c9484]">등록된 계좌가 없습니다.</p>
+      <>
+        <div className="page-container max-w-5xl">
+          <h1 className="page-title mb-4">거래 내역</h1>
+          <p className="text-sm text-[#65758a]">등록된 계좌가 없습니다.</p>
         </div>
-      </AppShell>
+      </>
     )
   }
 
@@ -61,20 +57,23 @@ export default async function TransactionsPage({
     supabase
       .from('transactions')
       .select('*, accounts(name, owner), assets(name, symbol, asset_class)')
+      .eq('user_id', userId)
       .in('account_id', accountIds)
       .order('date', { ascending: false })
-      .order('created_at', { ascending: false }),
-    supabase.from('assets').select('*'),
+      .order('created_at', { ascending: false }).throwOnError(),
+    supabase.from('assets').select('*').eq('user_id', userId).throwOnError(),
   ])
 
   // 실현손익 맵 (tx_id → pnl row)
-  const pnlRows = buildRealizedPnL(transactions ?? [], assets ?? [])
+  const typedTransactions = (transactions ?? []) as Transaction[]
+  const typedAssets = (assets ?? []) as Asset[]
+  const pnlRows = buildRealizedPnL(typedTransactions, typedAssets)
   const pnlByTxId = new Map(pnlRows.map(r => [r.tx_id, r]))
 
   // 유형 필터 적용
   const filtered = typeFilter
-    ? (transactions ?? []).filter((tx: any) => tx.type === typeFilter)
-    : (transactions ?? [])
+    ? typedTransactions.filter(tx => tx.type === typeFilter)
+    : typedTransactions
 
   // 실현손익 합계 (전체, 필터 전)
   const totalRealizedPnlKrw = pnlRows.reduce((s, r) => s + r.pnl_krw, 0)
@@ -89,13 +88,17 @@ export default async function TransactionsPage({
   }
 
   return (
-    <AppShell>
-      <div className="p-6 max-w-5xl">
-        <div className="flex items-center justify-between mb-5">
-          <h1 className="text-lg font-bold text-[#34322b]">거래 내역</h1>
+    <>
+      <div className="page-container max-w-5xl">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <p className="page-eyebrow">Ledger</p>
+            <h1 className="page-title">거래 내역</h1>
+            <p className="mt-2 text-sm text-[#65758a]">입출금과 매매 금액을 기록하고 수정하는 거래 원장입니다.</p>
+          </div>
           <Link
             href="/transactions/new"
-            className="bg-[#1c6b4a] hover:bg-[#165638] text-white text-xs font-semibold rounded-lg px-3 py-2 transition-colors"
+            className="bg-[#3f7fc3] hover:bg-[#326ba6] text-white text-xs font-semibold rounded-lg px-3 py-2 transition-colors"
           >
             + 거래 입력
           </Link>
@@ -104,22 +107,22 @@ export default async function TransactionsPage({
         {/* 요약 카드 */}
         {sellCount > 0 && (
           <div className="grid grid-cols-2 gap-3 mb-5">
-            <div className="bg-[#faf6ec] border border-[#e3d9c4] rounded-2xl p-4">
-              <p className="text-xs text-[#9c9484]">실현 손익 (누적)</p>
+            <div className="bg-[#ffffff] border border-[#d7e1eb] rounded-2xl p-4">
+              <p className="text-xs text-[#65758a]">실현 손익 (누적)</p>
               <p className={`text-xl font-bold mt-1 ${pnlClass(totalRealizedPnlKrw)}`}>
                 {sign(totalRealizedPnlKrw)}{krw(totalRealizedPnlKrw)}
               </p>
-              <p className="text-[10px] text-[#b5aa98] mt-0.5">매도 {sellCount}건 기준</p>
+              <p className="text-[10px] text-[#93a2b5] mt-0.5">매도 {sellCount}건 기준</p>
             </div>
-            <div className="bg-[#faf6ec] border border-[#e3d9c4] rounded-2xl p-4">
-              <p className="text-xs text-[#9c9484]">총 거래 건수</p>
-              <p className="text-xl font-bold text-[#34322b] mt-1">
-                {(transactions ?? []).length}건
+            <div className="bg-[#ffffff] border border-[#d7e1eb] rounded-2xl p-4">
+              <p className="text-xs text-[#65758a]">총 거래 건수</p>
+              <p className="text-xl font-bold text-[#172233] mt-1">
+                {typedTransactions.length}건
               </p>
-              <p className="text-[10px] text-[#b5aa98] mt-0.5">
-                매수 {(transactions ?? []).filter((t: any) => t.type === 'buy').length} ·
+              <p className="text-[10px] text-[#93a2b5] mt-0.5">
+                매수 {typedTransactions.filter(t => t.type === 'buy').length} ·
                 매도 {sellCount} ·
-                배당 {(transactions ?? []).filter((t: any) => t.type === 'dividend').length}
+                배당 {typedTransactions.filter(t => t.type === 'dividend').length}
               </p>
             </div>
           </div>
@@ -133,8 +136,8 @@ export default async function TransactionsPage({
               href={filterHref(f.value)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 (typeFilter ?? '') === f.value
-                  ? 'bg-[#1c6b4a] text-white'
-                  : 'bg-white border border-[#e3d9c4] text-[#34322b] hover:border-[#1c6b4a]'
+                  ? 'bg-[#3f7fc3] text-white'
+                  : 'bg-white border border-[#d7e1eb] text-[#172233] hover:border-[#3f7fc3]'
               }`}
             >
               {f.label}
@@ -143,59 +146,59 @@ export default async function TransactionsPage({
         </div>
 
         {/* 거래 목록 */}
-        <div className="bg-[#faf6ec] border border-[#e3d9c4] rounded-2xl overflow-hidden">
+        <div className="bg-[#ffffff] border border-[#d7e1eb] rounded-2xl overflow-hidden">
           {filtered.length === 0 ? (
-            <p className="text-sm text-[#9c9484] text-center py-10">거래 내역이 없습니다</p>
+            <p className="text-sm text-[#65758a] text-center py-10">거래 내역이 없습니다</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-[#e3d9c4] bg-[#f4eee0]">
-                    <th className="text-left text-[#9c9484] font-medium px-4 py-2.5">날짜</th>
-                    <th className="text-left text-[#9c9484] font-medium px-3 py-2.5">계좌</th>
-                    <th className="text-left text-[#9c9484] font-medium px-3 py-2.5">종목</th>
-                    <th className="text-center text-[#9c9484] font-medium px-3 py-2.5">유형</th>
-                    <th className="text-right text-[#9c9484] font-medium px-3 py-2.5">수량</th>
-                    <th className="text-right text-[#9c9484] font-medium px-3 py-2.5">단가</th>
-                    <th className="text-right text-[#9c9484] font-medium px-3 py-2.5">금액</th>
-                    <th className="text-right text-[#9c9484] font-medium px-3 py-2.5">실현손익</th>
+                  <tr className="border-b border-[#d7e1eb] bg-[#f3f7fb]">
+                    <th className="text-left text-[#65758a] font-medium px-4 py-2.5">날짜</th>
+                    <th className="text-left text-[#65758a] font-medium px-3 py-2.5">계좌</th>
+                    <th className="text-left text-[#65758a] font-medium px-3 py-2.5">종목</th>
+                    <th className="text-center text-[#65758a] font-medium px-3 py-2.5">유형</th>
+                    <th className="text-right text-[#65758a] font-medium px-3 py-2.5">수량</th>
+                    <th className="text-right text-[#65758a] font-medium px-3 py-2.5">단가</th>
+                    <th className="text-right text-[#65758a] font-medium px-3 py-2.5">금액</th>
+                    <th className="text-right text-[#65758a] font-medium px-3 py-2.5">실현손익</th>
                     <th className="px-3 py-2.5"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((tx: any) => {
+                  {filtered.map(tx => {
                     const pnl = tx.type === 'sell' ? pnlByTxId.get(tx.id) : null
                     const currency: string = tx.currency ?? 'KRW'
                     return (
-                      <tr key={tx.id} className="border-b border-[#f0ead8] last:border-0 hover:bg-[#f4eee0] transition-colors">
-                        <td className="px-4 py-2.5 text-[#9c9484] whitespace-nowrap">{tx.date}</td>
+                      <tr key={tx.id} className="border-b border-[#edf3f8] last:border-0 hover:bg-[#f3f7fb] transition-colors">
+                        <td className="px-4 py-2.5 text-[#65758a] whitespace-nowrap">{tx.date}</td>
                         <td className="px-3 py-2.5 whitespace-nowrap">
                           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium mr-1 ${
                             tx.accounts?.owner === 'spouse'
                               ? 'bg-purple-100 text-purple-700'
-                              : 'bg-emerald-100 text-emerald-700'
+                              : 'bg-blue-100 text-blue-700'
                           }`}>
                             {tx.accounts?.owner === 'spouse' ? '아내' : '나'}
                           </span>
-                          <span className="text-[#34322b]">{tx.accounts?.name ?? '-'}</span>
+                          <span className="text-[#172233]">{tx.accounts?.name ?? '-'}</span>
                         </td>
-                        <td className="px-3 py-2.5 text-[#34322b]">
-                          {tx.assets?.name ?? <span className="text-[#b5aa98]">현금</span>}
+                        <td className="px-3 py-2.5 text-[#172233]">
+                          {tx.assets?.name ?? <span className="text-[#93a2b5]">현금</span>}
                         </td>
                         <td className="px-3 py-2.5 text-center">
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${TX_COLOR[tx.type] ?? 'bg-[#f0ead8] text-[#9c9484]'}`}>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${TX_COLOR[tx.type] ?? 'bg-[#edf3f8] text-[#65758a]'}`}>
                             {TX_LABEL[tx.type] ?? tx.type}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 text-right text-[#34322b]">
+                        <td className="px-3 py-2.5 text-right text-[#172233]">
                           {tx.quantity != null ? Number(tx.quantity).toLocaleString() : '-'}
                         </td>
-                        <td className="px-3 py-2.5 text-right text-[#34322b]">
+                        <td className="px-3 py-2.5 text-right text-[#172233]">
                           {tx.price != null
                             ? (currency === 'USD' ? '$' : '₩') + Number(tx.price).toLocaleString()
                             : '-'}
                         </td>
-                        <td className="px-3 py-2.5 text-right text-[#34322b] font-medium">
+                        <td className="px-3 py-2.5 text-right text-[#172233] font-medium">
                           {tx.amount != null
                             ? (currency === 'USD' ? '$' : '₩') + Number(tx.amount).toLocaleString()
                             : '-'}
@@ -211,14 +214,14 @@ export default async function TransactionsPage({
                               </p>
                             </div>
                           ) : (
-                            <span className="text-[#e3d9c4]">—</span>
+                            <span className="text-[#d7e1eb]">—</span>
                           )}
                         </td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-1">
                             <Link
                               href={`/transactions/edit/${tx.id}`}
-                              className="text-[10px] text-[#9c9484] hover:text-[#1c6b4a] transition-colors px-1"
+                              className="text-[10px] text-[#65758a] hover:text-[#3f7fc3] transition-colors px-1"
                             >
                               수정
                             </Link>
@@ -234,6 +237,6 @@ export default async function TransactionsPage({
           )}
         </div>
       </div>
-    </AppShell>
+    </>
   )
 }

@@ -1,20 +1,20 @@
-import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/server'
-import AppShell from '@/components/AppShell'
+import { DEFAULT_FINANCIAL_PLAN, type FinancialPlanSettings } from '@/lib/calc/budget'
+import { getHouseholdContext } from '@/lib/supabase/server'
+import type { Account, AccountMonthlySnapshot, FinancialPlanSettingsRow, MonthlyBudget } from '@/lib/types'
 import MonthlyForm from './MonthlyForm'
+import PlanSettingsForm from './PlanSettingsForm'
 
-function fmtKrw(n: number) {
-  return '₩' + new Intl.NumberFormat('ko-KR').format(Math.round(n))
+function formatKrw(value: number) {
+  return `₩${new Intl.NumberFormat('ko-KR').format(Math.round(value))}`
 }
 
-// 최근 N개월 + 미래 2개월 목록 생성
-function generateMonths(n = 18): string[] {
+function generateMonths(count = 18) {
   const months: string[] = []
   const now = new Date()
-  for (let i = -2; i < n; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  for (let index = -2; index < count; index += 1) {
+    const date = new Date(now.getFullYear(), now.getMonth() - index, 1)
+    months.push(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`)
   }
   return months
 }
@@ -24,109 +24,135 @@ function currentMonth() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
+function toSettings(row: FinancialPlanSettingsRow | null): FinancialPlanSettings {
+  if (!row) return DEFAULT_FINANCIAL_PLAN
+  return {
+    monthlyFixedCost: Number(row.monthly_fixed_cost),
+    mortgageInterest: Number(row.mortgage_interest),
+    mortgagePrincipal: Number(row.mortgage_principal),
+    monthlyJointContribution: Number(row.monthly_joint_contribution),
+    currentEmergencyFund: Number(row.current_emergency_fund),
+    stage1Target: Number(row.stage1_target),
+    stage2Target: Number(row.stage2_target),
+    stage2EmergencyRatio: Number(row.stage2_emergency_ratio),
+    stage2InvestmentRatio: Number(row.stage2_investment_ratio),
+    completedInvestmentRatio: Number(row.completed_investment_ratio),
+    completedPropertyRatio: Number(row.completed_property_ratio),
+  }
+}
+
 export default async function BudgetPage({
   searchParams,
 }: {
   searchParams: Promise<{ month?: string }>
 }) {
-  const { month: qMonth } = await searchParams
-  const month = qMonth ?? currentMonth()
+  const { month: requestedMonth } = await searchParams
+  const month = requestedMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth) ? requestedMonth : currentMonth()
+  const { supabase, userId } = await getHouseholdContext()
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  // 현재 월 entry + 전체 히스토리
-  const [{ data: entryData }, { data: historyData }] = await Promise.all([
-    supabase
-      .from('monthly_budgets')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('month', month)
-      .maybeSingle(),
-    supabase
-      .from('monthly_budgets')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('month', { ascending: false })
-      .limit(24),
+  const [
+    { data: entryData },
+    { data: historyData },
+    { data: settingsData },
+    { data: accountData },
+    { data: accountSnapshotData },
+  ] = await Promise.all([
+    supabase.from('monthly_budgets').select('*').eq('user_id', userId).eq('month', month).maybeSingle().throwOnError(),
+    supabase.from('monthly_budgets').select('*').eq('user_id', userId).order('month', { ascending: false }).limit(24).throwOnError(),
+    supabase.from('financial_plan_settings').select('*').eq('user_id', userId).maybeSingle().throwOnError(),
+    supabase.from('accounts').select('*').eq('user_id', userId).eq('is_active', true).order('sort_order').order('created_at').throwOnError(),
+    supabase.from('account_monthly_snapshots').select('*').eq('user_id', userId).lte('month', month).order('month').throwOnError(),
   ])
 
-  const entry = entryData ?? null
-  const history = (historyData ?? []) as any[]
-  const months = generateMonths(18)
+  const entry = (entryData ?? null) as MonthlyBudget | null
+  const history = (historyData ?? []) as MonthlyBudget[]
+  const settingsRow = (settingsData ?? null) as FinancialPlanSettingsRow | null
+  const settings = toSettings(settingsRow)
+  const accounts = (accountData ?? []) as Account[]
+  const accountSnapshots = (accountSnapshotData ?? []) as AccountMonthlySnapshot[]
+  const latestByAccount = new Map<string, AccountMonthlySnapshot>()
+  const exactByAccount = new Map<string, AccountMonthlySnapshot>()
+  for (const snapshot of accountSnapshots) latestByAccount.set(snapshot.account_id, snapshot)
+  for (const snapshot of accountSnapshots) {
+    if (snapshot.month === month) exactByAccount.set(snapshot.account_id, snapshot)
+  }
+  const initialAccountValues = Object.fromEntries(accounts.map(account => {
+    const snapshot = latestByAccount.get(account.id)
+    const exact = exactByAccount.get(account.id)
+    return [account.id, {
+      evaluationAmount: Number(snapshot?.evaluation_amount ?? 0),
+      monthlyAllocation: Number(exact?.monthly_allocation ?? 0),
+      ytdContribution: snapshot?.month.startsWith(`${month.slice(0, 4)}-`)
+        ? Number(snapshot.ytd_contribution)
+        : 0,
+    }]
+  }))
+  const hasAccountSnapshot = accountSnapshots.some(snapshot => snapshot.month === month)
 
   return (
-    <AppShell>
-      <div className="p-6 max-w-4xl">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-lg font-bold text-[#34322b]">재무 계획</h1>
-            <p className="text-xs text-[#9c9484] mt-0.5">월별 공금 배분 · 비상금 추적</p>
-          </div>
+    <>
+      <div className="page-container max-w-[1240px]">
+        <div className="mb-5">
+          <p className="page-eyebrow">Monthly household record</p>
+          <h1 className="page-title">월간 기록</h1>
+          <p className="page-subtitle">매월 자금 흐름과 계좌 평가금액을 한 번에 기록합니다.</p>
         </div>
 
-        <Suspense fallback={<div className="h-64 bg-[#faf6ec] rounded-2xl animate-pulse" />}>
-          <MonthlyForm month={month} entry={entry} months={months} />
+        <PlanSettingsForm settings={settings} />
+
+        <Suspense fallback={<div className="h-64 animate-pulse rounded-2xl bg-[#ffffff]" />}>
+          <MonthlyForm
+            key={`${month}-${settingsRow?.updated_at ?? 'default'}`}
+            month={month}
+            entry={entry}
+            months={generateMonths()}
+            settings={settings}
+            accounts={accounts}
+            initialAccountValues={initialAccountValues}
+            hasAccountSnapshot={hasAccountSnapshot}
+          />
         </Suspense>
 
-        {/* 히스토리 테이블 */}
-        {history.length > 0 && (
-          <div className="mt-6 bg-[#faf6ec] border border-[#e3d9c4] rounded-2xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-[#e3d9c4] bg-[#f4eee0]">
-              <h2 className="text-sm font-semibold text-[#34322b]">월별 기록</h2>
+        {history.length > 0 ? (
+          <div className="app-card mt-5 overflow-hidden">
+            <div className="border-b border-[var(--color-border)] bg-[var(--color-section)] px-4 py-3.5">
+              <h2 className="text-base font-bold text-[var(--color-ink)]">월별 기록</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-[#f0ead8] text-[#9c9484]">
-                    <th className="text-left px-4 py-2.5 font-medium whitespace-nowrap">월</th>
-                    <th className="text-right px-3 py-2.5 font-medium whitespace-nowrap">예금 잔액</th>
-                    <th className="text-right px-3 py-2.5 font-medium whitespace-nowrap">공금</th>
-                    <th className="text-right px-3 py-2.5 font-medium whitespace-nowrap">성과급(배분)</th>
-                    <th className="text-center px-3 py-2.5 font-medium whitespace-nowrap">단계</th>
-                    <th className="text-left px-3 py-2.5 font-medium">메모</th>
+                  <tr className="border-b border-[#edf3f8] text-[#65758a]">
+                    <th className="whitespace-nowrap px-4 py-2.5 text-left font-medium">월</th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">비상금</th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">공금</th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">성과급 포함</th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">주담대 원금</th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-center font-medium">비상금 목표</th>
+                    <th className="px-3 py-2.5 text-left font-medium">메모</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {history.map((h: any) => {
-                    const [hy, hm] = h.month.split('-')
-                    const isCurrent = h.month === month
+                  {history.map(record => {
+                    const [year, monthNumber] = record.month.split('-')
+                    const emergencyFund = Number(record.cash_balance)
                     return (
-                      <tr
-                        key={h.id}
-                        className={`border-b border-[#f4eee0] last:border-0 hover:bg-[#f4eee0] transition-colors cursor-pointer ${
-                          isCurrent ? 'bg-emerald-50' : ''
-                        }`}
-                        onClick={() => {}}
-                      >
-                        <td className="px-4 py-3 font-medium text-[#34322b] whitespace-nowrap">
-                          {hy}년 {parseInt(hm)}월
-                          {isCurrent && <span className="ml-1 text-[10px] text-[#1c6b4a]">●</span>}
+                      <tr key={record.id} className={`border-b border-[#f3f7fb] last:border-0 ${record.month === month ? 'bg-blue-50' : ''}`}>
+                        <td className="whitespace-nowrap px-4 py-3 font-medium text-[#172233]">
+                          {year}년 {Number(monthNumber)}월
+                          {record.month === month ? <span className="ml-1 text-[10px] text-[#3f7fc3]">●</span> : null}
                         </td>
-                        <td className="px-3 py-3 text-right text-[#34322b] whitespace-nowrap">
-                          {fmtKrw(h.cash_balance)}
+                        <td className="whitespace-nowrap px-3 py-3 text-right text-[#172233]">{formatKrw(record.cash_balance)}</td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right text-[#172233]">{formatKrw(record.joint_savings)}</td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right text-[#6b3fa0]">
+                          {record.bonus_to_plan > 0 ? formatKrw(record.bonus_to_plan) : '-'}
                         </td>
-                        <td className="px-3 py-3 text-right text-[#34322b] whitespace-nowrap">
-                          {fmtKrw(h.joint_savings)}
-                        </td>
-                        <td className="px-3 py-3 text-right whitespace-nowrap">
-                          {h.bonus_to_plan > 0
-                            ? <span className="text-[#6b3fa0]">{fmtKrw(h.bonus_to_plan)}</span>
-                            : <span className="text-[#b5aa98]">-</span>}
-                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right text-[#172233]">{Number(record.mortgage_principal) + Number(record.mortgage_extra_principal) > 0 ? formatKrw(Number(record.mortgage_principal) + Number(record.mortgage_extra_principal)) : '-'}</td>
                         <td className="px-3 py-3 text-center">
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                            h.cash_balance >= 30_000_000
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-amber-100 text-amber-700'
-                          }`}>
-                            {h.cash_balance >= 30_000_000 ? '2단계' : '1단계'}
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${emergencyFund >= settings.stage2Target ? 'bg-blue-100 text-blue-700' : emergencyFund >= settings.stage1Target ? 'bg-amber-100 text-amber-700' : 'bg-[#edf3f8] text-[#65758a]'}`}>
+                            {emergencyFund >= settings.stage2Target ? '5천만 달성' : emergencyFund >= settings.stage1Target ? '3천만 달성' : '달성 전'}
                           </span>
                         </td>
-                        <td className="px-3 py-3 text-[#9c9484] max-w-[160px] truncate">
-                          {h.memo || '-'}
-                        </td>
+                        <td className="max-w-[160px] truncate px-3 py-3 text-[#65758a]">{record.memo || '-'}</td>
                       </tr>
                     )
                   })}
@@ -134,8 +160,8 @@ export default async function BudgetPage({
               </table>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
-    </AppShell>
+    </>
   )
 }

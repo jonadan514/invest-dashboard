@@ -1,49 +1,49 @@
-import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from 'next/server'
+import { ACCESS_COOKIE_NAME, isAccessConfigured, verifyAccessToken } from '@/lib/access/session'
 
-export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+const PUBLIC_PATHS = new Set(['/access', '/api/access/unlock'])
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
-        },
-      },
+function safeNextPath(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\') || /[\r\n]/.test(value)) return '/'
+  return value
+}
+
+function redirectWithinApp(request: NextRequest, path: string) {
+  // Proxy redirects require an absolute URL. Keep the incoming host.
+  const origin = new URL(request.url)
+  const host = request.headers.get('host')
+  if (host) origin.host = host
+  return NextResponse.redirect(new URL(path, origin))
+}
+
+export function proxy(request: NextRequest) {
+  const { pathname, search } = request.nextUrl
+  const token = request.cookies.get(ACCESS_COOKIE_NAME)?.value
+  const hasAccess = verifyAccessToken(token)
+
+  if (pathname === '/login') {
+    return redirectWithinApp(request, hasAccess ? '/' : '/access')
+  }
+
+  if (PUBLIC_PATHS.has(pathname)) {
+    if (pathname === '/access' && hasAccess) {
+      return redirectWithinApp(request, safeNextPath(request.nextUrl.searchParams.get('next')))
     }
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const isLoginPage = request.nextUrl.pathname.startsWith("/login");
-  if (!user && !isLoginPage) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
-  }
-  if (user && isLoginPage) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
+    return NextResponse.next()
   }
 
-  return response;
+  if (hasAccess) return NextResponse.next()
+
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.json({ error: '접근 비밀번호가 필요합니다.' }, { status: 401 })
+  }
+
+  const accessUrl = new URL('/access', request.url)
+  accessUrl.searchParams.set('next', `${pathname}${search}`)
+  if (!isAccessConfigured()) accessUrl.searchParams.set('error', 'config')
+  return redirectWithinApp(request, accessUrl.pathname + accessUrl.search)
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
-};
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
+}

@@ -14,7 +14,7 @@ export default function DeleteTxButton({ id }: { id: string }) {
     <button
       onClick={handleClick}
       disabled={pending}
-      className="text-[10px] text-[#b5aa98] hover:text-red-500 disabled:opacity-40 transition-colors px-1"
+      className="text-[10px] text-[#93a2b5] hover:text-red-500 disabled:opacity-40 transition-colors px-1"
     >
       {pending ? '…' : '삭제'}
     </button>

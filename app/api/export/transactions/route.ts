@@ -1,23 +1,24 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getHouseholdContext } from '@/lib/supabase/server'
+import type { Transaction } from '@/lib/types'
 
 export async function GET() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return new NextResponse('Unauthorized', { status: 401 })
+  const { supabase, userId } = await getHouseholdContext()
 
   const { data: txs } = await supabase
     .from('transactions')
     .select('*, accounts(name, owner, type), assets(name, symbol, asset_class)')
+    .eq('user_id', userId)
     .order('date', { ascending: true })
     .order('created_at', { ascending: true })
+    .throwOnError()
 
-  const rows = (txs ?? []) as any[]
+  const rows = (txs ?? []) as Transaction[]
 
   const headers = [
     'date', 'account_name', 'account_owner', 'account_type',
     'asset_name', 'symbol', 'asset_class',
-    'type', 'quantity', 'price', 'amount', 'fee', 'tax', 'currency', 'fx_rate', 'memo',
+    'type', 'quantity', 'price', 'amount', 'fee', 'tax', 'currency', 'fx_rate',
   ]
 
   function esc(v: unknown) {
@@ -43,7 +44,6 @@ export async function GET() {
       esc(r.tax),
       esc(r.currency),
       esc(r.fx_rate),
-      esc(r.memo),
     ].join(',')),
   ].join('\r\n')
 

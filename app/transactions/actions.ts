@@ -1,10 +1,10 @@
 'use server'
-import { createClient } from '@/lib/supabase/server'
+import { getHouseholdContext } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
 export async function deleteTransaction(id: string) {
-  const supabase = await createClient()
-  const { error } = await supabase.from('transactions').delete().eq('id', id)
+  const { supabase, userId } = await getHouseholdContext()
+  const { error } = await supabase.from('transactions').delete().eq('id', id).eq('user_id', userId)
   if (error) throw new Error(error.message)
   revalidatePath('/transactions')
   revalidatePath('/')
@@ -12,7 +12,7 @@ export async function deleteTransaction(id: string) {
 }
 
 export async function updateTransaction(id: string, formData: FormData) {
-  const supabase = await createClient()
+  const { supabase, userId } = await getHouseholdContext()
 
   const type = formData.get('type') as string
   const needsAsset = ['buy', 'sell', 'dividend'].includes(type)
@@ -30,9 +30,9 @@ export async function updateTransaction(id: string, formData: FormData) {
       price,
       amount,
       fee: Number(formData.get('fee') ?? 0),
-      memo: (formData.get('memo') as string) || null,
     })
     .eq('id', id)
+    .eq('user_id', userId)
 
   if (error) throw new Error(error.message)
   revalidatePath('/transactions')
@@ -41,7 +41,7 @@ export async function updateTransaction(id: string, formData: FormData) {
 }
 
 export async function createTransaction(formData: FormData) {
-  const supabase = await createClient()
+  const { supabase, userId } = await getHouseholdContext()
 
   const type = formData.get('type') as string
   const needsAsset = ['buy', 'sell', 'dividend'].includes(type)
@@ -52,6 +52,7 @@ export async function createTransaction(formData: FormData) {
   const currency = (formData.get('currency') as string) || 'KRW'
 
   const { error } = await supabase.from('transactions').insert({
+    user_id: userId,
     date: formData.get('date') as string,
     account_id: formData.get('account_id') as string,
     asset_id: (formData.get('asset_id') as string) || null,
@@ -61,7 +62,6 @@ export async function createTransaction(formData: FormData) {
     amount,
     fee: Number(formData.get('fee') ?? 0),
     currency,
-    memo: (formData.get('memo') as string) || null,
   })
   if (error) throw new Error(error.message)
 
@@ -70,7 +70,7 @@ export async function createTransaction(formData: FormData) {
 }
 
 export async function createAssetAndTransaction(formData: FormData) {
-  const supabase = await createClient()
+  const { supabase, userId } = await getHouseholdContext()
 
   const assetCurrency = (formData.get('asset_currency') as string) || 'KRW'
 
@@ -83,6 +83,7 @@ export async function createAssetAndTransaction(formData: FormData) {
       .from('assets')
       .select('id')
       .eq('symbol', symbol)
+      .eq('user_id', userId)
       .maybeSingle()
     asset = existing ?? null
   }
@@ -91,6 +92,7 @@ export async function createAssetAndTransaction(formData: FormData) {
     const { data: newAsset, error: assetErr } = await supabase
       .from('assets')
       .insert({
+        user_id: userId,
         name: formData.get('asset_name') as string,
         symbol,
         asset_class: formData.get('asset_class') as string,
@@ -109,6 +111,7 @@ export async function createAssetAndTransaction(formData: FormData) {
   const price = Number(formData.get('price'))
 
   const { error: txErr } = await supabase.from('transactions').insert({
+    user_id: userId,
     date: formData.get('date') as string,
     account_id: formData.get('account_id') as string,
     asset_id: asset.id,
@@ -118,7 +121,6 @@ export async function createAssetAndTransaction(formData: FormData) {
     amount: qty * price,
     fee: Number(formData.get('fee') ?? 0),
     currency: assetCurrency,
-    memo: (formData.get('memo') as string) || null,
   })
   if (txErr) throw new Error(txErr.message)
 

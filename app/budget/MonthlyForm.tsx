@@ -1,23 +1,22 @@
 'use client'
-import { useState, useEffect, useTransition, useCallback } from 'react'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { saveBudgetEntry } from './actions'
-import {
-  calcAllocation,
-  DEFAULT_RATIOS, DEFAULT_HOUSEHOLD,
-  type BudgetRatios, type HouseholdSettings, type AllocationResult,
-} from '@/lib/calc/budget'
 
-function fmtKrw(n: number) {
-  if (n === 0) return '₩0'
-  return '₩' + new Intl.NumberFormat('ko-KR').format(Math.round(n))
+import Link from 'next/link'
+import { useState, useTransition } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import type { FinancialPlanSettings } from '@/lib/calc/budget'
+import type { Account } from '@/lib/types'
+import { saveBudgetEntry } from './actions'
+
+function formatKrw(value: number) {
+  return `₩${new Intl.NumberFormat('ko-KR').format(Math.round(value))}`
 }
-function parseNum(s: string) {
-  return Number(s.replace(/,/g, '')) || 0
+
+function parseNumber(value: string) {
+  return Number(value.replace(/,/g, '')) || 0
 }
-function fmtInput(n: number) {
-  if (n === 0) return ''
-  return new Intl.NumberFormat('ko-KR').format(n)
+
+function formatInput(value: number) {
+  return value === 0 ? '' : new Intl.NumberFormat('ko-KR').format(value)
 }
 
 type Entry = {
@@ -25,334 +24,255 @@ type Entry = {
   bonus_total: number
   bonus_to_plan: number
   cash_balance: number
+  mortgage_interest: number
+  mortgage_principal: number
+  mortgage_extra_principal: number
   memo: string
 }
 
-interface Props {
+type AccountValue = {
+  evaluationAmount: number
+  monthlyAllocation: number
+  ytdContribution: number
+}
+
+export default function MonthlyForm({
+  month,
+  entry,
+  months,
+  settings,
+  accounts,
+  initialAccountValues,
+  hasAccountSnapshot,
+}: {
   month: string
   entry: Entry | null
   months: string[]
-}
-
-export default function MonthlyForm({ month, entry, months }: Props) {
+  settings: FinancialPlanSettings
+  accounts: Account[]
+  initialAccountValues: Record<string, AccountValue>
+  hasAccountSnapshot: boolean
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-
-  const [jointSavings, setJointSavings] = useState(entry?.joint_savings ?? 0)
-  const [bonusTotal,   setBonusTotal]   = useState(entry?.bonus_total   ?? 0)
-  const [bonusToPlan,  setBonusToPlan]  = useState(entry?.bonus_to_plan ?? 0)
-  const [cashBalance,  setCashBalance]  = useState(entry?.cash_balance  ?? 0)
-  const [memo,         setMemo]         = useState(entry?.memo          ?? '')
-  const [ratios,    setRatios]    = useState<BudgetRatios>(DEFAULT_RATIOS)
-  const [household, setHousehold] = useState<HouseholdSettings>(DEFAULT_HOUSEHOLD)
+  const [jointContribution, setJointContribution] = useState(entry?.joint_savings ?? settings.monthlyJointContribution)
+  const [bonusTotal, setBonusTotal] = useState(entry?.bonus_total ?? 0)
+  const [bonusToPlan, setBonusToPlan] = useState(entry?.bonus_to_plan ?? 0)
+  const [manualEmergencyFund, setManualEmergencyFund] = useState(entry?.cash_balance ?? settings.currentEmergencyFund)
+  const [mortgageInterest, setMortgageInterest] = useState(entry?.mortgage_interest ?? settings.mortgageInterest)
+  const [mortgagePrincipal, setMortgagePrincipal] = useState(entry?.mortgage_principal ?? settings.mortgagePrincipal)
+  const [mortgageExtraPrincipal, setMortgageExtraPrincipal] = useState(entry?.mortgage_extra_principal ?? 0)
+  const [memo, setMemo] = useState(entry?.memo ?? '')
+  const [accountValues, setAccountValues] = useState(initialAccountValues)
   const [saved, setSaved] = useState(false)
-  const [pending, start] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
 
-  // entry가 바뀔 때(월 변경) 폼 동기화
-  useEffect(() => {
-    setJointSavings(entry?.joint_savings ?? 0)
-    setBonusTotal(entry?.bonus_total     ?? 0)
-    setBonusToPlan(entry?.bonus_to_plan  ?? 0)
-    setCashBalance(entry?.cash_balance   ?? 0)
-    setMemo(entry?.memo                  ?? '')
-    setSaved(false)
-  }, [entry])
+  const emergencyAccounts = accounts.filter(account => account.is_emergency_fund)
+  const emergencyFund = emergencyAccounts.length > 0
+    ? emergencyAccounts.reduce((sum, account) => sum + (accountValues[account.id]?.evaluationAmount ?? 0), 0)
+    : manualEmergencyFund
+  const regularSurplus = Math.max(jointContribution - settings.monthlyFixedCost, 0)
+  const totalAllocatable = regularSurplus + bonusToPlan
+  const allocatedTotal = accounts.reduce((sum, account) => sum + (accountValues[account.id]?.monthlyAllocation ?? 0), 0)
+  const unallocated = totalAllocatable - allocatedTotal
+  const coverage = settings.monthlyFixedCost > 0 ? emergencyFund / settings.monthlyFixedCost : 0
 
-  useEffect(() => {
-    try {
-      const r = localStorage.getItem('budget_ratios')
-      if (r) setRatios(JSON.parse(r))
-      const h = localStorage.getItem('household_settings')
-      if (h) setHousehold(JSON.parse(h))
-    } catch {}
-  }, [])
-
-  const result: AllocationResult = calcAllocation(
-    { jointSavings, bonusToPlan, cashBalance },
-    household,
-    ratios,
-  )
-
-  const cashPct = household.cashTarget > 0
-    ? Math.min(100, (cashBalance / household.cashTarget) * 100)
-    : 0
-  const coverage = household.monthlyLivingCost > 0
-    ? cashBalance / household.monthlyLivingCost
-    : 0
-
-  function changeMonth(m: string) {
+  function changeMonth(nextMonth: string) {
     const params = new URLSearchParams(searchParams.toString())
-    params.set('month', m)
+    params.set('month', nextMonth)
     router.push(`${pathname}?${params.toString()}`)
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const fd = new FormData()
-    fd.set('month',         month)
-    fd.set('joint_savings', String(jointSavings))
-    fd.set('bonus_total',   String(bonusTotal))
-    fd.set('bonus_to_plan', String(bonusToPlan))
-    fd.set('cash_balance',  String(cashBalance))
-    fd.set('memo',          memo)
-    start(async () => {
-      await saveBudgetEntry(fd)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2500)
+  function updateAccount(accountId: string, key: keyof AccountValue, value: number) {
+    setAccountValues(current => ({
+      ...current,
+      [accountId]: { ...current[accountId], [key]: value },
+    }))
+  }
+
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    setError(null)
+    const formData = new FormData()
+    formData.set('month', month)
+    formData.set('joint_savings', String(jointContribution))
+    formData.set('bonus_total', String(bonusTotal))
+    formData.set('bonus_to_plan', String(bonusToPlan))
+    formData.set('cash_balance', String(emergencyFund))
+    formData.set('mortgage_interest', String(mortgageInterest))
+    formData.set('mortgage_principal', String(mortgagePrincipal))
+    formData.set('mortgage_extra_principal', String(mortgageExtraPrincipal))
+    formData.set('memo', memo)
+    for (const account of accounts) {
+      const values = accountValues[account.id] ?? { evaluationAmount: 0, monthlyAllocation: 0, ytdContribution: 0 }
+      formData.set(`account_${account.id}_evaluation`, String(values.evaluationAmount))
+      formData.set(`account_${account.id}_allocation`, String(values.monthlyAllocation))
+      formData.set(`account_${account.id}_ytd`, String(values.ytdContribution))
+    }
+
+    startTransition(async () => {
+      try {
+        await saveBudgetEntry(formData)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2500)
+      } catch (saveError) {
+        setError(saveError instanceof Error ? saveError.message : '저장하지 못했습니다.')
+      }
     })
   }
 
-  const isStage2 = result.stage === 2
-
   return (
     <div>
-      {/* 월 선택기 */}
-      <div className="flex items-center gap-3 mb-6">
-        <select
-          value={month}
-          onChange={e => changeMonth(e.target.value)}
-          className="text-sm font-semibold bg-[#faf6ec] border border-[#e3d9c4] rounded-lg px-3 py-2 text-[#34322b] focus:outline-none"
-        >
-          {months.map(m => {
-            const [y, mo] = m.split('-')
-            return <option key={m} value={m}>{y}년 {parseInt(mo)}월</option>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <select value={month} onChange={event => changeMonth(event.target.value)} aria-label="기록 월 선택" className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm font-bold text-[var(--color-ink)] shadow-sm outline-none">
+          {months.map(value => {
+            const [year, monthNumber] = value.split('-')
+            return <option key={value} value={value}>{year}년 {Number(monthNumber)}월</option>
           })}
         </select>
-        {entry && <span className="text-xs text-[#1c6b4a]">• 저장된 내역 있음</span>}
+        {entry || hasAccountSnapshot ? <span className="text-xs text-[#3f7fc3]">● 저장된 기록</span> : null}
       </div>
 
-      {/* 현황 카드 3개 */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-[#faf6ec] border border-[#e3d9c4] rounded-2xl p-4">
-          <p className="text-xs text-[#9c9484]">비상금 달성률</p>
-          <p className="text-xl font-bold text-[#34322b] mt-1">{cashPct.toFixed(1)}%</p>
-          <div className="mt-2 h-1.5 bg-[#e3d9c4] rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{ width: `${cashPct}%`, backgroundColor: cashPct >= 100 ? '#1c6b4a' : '#e67e22' }}
-            />
+      <div className="metric-strip mb-4 grid grid-cols-1 sm:grid-cols-3">
+        <div className="metric-cell p-4">
+          <p className="text-xs text-[#65758a]">현재 비상금</p>
+          <p className="mt-1 text-2xl font-bold tracking-[-0.03em] text-[#172233]">{formatKrw(emergencyFund)}</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <GoalBadge label="3천만 달성" achieved={emergencyFund >= settings.stage1Target} />
+            <GoalBadge label="5천만 달성" achieved={emergencyFund >= settings.stage2Target} />
           </div>
-          <p className="text-[10px] text-[#9c9484] mt-1">
-            {fmtKrw(cashBalance)} / {fmtKrw(household.cashTarget)}
-          </p>
         </div>
-        <div className="bg-[#faf6ec] border border-[#e3d9c4] rounded-2xl p-4">
-          <p className="text-xs text-[#9c9484]">비상금 커버리지</p>
-          <p className="text-xl font-bold text-[#34322b] mt-1">{coverage.toFixed(1)}개월</p>
-          <p className="text-[10px] text-[#9c9484] mt-1">
-            목표 {(household.cashTarget / household.monthlyLivingCost).toFixed(1)}개월
-          </p>
+        <div className="metric-cell p-4">
+          <p className="text-xs text-[#65758a]">고정비 방어력</p>
+          <p className="mt-1 text-2xl font-bold tracking-[-0.03em] text-[#172233]">{coverage.toFixed(1)}개월</p>
+          <p className="mt-1 text-[11px] text-[#65758a]">월 고정비 {formatKrw(settings.monthlyFixedCost)}</p>
         </div>
-        <div className="bg-[#faf6ec] border border-[#e3d9c4] rounded-2xl p-4">
-          <p className="text-xs text-[#9c9484]">이달 배분 가능액</p>
-          <p className="text-xl font-bold text-[#34322b] mt-1">{fmtKrw(result.totalAllocatable)}</p>
-          <p className="text-[10px] text-[#9c9484] mt-1">
-            공금 + 성과급 합산
-          </p>
+        <div className="metric-cell p-4">
+          <p className="text-xs text-[#65758a]">이달 배분 가능액</p>
+          <p className="mt-1 text-2xl font-bold tracking-[-0.03em] text-[#172233]">{formatKrw(totalAllocatable)}</p>
+          <p className="mt-1 text-[11px] text-[#65758a]">공금 − 고정비 + 포함 성과급</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* 입력 섹션 */}
-          <div className="bg-[#faf6ec] border border-[#e3d9c4] rounded-2xl p-5">
-            <h2 className="text-sm font-semibold text-[#34322b] mb-4">이달 입력</h2>
-
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <section className="app-card p-5">
+            <h2 className="mb-4 text-base font-bold text-[var(--color-ink)]">이달 자금</h2>
             <div className="space-y-4">
-              <div>
-                <label className="text-xs text-[#9c9484] block mb-1">현재 예금 잔액 (비상금)</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={fmtInput(cashBalance)}
-                    onChange={e => setCashBalance(parseNum(e.target.value))}
-                    placeholder="15,000,000"
-                    className="flex-1 text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#1c6b4a] text-right tabular-nums"
-                  />
-                  <span className="text-xs text-[#9c9484] shrink-0">원</span>
+              <MoneyInput label="매월 공금 납입금" value={jointContribution} onChange={setJointContribution} placeholder="7,000,000" />
+              <p className="-mt-2 text-[11px] text-[#93a2b5]">고정비를 제외한 정기 잉여금은 {formatKrw(regularSurplus)}입니다.</p>
+              <MoneyInput label="성과급·일시 수입" value={bonusTotal} onChange={value => { setBonusTotal(value); setBonusToPlan(current => Math.min(current, value)) }} placeholder="0" />
+              {bonusTotal > 0 ? <MoneyInput label="이번 달 배분에 포함할 성과급" value={bonusToPlan} onChange={value => setBonusToPlan(Math.min(value, bonusTotal))} placeholder="0" /> : null}
+              {emergencyAccounts.length === 0 ? (
+                <div className="border-t border-[#edf3f8] pt-4">
+                  <MoneyInput label="현재 비상금 (임시 수동 입력)" value={manualEmergencyFund} onChange={setManualEmergencyFund} placeholder="13,000,000" />
+                  <p className="mt-1 text-[11px] text-amber-700">밸런스 시트에서 공동계좌나 MMF를 비상금으로 지정하면 자동 합산됩니다.</p>
                 </div>
-              </div>
+              ) : null}
+            </div>
+          </section>
 
-              <div>
-                <label className="text-xs text-[#9c9484] block mb-1">공금 적립 가능액</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={fmtInput(jointSavings)}
-                    onChange={e => setJointSavings(parseNum(e.target.value))}
-                    placeholder="2,300,000"
-                    className="flex-1 text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#1c6b4a] text-right tabular-nums"
-                  />
-                  <span className="text-xs text-[#9c9484] shrink-0">원</span>
-                </div>
-                <p className="text-[10px] text-[#b5aa98] mt-1">연금계좌 납입액은 별도 관리</p>
-              </div>
-
-              <div className="border-t border-[#f0ead8] pt-4">
-                <label className="text-xs text-[#9c9484] block mb-1">성과급 / 일시 수입 (전체)</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={fmtInput(bonusTotal)}
-                    onChange={e => {
-                      const v = parseNum(e.target.value)
-                      setBonusTotal(v)
-                      if (bonusToPlan > v) setBonusToPlan(v)
-                    }}
-                    placeholder="0"
-                    className="flex-1 text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#1c6b4a] text-right tabular-nums"
-                  />
-                  <span className="text-xs text-[#9c9484] shrink-0">원</span>
-                </div>
-              </div>
-
-              {bonusTotal > 0 && (
-                <div>
-                  <label className="text-xs text-[#9c9484] block mb-1">성과급 중 이번 달 가계 배분액</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={fmtInput(bonusToPlan)}
-                      onChange={e => setBonusToPlan(Math.min(parseNum(e.target.value), bonusTotal))}
-                      placeholder="0"
-                      className="flex-1 text-sm bg-white border border-[#e3d9c4] rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#1c6b4a] text-right tabular-nums"
-                    />
-                    <span className="text-xs text-[#9c9484] shrink-0">원</span>
-                  </div>
-                  <p className="text-[10px] text-[#b5aa98] mt-1">
-                    나머지 {fmtKrw(bonusTotal - bonusToPlan)}은 별도 처리
-                  </p>
-                </div>
-              )}
-
-              <div className="border-t border-[#f0ead8] pt-4">
-                <label className="text-xs text-[#9c9484] block mb-1">메모</label>
-                <textarea
-                  value={memo}
-                  onChange={e => setMemo(e.target.value)}
-                  placeholder="특이사항 (스키여행비 일부 반영 등)"
-                  rows={2}
-                  className="w-full text-xs bg-white border border-[#e3d9c4] rounded-lg px-3 py-2 focus:outline-none resize-none text-[#34322b]"
-                />
+          <section className="app-card p-5">
+            <h2 className="mb-1 text-base font-bold text-[var(--color-ink)]">주택담보대출 납부</h2>
+            <p className="mb-4 text-[11px] leading-5 text-[#65758a]">이자와 정기 원금은 고정비의 구성 내역입니다. 다시 비용으로 차감하지 않으며, 원금만 밸런스 시트의 대출 잔액을 줄입니다.</p>
+            <div className="space-y-4">
+              <MoneyInput label="이번 달 이자" value={mortgageInterest} onChange={setMortgageInterest} placeholder="2,500,000" />
+              <MoneyInput label="이번 달 정기 원금" value={mortgagePrincipal} onChange={setMortgagePrincipal} placeholder="450,000" />
+              <MoneyInput label="추가 원금 상환" value={mortgageExtraPrincipal} onChange={setMortgageExtraPrincipal} placeholder="0" />
+              <div className="rounded-xl bg-[#f3f7fb] px-3 py-2.5 text-xs text-[#65758a]">
+                부채 감소 예정 <strong className="float-right text-[#172233]">{formatKrw(mortgagePrincipal + mortgageExtraPrincipal)}</strong>
               </div>
             </div>
+          </section>
+        </div>
 
-            <button
-              type="submit"
-              disabled={pending || result.totalAllocatable === 0}
-              className="mt-4 w-full text-sm bg-[#1c6b4a] hover:bg-[#165638] disabled:opacity-40 text-white rounded-xl py-2.5 font-semibold transition-colors"
-            >
-              {pending ? '저장 중…' : saved ? '저장됨 ✓' : '이달 배분 저장'}
-            </button>
+        <section className="app-card mt-4 overflow-hidden">
+          <div className="flex flex-col justify-between gap-2 border-b border-[var(--color-border)] bg-[var(--color-section)] px-5 py-4 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="text-base font-bold text-[var(--color-ink)]">계좌별 배분과 월말 잔액</h2>
+              <p className="mt-1 text-[11px] text-[#65758a]">실제 보낸 금액은 배분액에, 월말 앱 잔액은 평가금액에 입력합니다. 평가금액만 총자산에 반영됩니다.</p>
+            </div>
+            <div className="text-right text-[11px]">
+              <p className="text-[#65758a]">배분 {formatKrw(allocatedTotal)} / 가능 {formatKrw(totalAllocatable)}</p>
+              <p className={unallocated < 0 ? 'font-semibold text-red-600' : 'font-semibold text-[#3f7fc3]'}>{unallocated < 0 ? `초과 ${formatKrw(-unallocated)}` : `미배분 ${formatKrw(unallocated)}`}</p>
+            </div>
           </div>
 
-          {/* 배분 결과 */}
-          <div className="bg-[#faf6ec] border border-[#e3d9c4] rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-[#34322b]">배분 결과</h2>
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                isStage2
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-amber-100 text-amber-700'
-              }`}>
-                {isStage2 ? '2단계 · 성장자본' : '1단계 · 비상금 보강'}
-              </span>
+          {accounts.length === 0 ? (
+            <div className="px-5 py-8 text-center text-xs text-[#93a2b5]">
+              <Link href="/net-worth" className="font-semibold text-[#3f7fc3] hover:underline">밸런스 시트에서 금융계좌를 먼저 추가하세요.</Link>
             </div>
-
-            {result.totalAllocatable === 0 ? (
-              <p className="text-sm text-[#b5aa98] text-center py-8">공금 적립액을 입력하면 배분이 계산됩니다</p>
-            ) : (
-              <div className="space-y-3">
-                {/* 총액 */}
-                <div className="bg-[#f0ead8] rounded-xl px-4 py-3 flex justify-between items-center">
-                  <span className="text-xs text-[#9c9484]">총 배분 가능액</span>
-                  <span className="text-base font-bold text-[#34322b]">{fmtKrw(result.totalAllocatable)}</span>
-                </div>
-
-                {/* 예금 보강 */}
-                {result.cashReserve > 0 && (
-                  <div className="flex justify-between items-center px-1 py-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-                      <span className="text-xs text-[#34322b]">예금 보강</span>
-                      <span className="text-[10px] text-[#b5aa98]">
-                        ({(ratios.stage1CashReserve * 100).toFixed(0)}%)
-                      </span>
-                    </div>
-                    <span className="text-sm font-semibold text-amber-700">{fmtKrw(result.cashReserve)}</span>
-                  </div>
-                )}
-
-                {/* 가족 비정기 지출 */}
-                <div className="flex justify-between items-center px-1 py-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-purple-400 shrink-0" />
-                    <span className="text-xs text-[#34322b]">가족 비정기 지출</span>
-                    <span className="text-[10px] text-[#b5aa98]">
-                      ({(( isStage2 ? ratios.stage2FamilyExpense : ratios.stage1FamilyExpense) * 100).toFixed(0)}%)
-                    </span>
-                  </div>
-                  <span className="text-sm font-semibold text-purple-700">{fmtKrw(result.familyExpense)}</span>
-                </div>
-
-                {/* 성장자본 */}
-                {result.growthCapital > 0 && (
-                  <div className="border-l-2 border-[#1c6b4a] ml-1 pl-3 space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-[#1c6b4a] shrink-0" />
-                        <span className="text-xs font-medium text-[#34322b]">성장자본</span>
-                        <span className="text-[10px] text-[#b5aa98]">
-                          ({(( isStage2 ? ratios.stage2GrowthCapital : 0) * 100).toFixed(0) || '잉여'}%)
-                        </span>
+          ) : (
+            <div className="grid grid-cols-1 gap-px bg-[var(--color-border)] sm:grid-cols-2">
+              {accounts.map(account => {
+                const values = accountValues[account.id] ?? { evaluationAmount: 0, monthlyAllocation: 0, ytdContribution: 0 }
+                const isPension = account.type === 'pension' || account.type === 'irp'
+                return (
+                  <div key={account.id} className="bg-white p-5">
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[#172233]">{account.name}</p>
+                        <p className="mt-1 text-[11px] text-[#65758a]">{account.owner === 'spouse' ? '아내' : '나'} · {accountTypeLabel(account.type)}{account.broker ? ` · ${account.broker}` : ''}</p>
                       </div>
-                      <span className="text-sm font-bold text-[#1c6b4a]">{fmtKrw(result.growthCapital)}</span>
+                      <div className="flex shrink-0 gap-1">
+                        {account.is_emergency_fund ? <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-700">비상금</span> : null}
+                        {isPension ? <span className="rounded-full bg-purple-50 px-2 py-1 text-[10px] font-semibold text-purple-700">연금</span> : null}
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center pl-4 text-xs text-[#9c9484]">
-                      <span>├ 갈아타기 자본 ({(ratios.growthMoveUp * 100).toFixed(0)}%)</span>
-                      <span className="font-medium text-[#34322b]">{fmtKrw(result.moveUpCapital)}</span>
-                    </div>
-                    <div className="flex justify-between items-center pl-4 text-xs text-[#9c9484]">
-                      <span>└ 금융자산 투자 ({(ratios.growthInvestment * 100).toFixed(0)}%)</span>
-                      <span className="font-medium text-[#34322b]">{fmtKrw(result.financialInvestment)}</span>
+                    <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                      <MoneyInput label="이번 달 배분액" value={values.monthlyAllocation} onChange={value => updateAccount(account.id, 'monthlyAllocation', value)} placeholder="0" />
+                      <MoneyInput label="월말 평가금액" value={values.evaluationAmount} onChange={value => updateAccount(account.id, 'evaluationAmount', value)} placeholder="0" />
+                      {isPension ? <MoneyInput label={`${month.slice(0, 4)}년 누적 납입액`} value={values.ytdContribution} onChange={value => updateAccount(account.id, 'ytdContribution', value)} placeholder="0" /> : null}
                     </div>
                   </div>
-                )}
+                )
+              })}
+            </div>
+          )}
+        </section>
 
-                {/* 예금 예상 잔액 */}
-                <div className="mt-2 pt-3 border-t border-[#e3d9c4] flex justify-between items-center">
-                  <span className="text-xs text-[#9c9484]">예금 예상 잔액</span>
-                  <div className="text-right">
-                    <span className="text-base font-bold text-[#34322b]">
-                      {fmtKrw(result.expectedCashBalance)}
-                    </span>
-                    <span className="text-[10px] text-[#9c9484] ml-2">
-                      ({Math.min(100, result.expectedCashBalance / household.cashTarget * 100).toFixed(1)}%)
-                    </span>
-                  </div>
-                </div>
+        <section className="app-card mt-4 p-5">
+          <label htmlFor="budget-memo" className="mb-1 block text-xs text-[#65758a]">월별 메모</label>
+          <textarea id="budget-memo" value={memo} onChange={event => setMemo(event.target.value)} placeholder="이번 달 특이사항" rows={2} className="w-full resize-none rounded-lg border border-[#d7e1eb] bg-white px-3 py-2 text-xs text-[#172233] outline-none focus:border-[#3f7fc3]" />
+        </section>
 
-                {!isStage2 && result.cashShortfall > 0 && (
-                  <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
-                    목표까지 {fmtKrw(result.cashShortfall)} 남음
-                    · 약 {Math.ceil(result.cashShortfall / Math.max(result.cashReserve, 1))}개월 예상
-                  </p>
-                )}
-                {isStage2 && (
-                  <p className="text-[10px] text-[#1c6b4a] bg-emerald-50 rounded-lg px-3 py-2">
-                    비상금 목표 달성 · 성장자본 운용 단계
-                  </p>
-                )}
-              </div>
-            )}
+        <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-[#cbddec] bg-[#eaf3fb] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold text-[#172233]">이달 정보를 한 번에 저장합니다</p>
+            <p className="mt-1 text-[11px] text-[#65758a]">자금 흐름, 계좌 월말 금액, 연금 누적액, 주담대 원금 감소가 함께 반영됩니다.</p>
+            {error ? <p className="mt-2 text-xs text-[#d31f47]" role="alert">{error}</p> : null}
           </div>
+          <button type="submit" disabled={pending} className="min-h-11 shrink-0 rounded-xl bg-[#3f7fc3] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#326ba6] disabled:opacity-40">
+            {pending ? '저장 중…' : saved ? '저장됨 ✓' : '이달 기록 저장'}
+          </button>
         </div>
       </form>
+    </div>
+  )
+}
+
+function GoalBadge({ label, achieved }: { label: string; achieved: boolean }) {
+  return <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${achieved ? 'bg-blue-100 text-blue-700' : 'bg-[#edf3f8] text-[#93a2b5]'}`}>{achieved ? '✓ ' : ''}{label}</span>
+}
+
+function accountTypeLabel(type: Account['type']) {
+  const labels: Partial<Record<Account['type'], string>> = {
+    cash: '입출금·공동계좌', mmf: 'CMA·MMF', general: '주식·증권계좌', pension: '연금저축', irp: 'IRP', isa: 'ISA', crypto: '코인',
+  }
+  return labels[type] ?? type
+}
+
+function MoneyInput({ label, value, onChange, placeholder }: { label: string; value: number; onChange: (value: number) => void; placeholder: string }) {
+  const id = `money-${label.replace(/[^가-힣a-zA-Z0-9]/g, '-')}`
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1 block text-xs text-[#65758a]">{label}</label>
+      <div className="flex items-center gap-2">
+        <input id={id} type="text" inputMode="numeric" value={formatInput(value)} onChange={event => onChange(parseNumber(event.target.value))} placeholder={placeholder} className="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2.5 text-right text-sm font-medium tabular-nums shadow-inner outline-none focus:border-[var(--color-primary)]" />
+        <span className="shrink-0 text-xs text-[#65758a]">원</span>
+      </div>
     </div>
   )
 }
