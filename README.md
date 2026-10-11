@@ -1,4 +1,6 @@
-# 우리집 투자 대시보드
+# Asset Management Dashboard
+
+이 앱의 소스 저장소와 로컬 폴더 이름은 `invest-dashboard`입니다. 동기화 기준으로 확인한 배포는 `https://invest-dashboard-249znm7dr-jyh438190-2515s-projects.vercel.app/access`이며, 가족 공용 비밀번호와 자산 편집 기능을 유지합니다.
 
 부부의 계좌, 거래, 자산배분, 연금, 배당과 월별 가계 재무계획을 한곳에서 관리하는 개인용 대시보드입니다.
 

@@ -24,6 +24,8 @@ DASHBOARD_ACCESS_PASSWORD=your-family-password-at-least-10-characters
 
 `supabase/migrations/002_shared_backend_sync.sql`은 GitHub의 공용 DB 이전 버전에서 추가된 SQL입니다. 같은 번호의 `002_complete_finance_features.sql`과 용도가 다르므로 전체 폴더를 자동 적용하지 말고, 사용 중인 DB에 맞는 위의 공용 연결 또는 아래의 단독 연결 절차를 따르세요.
 
+GitHub의 전용 DB 대안 SQL은 `supabase/reference/002_asset_management_sync.sql`에 참고용으로 보관합니다. 소스 동기화 과정에서 이 SQL을 운영 DB에 적용하지 않습니다. 실제 연결은 배포 환경변수 또는 로컬 `.env.local`의 값을 따릅니다.
+
 ## 1. Supabase 프로젝트 준비
 
 1. Supabase에서 프로젝트를 생성합니다.
