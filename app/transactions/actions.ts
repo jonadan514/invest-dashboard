@@ -30,6 +30,8 @@ export async function updateTransaction(id: string, formData: FormData) {
       price,
       amount,
       fee: Number(formData.get('fee') ?? 0),
+      tax: Number(formData.get('tax') ?? 0),
+      fx_rate: formData.get('fx_rate') ? Number(formData.get('fx_rate')) : undefined,
     })
     .eq('id', id)
     .eq('user_id', userId)
@@ -61,6 +63,8 @@ export async function createTransaction(formData: FormData) {
     price,
     amount,
     fee: Number(formData.get('fee') ?? 0),
+    tax: Number(formData.get('tax') ?? 0),
+    fx_rate: currency === 'USD' ? Number(formData.get('fx_rate') ?? 0) || 1 : 1,
     currency,
   })
   if (error) throw new Error(error.message)
@@ -120,6 +124,8 @@ export async function createAssetAndTransaction(formData: FormData) {
     price,
     amount: qty * price,
     fee: Number(formData.get('fee') ?? 0),
+    tax: Number(formData.get('tax') ?? 0),
+    fx_rate: assetCurrency === 'USD' ? Number(formData.get('fx_rate') ?? 0) || 1 : 1,
     currency: assetCurrency,
   })
   if (txErr) throw new Error(txErr.message)

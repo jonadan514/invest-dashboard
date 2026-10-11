@@ -236,6 +236,7 @@ export interface Holding {
   owner: OwnerType
   quantity: number
   avg_cost: number           // 이동평균 원가 (원화폐 기준)
+  avg_cost_krw: number       // 거래시점 환율을 반영한 원화 이동평균 원가
   total_cost: number         // 원화폐 기준 투자원금
   total_cost_krw: number     // KRW 환산 투자원금
   current_price: number | null

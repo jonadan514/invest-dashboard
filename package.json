@@ -7,22 +7,22 @@
     "build": "next build",
     "start": "next start -H 127.0.0.1",
     "lint": "eslint",
-    "test": "node --test --no-warnings --experimental-strip-types tests/finance-calculations.test.ts tests/child-valuation.test.ts"
+    "test": "node --test --no-warnings --experimental-strip-types tests/*.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0",
     "lucide-react": "^1.41.0",
-    "next": "16.2.9",
+    "next": "16.3.8",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "4.3.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.9",
+    "eslint-config-next": "16.3.8",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

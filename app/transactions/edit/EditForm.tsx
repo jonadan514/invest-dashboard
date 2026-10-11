@@ -21,6 +21,8 @@ interface Props {
     price: number | null
     amount: number | null
     fee: number
+    tax: number | null
+    fx_rate: number | null
     currency: string
     accounts: { name: string; owner: string } | null
     assets: { name: string; symbol: string | null } | null
@@ -167,6 +169,19 @@ export default function EditForm({ tx }: Props) {
       )}
 
       {/* 수수료 */}
+      {currency === 'USD' && (
+        <div>
+          <label className="block text-xs text-[#65758a] mb-1">거래 당시 환율 (원/달러)</label>
+          <input name="fx_rate" type="number" step="any" min="100" required
+            defaultValue={tx.fx_rate && tx.fx_rate > 100 ? tx.fx_rate : ''} placeholder="예: 1400"
+            className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]" />
+        </div>
+      )}
+      <div>
+        <label className="block text-xs text-[#65758a] mb-1">세금 ({currency === 'USD' ? '달러' : '원'})</label>
+        <input name="tax" type="number" step="any" min="0" defaultValue={tx.tax ?? 0}
+          className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]" />
+      </div>
       <div>
         <label className="block text-xs text-[#65758a] mb-1">수수료</label>
         <input

@@ -32,7 +32,7 @@ export default function TransactionForm({
   const [error, setError] = useState('')
 
   const needsAsset = ['buy', 'sell', 'dividend'].includes(txType)
-  const currency = selectedAsset?.currency ?? 'KRW'
+  const currency = needsAsset ? selectedAsset?.currency ?? 'KRW' : 'KRW'
   const total = parseFloat(qty || '0') * parseFloat(price || '0')
   const showTotal = needsAsset && selectedAsset && total > 0
 
@@ -201,6 +201,18 @@ export default function TransactionForm({
       )}
 
       {/* Fee */}
+      {currency === 'USD' && (
+        <div>
+          <label className="block text-xs text-[#65758a] mb-1">거래 당시 환율 (원/달러)</label>
+          <input name="fx_rate" type="number" step="any" min="100" required placeholder="예: 1400"
+            className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]" />
+        </div>
+      )}
+      <div>
+        <label className="block text-xs text-[#65758a] mb-1">세금 ({currency === 'USD' ? '달러' : '원'})</label>
+        <input name="tax" type="number" step="any" min="0" defaultValue="0"
+          className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]" />
+      </div>
       <div>
         <label className="block text-xs text-[#65758a] mb-1">수수료</label>
         <input

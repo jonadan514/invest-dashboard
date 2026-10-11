@@ -53,7 +53,7 @@ export default async function TransactionsPage({
   }
 
   // 거래 + 자산 병렬 조회
-  const [{ data: transactions = [] }, { data: assets = [] }] = await Promise.all([
+  const [{ data: transactions = [] }, { data: assets = [] }, { data: usdFx }] = await Promise.all([
     supabase
       .from('transactions')
       .select('*, accounts(name, owner), assets(name, symbol, asset_class)')
@@ -62,12 +62,13 @@ export default async function TransactionsPage({
       .order('date', { ascending: false })
       .order('created_at', { ascending: false }).throwOnError(),
     supabase.from('assets').select('*').eq('user_id', userId).throwOnError(),
+    supabase.from('fx_rates').select('rate').eq('pair', 'USDKRW').order('as_of', { ascending: false }).limit(1).maybeSingle().throwOnError(),
   ])
 
   // 실현손익 맵 (tx_id → pnl row)
   const typedTransactions = (transactions ?? []) as Transaction[]
   const typedAssets = (assets ?? []) as Asset[]
-  const pnlRows = buildRealizedPnL(typedTransactions, typedAssets)
+  const pnlRows = buildRealizedPnL(typedTransactions, typedAssets, Number(usdFx?.rate ?? 1400))
   const pnlByTxId = new Map(pnlRows.map(r => [r.tx_id, r]))
 
   // 유형 필터 적용
