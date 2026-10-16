@@ -1,8 +1,25 @@
 # 셋업 가이드
 
-## 현재 공용 Supabase 연결
+## Asset Management Dashboard 전용 연결
 
-현재 로컬 앱은 `https://njigeztkkeuvfltqtrad.supabase.co`에 연결합니다. 가족 공용 비밀번호 로그인은 유지하고, 서버의 `SUPABASE_SECRET_KEY`와 `SUPABASE_HOUSEHOLD_USER_ID`로 투자 데이터를 조회합니다. `.env.local`은 Git에서 제외되어야 합니다.
+연결 대상은 기존 전용 Supabase 프로젝트 `hibkysovkhcehfalzdag`입니다. 가족 공용 비밀번호 로그인과 기존 자산 편집 기능을 그대로 사용합니다.
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://hibkysovkhcehfalzdag.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_your-dedicated-project-server-key
+SUPABASE_HOUSEHOLD_USER_ID=your-dedicated-project-user-uuid
+DASHBOARD_ACCESS_PASSWORD=your-family-password-at-least-10-characters
+```
+
+URL, 서버 키와 가구 사용자 ID는 모두 전용 프로젝트의 값이어야 합니다. 기존 기록의 `user_id`에 해당하는 Auth 사용자 ID를 사용하세요. 다른 프로젝트의 사용자 ID를 유지하면 기록이 비어 보이거나 저장이 실패할 수 있습니다. 이 앱은 서버에서만 DB에 접근하므로 publishable key는 필요하지 않습니다.
+
+2026-10-14 점검에서 전용 DB의 기본 테이블 19개, 앱에서 사용하는 RPC 5개, 기존 계좌·순자산·자녀 기록과 해당 소유자 연결을 확인했습니다. 이 프로젝트에는 필요한 구조가 이미 있으므로 초기화 SQL이나 마이그레이션 전체를 다시 실행하지 않습니다. 이 점검은 실제 서버 키를 이용한 앱 조회·저장 검증과는 별개입니다.
+
+`.env.local` 변경 후 로컬 서버를 재시작하세요. 서버 키가 바뀌면 기존 접근 쿠키가 무효화되므로 `/access`에서 공용 비밀번호를 다시 입력해야 합니다. Vercel에는 동일한 전용 연결값을 Production 환경변수로 등록한 뒤 새로 배포합니다. 로컬 설정 변경만으로 기존 배포 설정은 바뀌지 않습니다.
+
+## 이전 공용 Supabase 연결 (호환용)
+
+이전 공용 연결은 `https://njigeztkkeuvfltqtrad.supabase.co`입니다. 이 DB를 별도로 사용할 때만 아래 설정을 따릅니다. 가족 공용 비밀번호 로그인은 유지하고, 서버의 `SUPABASE_SECRET_KEY`와 `SUPABASE_HOUSEHOLD_USER_ID`로 투자 데이터를 조회합니다. `.env.local`은 Git에서 제외되어야 합니다.
 
 기본 투자 테이블 6개(`accounts`, `assets`, `transactions`, `prices`, `fx_rates`, `balances`)는 그대로 사용합니다. 추가 재무·자녀 테이블 13개와 RPC 5개는 `invest_` 접두사를 사용하며, 서버 연결 코드가 기존 논리 이름을 변환합니다. 가족 앱의 `public.children`과 투자 앱의 `public.invest_children`은 별도 테이블입니다. 백업 파일의 논리 이름은 유지합니다.
 
@@ -41,7 +58,7 @@ GitHub의 전용 DB 대안 SQL은 `supabase/reference/002_asset_management_sync.
    - `supabase/migrations/007_net_worth_item_terms.sql`
    - `supabase/migrations/008_data_stability.sql`
 
-기존 프로젝트에서 `001_init.sql`을 이미 적용했다면 `002_complete_finance_features.sql`만 추가로 실행하면 됩니다.
+위 목록은 초기 기능 단계의 SQL이며, 이후의 자녀·접근 보호·백업 복원 관련 변경 전체를 포함하지 않습니다. 기존 프로젝트는 적용 이력과 실제 구조를 비교해 필요한 변경만 적용하세요. `001_init.sql`이 있다는 이유만으로 `002_complete_finance_features.sql`만 실행하면 최신 앱과 맞는다고 가정하지 마세요. 이 저장소에는 공용 DB용 SQL도 섞여 있으므로 마이그레이션 폴더 전체를 일괄 실행하지 않습니다.
 
 생성되는 주요 테이블은 다음과 같습니다.
 
