@@ -47,6 +47,8 @@ Vercel의 Production 환경에 `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`
 
 ## 검사
 
+계좌 비활성화·재활성화는 월별 이력으로 보존하며, 현재 실적에는 미래 월 기록을 포함하지 않습니다. 과거 주담대 잔액을 정정하면 이후 자동 잔액을 함께 재계산합니다. 전체 백업 복원은 거래 메모와 계좌 상태 이력을 보존합니다. 이 기능의 전용 DB 마이그레이션은 [SETUP.md](./SETUP.md)를 참고하세요.
+
 ```powershell
 npm.cmd test
 npm.cmd run lint

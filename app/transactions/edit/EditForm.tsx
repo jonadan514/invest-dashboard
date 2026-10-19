@@ -2,15 +2,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateTransaction } from '../actions'
-
-const TX_TYPES = [
-  { value: 'buy', label: '매수' },
-  { value: 'sell', label: '매도' },
-  { value: 'dividend', label: '배당' },
-  { value: 'deposit', label: '입금' },
-  { value: 'withdraw', label: '출금' },
-  { value: 'interest', label: '이자' },
-]
+import { EDIT_TRANSACTION_TYPES, isAssetTransaction } from '@/lib/transaction-edit'
 
 interface Props {
   tx: {
@@ -25,7 +17,7 @@ interface Props {
     fx_rate: number | null
     currency: string
     accounts: { name: string; owner: string } | null
-    assets: { name: string; symbol: string | null } | null
+    assets: { name: string; symbol: string | null; currency: string } | null
   }
 }
 
@@ -37,8 +29,8 @@ export default function EditForm({ tx }: Props) {
   const [price, setPrice] = useState(tx.price?.toString() ?? '')
   const [error, setError] = useState('')
 
-  const needsAsset = ['buy', 'sell', 'dividend'].includes(txType)
-  const currency = tx.currency ?? 'KRW'
+  const isTrade = txType === 'buy' || txType === 'sell'
+  const currency = isAssetTransaction(tx.type) ? tx.assets?.currency ?? tx.currency : tx.currency
   const total = parseFloat(qty || '0') * parseFloat(price || '0')
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -92,7 +84,7 @@ export default function EditForm({ tx }: Props) {
       <div>
         <label className="block text-xs text-[#65758a] mb-1.5">거래 유형 *</label>
         <div className="flex flex-wrap gap-1.5">
-          {TX_TYPES.map(t => (
+          {EDIT_TRANSACTION_TYPES.filter(t => isAssetTransaction(t.value) === isAssetTransaction(tx.type)).map(t => (
             <button
               key={t.value}
               type="button"
@@ -108,10 +100,11 @@ export default function EditForm({ tx }: Props) {
           ))}
         </div>
         <input type="hidden" name="type" value={txType} />
+        <p className="mt-2 text-xs text-[#65758a]">종목 거래와 현금 거래 간 변경은 새 거래로 등록해 주세요.</p>
       </div>
 
       {/* 수량 + 단가 */}
-      {needsAsset && (
+      {isTrade && (
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-[#65758a] mb-1">수량 *</label>
@@ -119,7 +112,7 @@ export default function EditForm({ tx }: Props) {
               name="quantity"
               type="number"
               step="any"
-              min="0"
+              min="0.000000001"
               required
               value={qty}
               onChange={e => setQty(e.target.value)}
@@ -134,7 +127,7 @@ export default function EditForm({ tx }: Props) {
               name="price"
               type="number"
               step="any"
-              min="0"
+              min="0.000000001"
               required
               value={price}
               onChange={e => setPrice(e.target.value)}
@@ -145,17 +138,17 @@ export default function EditForm({ tx }: Props) {
       )}
 
       {/* 총액 미리보기 */}
-      {needsAsset && total > 0 && (
+      {isTrade && total > 0 && (
         <div className="bg-[#eaf3fb] border border-[#cbddec] rounded-lg px-3 py-2 text-xs text-[#3f7fc3] font-medium">
           총액: {currency === 'KRW' ? '₩' : '$'}{total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
           <span className="text-[#3d9970] ml-1">({qty}주 × {Number(price).toLocaleString()})</span>
         </div>
       )}
 
-      {/* 현금 금액 (비자산 거래) */}
-      {!needsAsset && (
+      {/* 현금 금액 및 배당 수령액 */}
+      {!isTrade && (
         <div>
-          <label className="block text-xs text-[#65758a] mb-1">금액 (원) *</label>
+          <label className="block text-xs text-[#65758a] mb-1">{txType === 'dividend' ? '배당 금액' : '금액'} ({currency === 'KRW' ? '원' : currency}) *</label>
           <input
             name="cash_amount"
             type="number"
@@ -169,16 +162,16 @@ export default function EditForm({ tx }: Props) {
       )}
 
       {/* 수수료 */}
-      {currency === 'USD' && (
+      {currency !== 'KRW' && (
         <div>
-          <label className="block text-xs text-[#65758a] mb-1">거래 당시 환율 (원/달러)</label>
-          <input name="fx_rate" type="number" step="any" min="100" required
-            defaultValue={tx.fx_rate && tx.fx_rate > 100 ? tx.fx_rate : ''} placeholder="예: 1400"
+          <label className="block text-xs text-[#65758a] mb-1">거래 당시 환율 (원/{currency === 'USD' ? '달러' : currency})</label>
+          <input name="fx_rate" type="number" step="any" min={currency === 'USD' ? 100 : 0.000001} required
+            defaultValue={tx.fx_rate && tx.fx_rate >= (currency === 'USD' ? 100 : 0.000001) ? tx.fx_rate : ''} placeholder="예: 1400"
             className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]" />
         </div>
       )}
       <div>
-        <label className="block text-xs text-[#65758a] mb-1">세금 ({currency === 'USD' ? '달러' : '원'})</label>
+        <label className="block text-xs text-[#65758a] mb-1">세금 ({currency === 'KRW' ? '원' : currency})</label>
         <input name="tax" type="number" step="any" min="0" defaultValue={tx.tax ?? 0}
           className="w-full text-sm bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]" />
       </div>

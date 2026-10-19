@@ -13,7 +13,7 @@ export default async function EditTransactionPage({
 
   const { data: tx } = await supabase
     .from('transactions')
-    .select('*, accounts(name, owner), assets(name, symbol)')
+    .select('*, accounts(name, owner), assets(name, symbol, currency)')
     .eq('id', id)
     .eq('user_id', userId)
     .single()

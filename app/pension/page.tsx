@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { latestSnapshotsAtMonth, latestYearContributions } from '@/lib/calc/account-snapshots'
+import { isAccountActiveAtMonth, latestSnapshotsAtMonth, latestYearContributions } from '@/lib/calc/account-snapshots'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import type { Account, AccountMonthlySnapshot } from '@/lib/types'
 
@@ -34,7 +34,6 @@ export default async function PensionPage() {
     .select('*')
     .eq('user_id', userId)
     .in('type', ['pension', 'irp'])
-    .eq('is_active', true)
     .order('sort_order')
     .order('created_at').throwOnError()
 
@@ -59,11 +58,12 @@ export default async function PensionPage() {
     .select('*')
     .eq('user_id', userId)
     .in('account_id', accountIds)
+    .lte('month', currentMonth)
     .order('month').throwOnError()
 
   const snapshots = (snapshotRows ?? []) as AccountMonthlySnapshot[]
   const accountMap = new Map(accounts.map(account => [account.id, account]))
-  const currentContributions = latestYearContributions(accounts, snapshots, currentYear)
+  const currentContributions = latestYearContributions(accounts, snapshots, currentYear, currentMonth)
   const latestEvaluations = latestSnapshotsAtMonth(snapshots, currentMonth)
 
   function buildPerson(owner: 'me' | 'spouse', label: string): PersonStats {
@@ -75,6 +75,7 @@ export default async function PensionPage() {
       .filter(account => account.type === 'irp')
       .reduce((sum, account) => sum + Number(currentContributions.get(account.id)?.ytd_contribution ?? 0), 0)
     const evaluationAmount = ownerAccounts
+      .filter(account => isAccountActiveAtMonth(account, currentMonth))
       .reduce((sum, account) => sum + Number(latestEvaluations.get(account.id)?.evaluation_amount ?? 0), 0)
     return { owner, label, pensionContribution, irpContribution, totalContribution: pensionContribution + irpContribution, evaluationAmount }
   }
@@ -84,7 +85,7 @@ export default async function PensionPage() {
   const totalEvaluation = persons.reduce((sum, person) => sum + person.evaluationAmount, 0)
   const totalDeductible = persons.reduce((sum, person) => sum + calcDeductible(person.pensionContribution, person.irpContribution).total, 0)
   const estimatedTaxCredit = Math.round(totalDeductible * 0.165)
-  const yearlyData = buildYearlyData(accounts, snapshots, accountMap)
+  const yearlyData = buildYearlyData(accounts, snapshots, accountMap, currentMonth)
 
   return (
     <>
@@ -128,6 +129,7 @@ export default async function PensionPage() {
             {accounts.map(account => {
               const latest = latestEvaluations.get(account.id)
               const contribution = currentContributions.get(account.id)
+              const active = isAccountActiveAtMonth(account, currentMonth)
               return (
                 <div key={account.id} className="grid grid-cols-1 gap-3 border-b border-[var(--color-border)] px-5 py-4 last:border-0 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-6">
                   <div className="min-w-0">
@@ -138,10 +140,10 @@ export default async function PensionPage() {
                       <p className="truncate text-sm font-semibold text-[var(--color-ink)]">{account.name}</p>
                     </div>
                     <p className="mt-1 text-[11px] text-[var(--color-muted)]">
-                      {account.type === 'irp' ? 'IRP' : '연금저축'}{latest ? ` · ${formatMonth(latest.month)} 평가` : ' · 평가 기록 없음'}
+                      {account.type === 'irp' ? 'IRP' : '연금저축'}{active ? '' : ' · 비활성 계좌'}{latest ? ` · ${formatMonth(latest.month)} 평가` : ' · 평가 기록 없음'}
                     </p>
                   </div>
-                  <ValueCell label="평가금액" value={Number(latest?.evaluation_amount ?? 0)} />
+                  <ValueCell label="현재 평가금액" value={active ? Number(latest?.evaluation_amount ?? 0) : 0} />
                   <ValueCell label={`${currentYear}년 누적 납입`} value={Number(contribution?.ytd_contribution ?? 0)} />
                 </div>
               )
@@ -226,10 +228,10 @@ function YearlyChart({ data, currentYear }: { data: YearData[]; currentYear: str
   )
 }
 
-function buildYearlyData(accounts: Account[], snapshots: AccountMonthlySnapshot[], accountMap: Map<string, Account>) {
-  const years = [...new Set(snapshots.map(snapshot => snapshot.month.slice(0, 4)))].sort()
+function buildYearlyData(accounts: Account[], snapshots: AccountMonthlySnapshot[], accountMap: Map<string, Account>, cutoffMonth: string) {
+  const years = [...new Set(snapshots.filter(snapshot => snapshot.month <= cutoffMonth).map(snapshot => snapshot.month.slice(0, 4)))].sort()
   return years.map(year => {
-    const latest = latestYearContributions(accounts, snapshots, year)
+    const latest = latestYearContributions(accounts, snapshots, year, cutoffMonth)
     let me = 0
     let spouse = 0
     for (const [accountId, snapshot] of latest) {

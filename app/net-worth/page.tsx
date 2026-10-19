@@ -1,5 +1,5 @@
 import { getHouseholdContext } from '@/lib/supabase/server'
-import { buildAccountTotalTrend, latestSnapshotsAtMonth } from '@/lib/calc/account-snapshots'
+import { buildAccountTotalTrend, isAccountActiveAtMonth, latestSnapshotsAtMonth } from '@/lib/calc/account-snapshots'
 import { DEFAULT_FINANCIAL_PLAN } from '@/lib/calc/budget'
 import type { Account, AccountMonthlySnapshot, FinancialPlanSettingsRow, MonthlyBudget, NetWorthItem, NetWorthSnapshot } from '@/lib/types'
 import NetWorthChart from './NetWorthChart'
@@ -14,7 +14,9 @@ interface TrendPoint {
 
 function currentMonth() {
   const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  return new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric', month: '2-digit', timeZone: 'Asia/Seoul',
+  }).format(now)
 }
 
 function monthOptions(selected: string) {
@@ -25,7 +27,7 @@ function monthOptions(selected: string) {
   })
 }
 
-function buildTrend(items: NetWorthItem[], snapshots: NetWorthSnapshot[], accountTotals: { month: string; amount: number }[]) {
+function buildTrend(items: NetWorthItem[], snapshots: NetWorthSnapshot[], accountTotals: { month: string; amount: number }[], cutoffMonth: string) {
   const itemMap = new Map(items.map(item => [item.id, item]))
   const byMonth = new Map<string, NetWorthSnapshot[]>()
   for (const snapshot of snapshots) {
@@ -34,7 +36,10 @@ function buildTrend(items: NetWorthItem[], snapshots: NetWorthSnapshot[], accoun
     byMonth.set(snapshot.month, list)
   }
   const portfolioByMonth = new Map(accountTotals.map(snapshot => [snapshot.month, Number(snapshot.amount)]))
-  const months = new Set([...byMonth.keys(), ...portfolioByMonth.keys()])
+  const months = new Set([
+    ...byMonth.keys(), ...portfolioByMonth.keys(),
+    ...items.flatMap(item => item.inactive_from_month ? [item.inactive_from_month] : []),
+  ].filter(month => month <= cutoffMonth))
 
   const latest = new Map<string, number>()
   let latestPortfolio = 0
@@ -76,7 +81,7 @@ export default async function NetWorthPage({
     supabase.from('net_worth_snapshots').select('*').eq('user_id', userId).lte('month', month).order('month').throwOnError(),
     supabase.from('financial_plan_settings').select('*').eq('user_id', userId).maybeSingle().throwOnError(),
     supabase.from('monthly_budgets').select('*').eq('user_id', userId).eq('month', month).maybeSingle().throwOnError(),
-    supabase.from('accounts').select('*').eq('user_id', userId).eq('is_active', true).in('type', ['cash', 'mmf', 'general', 'pension', 'irp', 'isa', 'crypto']).order('sort_order').throwOnError(),
+    supabase.from('accounts').select('*').eq('user_id', userId).in('type', ['cash', 'mmf', 'general', 'pension', 'irp', 'isa', 'crypto']).order('sort_order').throwOnError(),
     supabase.from('account_monthly_snapshots').select('*').eq('user_id', userId).lte('month', month).order('month').throwOnError(),
   ])
 
@@ -84,7 +89,8 @@ export default async function NetWorthPage({
   const snapshots = (snapshotRows ?? []) as NetWorthSnapshot[]
   const accounts = (accountRows ?? []) as Account[]
   const accountSnapshots = (accountSnapshotRows ?? []) as AccountMonthlySnapshot[]
-  const accountTotals = buildAccountTotalTrend(accounts, accountSnapshots)
+  const accountTotals = buildAccountTotalTrend(accounts, accountSnapshots, month)
+  const activeAccounts = accounts.filter(account => isAccountActiveAtMonth(account, month))
   const latestAccountSnapshots = latestSnapshotsAtMonth(accountSnapshots, month)
   const latestAccountTotal = [...accountTotals].reverse().find(point => point.month <= month)
   const portfolioValue = latestAccountTotal?.amount ?? 0
@@ -94,7 +100,7 @@ export default async function NetWorthPage({
   const latestAmounts: Record<string, number> = {}
   for (const snapshot of snapshots) latestAmounts[snapshot.item_id] = Number(snapshot.amount)
 
-  const trend = buildTrend(items, snapshots, accountTotals)
+  const trend = buildTrend(items, snapshots, accountTotals, month)
   const exactCurrent = trend.find(point => point.month === month) ?? null
   const current = exactCurrent ?? trend.at(-1) ?? null
   const currentIndex = exactCurrent ? trend.findIndex(point => point.month === exactCurrent.month) : -1
@@ -170,7 +176,7 @@ export default async function NetWorthPage({
           months={monthOptions(month)}
           activeItems={activeItems}
           inactiveItems={inactiveItems}
-          accounts={accounts}
+          accounts={activeAccounts}
           latestAccountSnapshots={Object.fromEntries([...latestAccountSnapshots.entries()].map(([accountId, snapshot]) => [accountId, {
             amount: Number(snapshot.evaluation_amount),
             month: snapshot.month,

@@ -61,11 +61,10 @@ export async function createNetWorthItem(formData: FormData) {
     .single()
   if (error) throw new Error(error.message)
 
-  const { error: snapshotError } = await supabase.from('net_worth_snapshots').insert({
-    user_id: userId,
-    item_id: item.id,
-    month,
-    amount: initialAmount,
+  const { error: snapshotError } = await supabase.rpc('save_net_worth_snapshot', {
+    p_user_id: userId,
+    p_month: month,
+    p_balances: [{ item_id: item.id, amount: initialAmount }],
   })
   if (snapshotError) {
     await supabase.from('net_worth_items').delete().eq('id', item.id).eq('user_id', userId)
@@ -89,16 +88,19 @@ export async function saveNetWorthSnapshot(formData: FormData) {
   if (itemError) throw new Error(itemError.message)
 
   const rows = (items ?? []).map(item => {
-    const raw = String(formData.get(`amount_${item.id}`) ?? '0').replace(/,/g, '')
+    const raw = String(formData.get(`amount_${item.id}`) ?? '').replace(/,/g, '').trim()
+    if (!raw) throw new Error('모든 항목의 금액을 입력해 주세요.')
     const amount = Number(raw)
     if (!Number.isFinite(amount) || amount < 0) throw new Error('금액은 0 이상의 숫자로 입력해 주세요.')
-    return { user_id: userId, item_id: item.id, month, amount, source: 'manual', updated_at: new Date().toISOString() }
+    return { item_id: item.id, amount }
   })
 
   if (rows.length > 0) {
-    const { error } = await supabase
-      .from('net_worth_snapshots')
-      .upsert(rows, { onConflict: 'user_id,item_id,month' })
+    const { error } = await supabase.rpc('save_net_worth_snapshot', {
+      p_user_id: userId,
+      p_month: month,
+      p_balances: rows,
+    })
     if (error) throw new Error(error.message)
   }
 

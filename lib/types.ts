@@ -70,6 +70,8 @@ export interface Account {
   is_emergency_fund: boolean
   sort_order: number
   is_active: boolean
+  inactive_from_month?: string | null
+  activity_history?: { month: string; active: boolean }[]
   interest_rate: number | null
   monthly_payment: number | null
   maturity_date: string | null

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { buildAccountTotalTrend, latestSnapshotsAtMonth, latestYearContributions } from '@/lib/calc/account-snapshots'
+import { buildAccountTotalTrend, isAccountActiveAtMonth, latestSnapshotsAtMonth, latestYearContributions } from '@/lib/calc/account-snapshots'
 import { DEFAULT_FINANCIAL_PLAN } from '@/lib/calc/budget'
 import { calcDeductible, TOTAL_DEDUCT_LIMIT } from '@/lib/calc/pension'
 import { krw } from '@/lib/labels'
@@ -55,12 +55,12 @@ export default async function DashboardPage() {
     { data: netWorthSnapshotsRaw },
     { data: accountSnapshotsRaw },
   ] = await Promise.all([
-    supabase.from('accounts').select('*').eq('user_id', userId).eq('is_active', true).order('sort_order').throwOnError(),
-    supabase.from('monthly_budgets').select('*').eq('user_id', userId).order('month', { ascending: false }).limit(12).throwOnError(),
+    supabase.from('accounts').select('*').eq('user_id', userId).order('sort_order').throwOnError(),
+    supabase.from('monthly_budgets').select('*').eq('user_id', userId).lte('month', currentMonth).order('month', { ascending: false }).limit(12).throwOnError(),
     supabase.from('financial_plan_settings').select('*').eq('user_id', userId).maybeSingle().throwOnError(),
     supabase.from('net_worth_items').select('*').eq('user_id', userId).order('sort_order').throwOnError(),
-    supabase.from('net_worth_snapshots').select('*').eq('user_id', userId).order('month').throwOnError(),
-    supabase.from('account_monthly_snapshots').select('*').eq('user_id', userId).order('month').throwOnError(),
+    supabase.from('net_worth_snapshots').select('*').eq('user_id', userId).lte('month', currentMonth).order('month').throwOnError(),
+    supabase.from('account_monthly_snapshots').select('*').eq('user_id', userId).lte('month', currentMonth).order('month').throwOnError(),
   ])
 
   const accounts = (accountsRaw ?? []) as Account[]
@@ -69,17 +69,19 @@ export default async function DashboardPage() {
   const netWorthItems = (netWorthItemsRaw ?? []) as NetWorthItem[]
   const netWorthSnapshots = (netWorthSnapshotsRaw ?? []) as NetWorthSnapshot[]
   const accountSnapshots = (accountSnapshotsRaw ?? []) as AccountMonthlySnapshot[]
-  const accountTotals = buildAccountTotalTrend(accounts, accountSnapshots)
+  const accountTotals = buildAccountTotalTrend(accounts, accountSnapshots, currentMonth)
+  const activeAccounts = accounts.filter(account => isAccountActiveAtMonth(account, currentMonth))
 
-  const trend = buildTrend(netWorthItems, netWorthSnapshots, accountTotals)
+  const trend = buildTrend(netWorthItems, netWorthSnapshots, accountTotals, currentMonth)
   const current = trend.at(-1) ?? { month: currentMonth, assets: 0, liabilities: 0, netWorth: 0 }
   const previous = trend.at(-2)
   const netWorthChange = previous ? current.netWorth - previous.netWorth : 0
 
   const latestBudget = budgets[0] ?? null
-  const emergencyAccounts = accounts.filter(account => account.is_emergency_fund)
-  const emergencySnapshots = latestSnapshotsAtMonth(accountSnapshots, latestBudget?.month ?? current.month)
-  const emergencyFund = emergencyAccounts.length > 0
+  const emergencyAccounts = activeAccounts.filter(account => account.is_emergency_fund)
+  const hasEmergencyAccounts = accounts.some(account => account.is_emergency_fund)
+  const emergencySnapshots = latestSnapshotsAtMonth(accountSnapshots, currentMonth)
+  const emergencyFund = hasEmergencyAccounts
     ? emergencyAccounts.reduce((sum, account) => sum + Number(emergencySnapshots.get(account.id)?.evaluation_amount ?? 0), 0)
     : latestBudget
       ? Number(latestBudget.cash_balance)
@@ -91,7 +93,7 @@ export default async function DashboardPage() {
 
   const pensionAccounts = accounts.filter(account => account.type === 'pension' || account.type === 'irp')
   const pensionAccountMap = new Map(pensionAccounts.map(account => [account.id, account]))
-  const pensionSnapshots = latestYearContributions(accounts, accountSnapshots, String(currentYear))
+  const pensionSnapshots = latestYearContributions(accounts, accountSnapshots, String(currentYear), currentMonth)
   let mePensionSavings = 0
   let meIrp = 0
   let spousePensionSavings = 0
@@ -116,10 +118,11 @@ export default async function DashboardPage() {
   const composition = buildComposition(netWorthItems, netWorthSnapshots, accountTotals, current.month)
   const latestSnapshotMonth = netWorthSnapshots.at(-1)?.month ?? null
   const latestAccountMonth = accountSnapshots.at(-1)?.month ?? null
-  const activeAccountIds = accounts.map(account => account.id)
+  const activeAccountIds = activeAccounts.map(account => account.id)
   const currentAccountIds = new Set(accountSnapshots.filter(snapshot => snapshot.month === currentMonth).map(snapshot => snapshot.account_id))
   const hasCurrentAccountRecord = activeAccountIds.length === 0 || activeAccountIds.every(id => currentAccountIds.has(id))
-  const hasCurrentPensionRecord = pensionAccounts.length > 0 && pensionAccounts.every(account => currentAccountIds.has(account.id))
+  const activePensionAccounts = pensionAccounts.filter(account => isAccountActiveAtMonth(account, currentMonth))
+  const hasCurrentPensionRecord = activePensionAccounts.length > 0 && activePensionAccounts.every(account => currentAccountIds.has(account.id))
   const today = new Intl.DateTimeFormat('ko-KR', {
     year: 'numeric',
     month: 'long',
@@ -568,6 +571,7 @@ function buildTrend(
   items: NetWorthItem[],
   snapshots: NetWorthSnapshot[],
   accountTotals: { month: string; amount: number }[],
+  cutoffMonth: string,
 ): TrendPoint[] {
   const itemMap = new Map(items.map(item => [item.id, item]))
   const snapshotsByMonth = new Map<string, NetWorthSnapshot[]>()
@@ -578,7 +582,10 @@ function buildTrend(
   }
 
   const portfolioByMonth = new Map(accountTotals.map(snapshot => [snapshot.month, Number(snapshot.amount)]))
-  const months = [...new Set([...snapshotsByMonth.keys(), ...portfolioByMonth.keys()])].sort()
+  const months = [...new Set([
+    ...snapshotsByMonth.keys(), ...portfolioByMonth.keys(),
+    ...items.flatMap(item => item.inactive_from_month ? [item.inactive_from_month] : []),
+  ])].filter(month => month <= cutoffMonth).sort()
   const latestAmounts = new Map<string, number>()
   let latestPortfolio = 0
 

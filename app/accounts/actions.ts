@@ -37,13 +37,18 @@ export async function deleteAccount(id: string) {
   revalidatePath('/')
 }
 
-export async function toggleActive(id: string, current: boolean) {
+export async function toggleActive(id: string, _current?: boolean, effectiveMonth?: string) {
   const { supabase, userId } = await getHouseholdContext()
-  const { error } = await supabase
-    .from('accounts')
-    .update({ is_active: !current })
-    .eq('id', id)
-    .eq('user_id', userId)
+  const month = effectiveMonth ?? new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric', month: '2-digit', timeZone: 'Asia/Seoul',
+  }).format(new Date())
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('올바른 월 형식이 아닙니다.')
+  // The locked database row determines the status, never the stale client flag.
+  const { error } = await supabase.rpc('toggle_account_activity', {
+    p_user_id: userId,
+    p_account_id: id,
+    p_month: month,
+  })
   if (error) throw new Error(error.message)
   revalidatePath('/accounts')
   revalidatePath('/net-worth')

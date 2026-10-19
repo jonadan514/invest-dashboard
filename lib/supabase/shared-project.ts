@@ -8,6 +8,7 @@ const APP_TABLES = new Set([
 const APP_FUNCTIONS = new Set([
   'dashboard_access_retry_after', 'record_dashboard_access_failure', 'clear_dashboard_access_failures',
   'save_household_monthly_record', 'restore_household_backup',
+  'save_net_worth_snapshot', 'toggle_account_activity',
 ])
 
 export function isSharedInvestmentProject(url: string) {

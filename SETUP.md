@@ -19,6 +19,8 @@ URL, 서버 키와 가구 사용자 ID는 모두 전용 프로젝트의 값이�
 
 ## 이전 공용 Supabase 연결 (호환용)
 
+2026-10-19 보완 버전의 계좌 상태 이력·수동 대출 잔액 재계산은 전용 DB용 `20261019012423_atomic_net_worth_mortgage_replay.sql`, `20261019012632_preserve_account_activity_history.sql`을 순서대로 적용한 환경을 사용합니다. 두 파일에는 공용 DB 오적용 방지 검사가 있습니다. 현재 전용 운영 DB에는 적용·검증을 마쳤으며, 다른 DB에 마이그레이션 폴더 전체를 실행하지 마세요.
+
 이전 공용 연결은 `https://njigeztkkeuvfltqtrad.supabase.co`입니다. 이 DB를 별도로 사용할 때만 아래 설정을 따릅니다. 가족 공용 비밀번호 로그인은 유지하고, 서버의 `SUPABASE_SECRET_KEY`와 `SUPABASE_HOUSEHOLD_USER_ID`로 투자 데이터를 조회합니다. `.env.local`은 Git에서 제외되어야 합니다.
 
 기본 투자 테이블 6개(`accounts`, `assets`, `transactions`, `prices`, `fx_rates`, `balances`)는 그대로 사용합니다. 추가 재무·자녀 테이블 13개와 RPC 5개는 `invest_` 접두사를 사용하며, 서버 연결 코드가 기존 논리 이름을 변환합니다. 가족 앱의 `public.children`과 투자 앱의 `public.invest_children`은 별도 테이블입니다. 백업 파일의 논리 이름은 유지합니다.

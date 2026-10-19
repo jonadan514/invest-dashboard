@@ -1,6 +1,7 @@
 'use server'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { buildTransactionUpdate } from '@/lib/transaction-edit'
 
 export async function deleteTransaction(id: string) {
   const { supabase, userId } = await getHouseholdContext()
@@ -14,29 +15,27 @@ export async function deleteTransaction(id: string) {
 export async function updateTransaction(id: string, formData: FormData) {
   const { supabase, userId } = await getHouseholdContext()
 
-  const type = formData.get('type') as string
-  const needsAsset = ['buy', 'sell', 'dividend'].includes(type)
-  const qty = formData.get('quantity') ? Number(formData.get('quantity')) : null
-  const price = formData.get('price') ? Number(formData.get('price')) : null
-  const cashAmount = formData.get('cash_amount') ? Number(formData.get('cash_amount')) : null
-  const amount = needsAsset && qty && price ? qty * price : cashAmount
+  const { data: stored, error: readError } = await supabase.from('transactions')
+    .select('type, asset_id, currency, user_id').eq('id', id).eq('user_id', userId).maybeSingle()
+  if (readError) throw new Error(readError.message)
+  let asset = null
+  if (stored?.asset_id) {
+    const { data, error } = await supabase.from('assets').select('id, currency, user_id')
+      .eq('id', stored.asset_id).eq('user_id', userId).maybeSingle()
+    if (error) throw new Error(error.message)
+    asset = data
+  }
+  const update = buildTransactionUpdate(stored, asset, userId, formData)
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from('transactions')
-    .update({
-      date: formData.get('date') as string,
-      type,
-      quantity: qty,
-      price,
-      amount,
-      fee: Number(formData.get('fee') ?? 0),
-      tax: Number(formData.get('tax') ?? 0),
-      fx_rate: formData.get('fx_rate') ? Number(formData.get('fx_rate')) : undefined,
-    })
+    .update(update)
     .eq('id', id)
     .eq('user_id', userId)
+    .select('id').maybeSingle()
 
   if (error) throw new Error(error.message)
+  if (!updated) throw new Error('수정할 거래를 찾을 수 없습니다.')
   revalidatePath('/transactions')
   revalidatePath('/')
   revalidatePath('/holdings')

@@ -24,7 +24,7 @@ test('계좌 평가금액은 기록이 없는 달에도 최근 월말 값을 이
     { month: '2026-09', amount: 14_000_000 },
   ])
   assert.equal(latestSnapshotsAtMonth(snapshots, '2026-09').get('pension')?.month, '2026-08')
-  assert.equal(latestYearContributions(accounts, snapshots, '2026').get('pension')?.ytd_contribution, 2_000_000)
+  assert.equal(latestYearContributions(accounts, snapshots, '2026', '2026-09').get('pension')?.ytd_contribution, 2_000_000)
 })
 
 test('연금저축과 IRP 공제 달성률은 모든 화면에서 같은 규칙을 사용한다', () => {
