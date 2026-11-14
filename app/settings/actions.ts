@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { storeBackup } from '@/lib/backup'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import type { HouseholdGoal } from '@/lib/types'
 
@@ -112,4 +113,11 @@ export async function migrateLegacySettings(input: {
   }
   revalidatePath('/settings')
   revalidatePath('/')
+}
+
+export async function createBackupNow() {
+  const { supabase, userId } = await getHouseholdContext()
+  const result = await storeBackup(supabase, userId)
+  revalidatePath('/settings')
+  return { name: result.name, deleted: result.deleted.length }
 }

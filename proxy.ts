@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { ACCESS_COOKIE_NAME, isAccessConfigured, verifyAccessToken } from '@/lib/access/session'
 
-const PUBLIC_PATHS = new Set(['/access', '/api/access/unlock'])
+// /api/cron/backup은 쿠키 대신 CRON_SECRET Bearer 헤더로 직접 인증한다.
+const PUBLIC_PATHS = new Set(['/access', '/api/access/unlock', '/api/cron/backup'])
 
 function safeNextPath(value: string | null) {
   if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\') || /[\r\n]/.test(value)) return '/'
