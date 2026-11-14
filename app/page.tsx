@@ -1,24 +1,30 @@
 import Link from 'next/link'
 import { buildAccountTotalTrend, isAccountActiveAtMonth, latestSnapshotsAtMonth, latestYearContributions } from '@/lib/calc/account-snapshots'
 import { DEFAULT_FINANCIAL_PLAN } from '@/lib/calc/budget'
+import {
+  accountSeries,
+  buildTrend,
+  goalProgress,
+  INVESTMENT_ACCOUNT_TYPES,
+  netWorthChangeDrivers,
+  pickActiveGoal,
+  type MonthValue,
+  type TrendPoint,
+} from '@/lib/calc/home-insights'
 import { calcDeductible, TOTAL_DEDUCT_LIMIT } from '@/lib/calc/pension'
-import { krw } from '@/lib/labels'
+import { compactKrw, formatMonth, krw } from '@/lib/labels'
 import { getHouseholdContext } from '@/lib/supabase/server'
+import ChangeDriversCard from '@/components/ChangeDriversCard'
+import GoalCard from '@/components/GoalCard'
 import type {
   Account,
   AccountMonthlySnapshot,
   FinancialPlanSettingsRow,
+  HouseholdGoal,
   MonthlyBudget,
   NetWorthItem,
   NetWorthSnapshot,
 } from '@/lib/types'
-
-interface TrendPoint {
-  month: string
-  assets: number
-  liabilities: number
-  netWorth: number
-}
 
 interface CompositionItem {
   label: string
@@ -54,6 +60,7 @@ export default async function DashboardPage() {
     { data: netWorthItemsRaw },
     { data: netWorthSnapshotsRaw },
     { data: accountSnapshotsRaw },
+    { data: goalsRaw },
   ] = await Promise.all([
     supabase.from('accounts').select('*').eq('user_id', userId).order('sort_order').throwOnError(),
     supabase.from('monthly_budgets').select('*').eq('user_id', userId).lte('month', currentMonth).order('month', { ascending: false }).limit(12).throwOnError(),
@@ -61,6 +68,7 @@ export default async function DashboardPage() {
     supabase.from('net_worth_items').select('*').eq('user_id', userId).order('sort_order').throwOnError(),
     supabase.from('net_worth_snapshots').select('*').eq('user_id', userId).lte('month', currentMonth).order('month').throwOnError(),
     supabase.from('account_monthly_snapshots').select('*').eq('user_id', userId).lte('month', currentMonth).order('month').throwOnError(),
+    supabase.from('household_goals').select('*').eq('user_id', userId).is('achieved_at', null).order('sort_order').order('created_at').throwOnError(),
   ])
 
   const accounts = (accountsRaw ?? []) as Account[]
@@ -69,6 +77,7 @@ export default async function DashboardPage() {
   const netWorthItems = (netWorthItemsRaw ?? []) as NetWorthItem[]
   const netWorthSnapshots = (netWorthSnapshotsRaw ?? []) as NetWorthSnapshot[]
   const accountSnapshots = (accountSnapshotsRaw ?? []) as AccountMonthlySnapshot[]
+  const goals = (goalsRaw ?? []) as HouseholdGoal[]
   const accountTotals = buildAccountTotalTrend(accounts, accountSnapshots, currentMonth)
   const activeAccounts = accounts.filter(account => isAccountActiveAtMonth(account, currentMonth))
 
@@ -123,6 +132,42 @@ export default async function DashboardPage() {
   const hasCurrentAccountRecord = activeAccountIds.length === 0 || activeAccountIds.every(id => currentAccountIds.has(id))
   const activePensionAccounts = pensionAccounts.filter(account => isAccountActiveAtMonth(account, currentMonth))
   const hasCurrentPensionRecord = activePensionAccounts.length > 0 && activePensionAccounts.every(account => currentAccountIds.has(account.id))
+  const activeGoal = pickActiveGoal(goals)
+  const goalTracking = activeGoal ? goalSeries(activeGoal) : null
+  const activeGoalProgress = activeGoal && goalTracking ? goalProgress(Number(activeGoal.target), goalTracking.series) : null
+  const changeDrivers = previous
+    ? netWorthChangeDrivers({
+      accounts,
+      accountSnapshots,
+      items: netWorthItems,
+      itemSnapshots: netWorthSnapshots,
+      fromMonth: previous.month,
+      toMonth: current.month,
+    })
+    : []
+
+  function goalSeries(goal: HouseholdGoal): { series: MonthValue[]; basis: string } | null {
+    const accountMonths = accountTotals.map(point => point.month)
+    switch (goal.type) {
+      case 'net_worth':
+        return { series: trend.map(point => ({ month: point.month, value: point.netWorth })), basis: '밸런스 시트 순자산 기준' }
+      case 'investment':
+        return {
+          series: accountSeries(accounts, accountSnapshots, accountMonths, account => INVESTMENT_ACCOUNT_TYPES.includes(account.type)),
+          basis: '주식·ISA·코인·연금 계좌 평가금액 합계',
+        }
+      case 'cash':
+        if (hasEmergencyAccounts) {
+          return { series: accountSeries(accounts, accountSnapshots, accountMonths, account => account.is_emergency_fund), basis: '비상금 계좌 평가금액 합계' }
+        }
+        return budgets.length > 0
+          ? { series: budgets.map(budget => ({ month: budget.month, value: Number(budget.cash_balance) })), basis: '월간 기록의 현금 잔액 기준' }
+          : { series: [{ month: currentMonth, value: emergencyFund }], basis: '재무계획의 현재 비상금 기준' }
+      default:
+        return null
+    }
+  }
+
   const today = new Intl.DateTimeFormat('ko-KR', {
     year: 'numeric',
     month: 'long',
@@ -158,6 +203,16 @@ export default async function DashboardPage() {
             description={previous ? `${formatMonth(previous.month)} 대비` : '비교 기록 필요'}
             signed
             unavailable={!previous}
+          />
+        </section>
+
+        <section aria-label="목표와 이번 달 변화" className="mt-4 grid grid-cols-1 gap-4 lg:mt-0 lg:grid-cols-2 lg:gap-3">
+          <GoalCard goal={activeGoal} progress={activeGoalProgress} basis={goalTracking?.basis ?? null} />
+          <ChangeDriversCard
+            fromMonth={previous?.month ?? null}
+            toMonth={current.month}
+            totalChange={netWorthChange}
+            drivers={changeDrivers}
           />
         </section>
 
@@ -567,46 +622,6 @@ function ProgressBar({ value, color }: { value: number; color: string }) {
   )
 }
 
-function buildTrend(
-  items: NetWorthItem[],
-  snapshots: NetWorthSnapshot[],
-  accountTotals: { month: string; amount: number }[],
-  cutoffMonth: string,
-): TrendPoint[] {
-  const itemMap = new Map(items.map(item => [item.id, item]))
-  const snapshotsByMonth = new Map<string, NetWorthSnapshot[]>()
-  for (const snapshot of snapshots) {
-    const list = snapshotsByMonth.get(snapshot.month) ?? []
-    list.push(snapshot)
-    snapshotsByMonth.set(snapshot.month, list)
-  }
-
-  const portfolioByMonth = new Map(accountTotals.map(snapshot => [snapshot.month, Number(snapshot.amount)]))
-  const months = [...new Set([
-    ...snapshotsByMonth.keys(), ...portfolioByMonth.keys(),
-    ...items.flatMap(item => item.inactive_from_month ? [item.inactive_from_month] : []),
-  ])].filter(month => month <= cutoffMonth).sort()
-  const latestAmounts = new Map<string, number>()
-  let latestPortfolio = 0
-
-  return months.map(month => {
-    for (const snapshot of snapshotsByMonth.get(month) ?? []) {
-      latestAmounts.set(snapshot.item_id, Number(snapshot.amount))
-    }
-    if (portfolioByMonth.has(month)) latestPortfolio = portfolioByMonth.get(month) ?? 0
-
-    let assets = latestPortfolio
-    let liabilities = 0
-    for (const [itemId, amount] of latestAmounts) {
-      const item = itemMap.get(itemId)
-      if (!item || (item.inactive_from_month && month >= item.inactive_from_month)) continue
-      if (item.kind === 'asset') assets += amount
-      else liabilities += amount
-    }
-    return { month, assets, liabilities, netWorth: assets - liabilities }
-  })
-}
-
 function buildComposition(
   items: NetWorthItem[],
   snapshots: NetWorthSnapshot[],
@@ -646,20 +661,4 @@ function buildConicGradient(items: CompositionItem[]) {
     return stop
   })
   return `conic-gradient(${stops.join(', ')})`
-}
-
-function formatMonth(month: string) {
-  const [year, value] = month.split('-')
-  return `${year}년 ${Number(value)}월`
-}
-
-function compactKrw(value: number) {
-  const absolute = Math.abs(value)
-  const sign = value < 0 ? '-' : ''
-  if (absolute >= 100_000_000) {
-    const eok = absolute / 100_000_000
-    return `${sign}${Number.isInteger(eok) ? eok.toFixed(0) : eok.toFixed(1)}억`
-  }
-  if (absolute >= 10_000) return `${sign}${Math.round(absolute / 10_000).toLocaleString('ko-KR')}만`
-  return `${sign}${Math.round(absolute).toLocaleString('ko-KR')}원`
 }
