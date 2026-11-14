@@ -8,6 +8,8 @@ import { investmentTable, investmentFunction, isSharedInvestmentProject } from '
 type InvestmentClient = Pick<SupabaseClient, 'auth' | 'from' | 'rpc'>
 
 let cachedClient: InvestmentClient | null = null
+let cachedStorage: SupabaseClient['storage'] | null = null
+let cachedShared = false
 let cachedHouseholdUserId: string | null = null
 
 export function createClient(): InvestmentClient {
@@ -29,6 +31,8 @@ export function createClient(): InvestmentClient {
     },
   })
   const shared = isSharedInvestmentProject(url)
+  cachedStorage = client.storage
+  cachedShared = shared
   cachedClient = {
     auth: client.auth,
     from: ((name: string) => client.from(investmentTable(name, shared))) as SupabaseClient['from'],
@@ -62,6 +66,22 @@ async function resolveHouseholdUserId(supabase: InvestmentClient): Promise<strin
 export async function getHouseholdContext() {
   await requireHouseholdAccess()
   await connection()
+  const supabase = createClient()
+  const userId = await resolveHouseholdUserId(supabase)
+  return { supabase, userId }
+}
+
+/** 서버 키로 만든 Storage 클라이언트와 이 앱이 쓰는 비공개 백업 버킷 이름. */
+export function createBackupStorage() {
+  createClient()
+  return { storage: cachedStorage!, bucket: cachedShared ? 'invest-household-backups' : 'household-backups' }
+}
+
+/**
+ * 접근 비밀번호 쿠키 없이 가구 데이터에 접근한다.
+ * Vercel Cron처럼 다른 방법(CRON_SECRET)으로 이미 인증한 서버 코드에서만 호출해야 한다.
+ */
+export async function getTrustedHouseholdContext() {
   const supabase = createClient()
   const userId = await resolveHouseholdUserId(supabase)
   return { supabase, userId }

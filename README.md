@@ -26,6 +26,7 @@
 - 연간 결산 리포트(인쇄·PDF 저장)
 - 월말 기록 알림 배너와 휴대폰 캘린더용 매월 반복 알림(.ics)
 - 계좌·월간 기록·순자산·설정을 포함한 전체 JSON 백업 및 복원
+- 매주 자동 백업(Vercel Cron → Supabase Storage 비공개 버킷, 최근 12개 보관)과 설정 화면에서 내려받기
 - 이전 거래 원장 데이터의 CSV 내보내기
 
 종목별 매수·매도 거래 원장, 보유종목·배당 화면과 시세 연동은 월 1회 기록 방식으로 전환하면서 제거했습니다. DB의 `assets`, `transactions` 데이터는 삭제하지 않았으며 전체 백업과 거래 CSV로 계속 내보낼 수 있습니다.
@@ -46,7 +47,7 @@ npm.cmd run dev
 
 ## Vercel 배포
 
-Vercel의 Production 환경에 `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_HOUSEHOLD_USER_ID`, `DASHBOARD_ACCESS_PASSWORD`를 등록합니다. 배포 대상은 전용 Asset Management Dashboard DB(`hibkysovkhcehfalzdag`)이며, URL·서버 키·사용자 ID는 모두 이 프로젝트의 값을 사용합니다. Preview 환경에는 운영 Supabase 비밀키를 등록하지 않는 것을 권장합니다.
+Vercel의 Production 환경에 `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_HOUSEHOLD_USER_ID`, `DASHBOARD_ACCESS_PASSWORD`, `CRON_SECRET`(주간 자동 백업용, 16자 이상)을 등록합니다. 배포 대상은 전용 Asset Management Dashboard DB(`hibkysovkhcehfalzdag`)이며, URL·서버 키·사용자 ID는 모두 이 프로젝트의 값을 사용합니다. Preview 환경에는 운영 Supabase 비밀키를 등록하지 않는 것을 권장합니다.
 
 ## 검사
 
@@ -58,7 +59,7 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-계산 회귀 테스트는 월말 계좌 기록, 연금 세액공제, 자녀 자산 평가, 백업 복원, 대시보드 목표·순자산 변화 요인, 저축률, 연금 연말 한도, 대출 상환, 연간 결산과 월말 알림 계산을 확인합니다.
+계산 회귀 테스트는 월말 계좌 기록, 연금 세액공제, 자녀 자산 평가, 백업 복원, 대시보드 목표·순자산 변화 요인, 저축률, 연금 연말 한도, 대출 상환, 연간 결산, 월말 알림 계산과 백업 파일 이름·보관 개수·크론 인증을 확인합니다.
 
 전용 Asset Management Dashboard DB는 접두사 없는 테이블과 RPC를 사용합니다. 이전 공용 Supabase 연결도 호환되지만, 공용 DB의 키나 사용자 ID를 전용 DB에 섞어 쓰면 안 됩니다. 상세 설정은 [SETUP.md](./SETUP.md)를 참고하세요. 소스 동기화만으로 DB 마이그레이션이 자동 적용되지는 않습니다.
 

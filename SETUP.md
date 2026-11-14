@@ -84,6 +84,16 @@ SUPABASE_SECRET_KEY=sb_secret_your-secret-key
 DASHBOARD_ACCESS_PASSWORD=10자-이상의-가족-공용-비밀번호
 ```
 
+### 자동 백업 설정
+
+`vercel.json`의 크론이 매주 월요일 03시경(한국 시간) `/api/cron/backup`을 호출해 전체 백업 JSON을 Supabase Storage의 비공개 버킷 `household-backups`에 저장하고 최근 12개만 남깁니다. 버킷은 첫 백업 때 자동으로 만들어집니다.
+
+1. 16자 이상의 임의 문자열을 만들어 Vercel 프로젝트의 Production 환경변수 `CRON_SECRET`으로 등록합니다. 예: `openssl rand -hex 24`
+2. 다시 배포하면 Vercel의 **Settings → Cron Jobs**에 일정이 표시됩니다.
+3. 설정 화면의 **자동 백업**에서 상태와 저장된 백업을 확인하고 **지금 백업하기**로 바로 시험할 수 있습니다.
+
+`CRON_SECRET`이 없으면 크론 호출은 거부되고 설정 화면에 "자동 실행 설정 필요"가 표시됩니다. 백업 파일에는 가족 재무 데이터가 들어 있으므로 버킷을 공개로 바꾸지 마세요. 공개 상태가 감지되면 백업을 저장하지 않습니다.
+
 Secret API Key는 Supabase Dashboard의 **Settings → API Keys → Secret keys**에서 생성하거나 복사할 수 있습니다. 기존 프로젝트의 legacy `service_role` 키도 `SUPABASE_SERVICE_ROLE_KEY` 이름으로 사용할 수 있지만 새 Secret API Key가 권장됩니다.
 
 Secret API Key에는 `NEXT_PUBLIC_` 접두사를 붙이지 말고 Git에 커밋하지 마세요. 이 키는 RLS를 우회할 수 있으므로 서버 전용입니다.
