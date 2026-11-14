@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { CalendarPlus } from 'lucide-react'
 import { buildAccountTotalTrend, isAccountActiveAtMonth, latestSnapshotsAtMonth, latestYearContributions } from '@/lib/calc/account-snapshots'
 import { DEFAULT_FINANCIAL_PLAN } from '@/lib/calc/budget'
 import {
@@ -16,11 +17,17 @@ import { compactKrw, formatMonth, krw } from '@/lib/labels'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import ChangeDriversCard from '@/components/ChangeDriversCard'
 import GoalCard from '@/components/GoalCard'
+import MonthEndBanner from '@/components/MonthEndBanner'
+import { monthEndReminder } from '@/lib/calc/reminder'
+import SavingsCard from '@/components/SavingsCard'
+import { averageSavingsRate, buildSavingsSeries } from '@/lib/calc/savings'
+import { PensionYearEndBanner } from '@/components/PensionYearEnd'
 import type {
   Account,
   AccountMonthlySnapshot,
   FinancialPlanSettingsRow,
   HouseholdGoal,
+  HouseholdSettings,
   MonthlyBudget,
   NetWorthItem,
   NetWorthSnapshot,
@@ -61,6 +68,7 @@ export default async function DashboardPage() {
     { data: netWorthSnapshotsRaw },
     { data: accountSnapshotsRaw },
     { data: goalsRaw },
+    { data: householdSettingsRaw },
   ] = await Promise.all([
     supabase.from('accounts').select('*').eq('user_id', userId).order('sort_order').throwOnError(),
     supabase.from('monthly_budgets').select('*').eq('user_id', userId).lte('month', currentMonth).order('month', { ascending: false }).limit(12).throwOnError(),
@@ -69,6 +77,7 @@ export default async function DashboardPage() {
     supabase.from('net_worth_snapshots').select('*').eq('user_id', userId).lte('month', currentMonth).order('month').throwOnError(),
     supabase.from('account_monthly_snapshots').select('*').eq('user_id', userId).lte('month', currentMonth).order('month').throwOnError(),
     supabase.from('household_goals').select('*').eq('user_id', userId).is('achieved_at', null).order('sort_order').order('created_at').throwOnError(),
+    supabase.from('household_settings').select('*').eq('user_id', userId).maybeSingle().throwOnError(),
   ])
 
   const accounts = (accountsRaw ?? []) as Account[]
@@ -78,6 +87,7 @@ export default async function DashboardPage() {
   const netWorthSnapshots = (netWorthSnapshotsRaw ?? []) as NetWorthSnapshot[]
   const accountSnapshots = (accountSnapshotsRaw ?? []) as AccountMonthlySnapshot[]
   const goals = (goalsRaw ?? []) as HouseholdGoal[]
+  const householdSettings = householdSettingsRaw as HouseholdSettings | null
   const accountTotals = buildAccountTotalTrend(accounts, accountSnapshots, currentMonth)
   const activeAccounts = accounts.filter(account => isAccountActiveAtMonth(account, currentMonth))
 
@@ -119,6 +129,9 @@ export default async function DashboardPage() {
       else meIrp += amount
     }
   }
+  const pensionRecordMonth = [...pensionSnapshots.values()].reduce<string | null>(
+    (latest, snapshot) => (pensionAccountMap.has(snapshot.account_id) && (!latest || snapshot.month > latest) ? snapshot.month : latest), null)
+  const todayKst = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(now)
   const meDeductible = calcDeductible(mePensionSavings, meIrp).total
   const spouseDeductible = calcDeductible(spousePensionSavings, spouseIrp).total
   const totalPension = meDeductible + spouseDeductible
@@ -132,6 +145,10 @@ export default async function DashboardPage() {
   const hasCurrentAccountRecord = activeAccountIds.length === 0 || activeAccountIds.every(id => currentAccountIds.has(id))
   const activePensionAccounts = pensionAccounts.filter(account => isAccountActiveAtMonth(account, currentMonth))
   const hasCurrentPensionRecord = activePensionAccounts.length > 0 && activePensionAccounts.every(account => currentAccountIds.has(account.id))
+  const monthlyIncome = Number(householdSettings?.monthly_income ?? 0)
+  const savingsPoints = buildSavingsSeries(budgets, monthlyIncome, Number(plan?.monthly_fixed_cost ?? DEFAULT_FINANCIAL_PLAN.monthlyFixedCost))
+  const savingsAverage = averageSavingsRate(savingsPoints)
+
   const activeGoal = pickActiveGoal(goals)
   const goalTracking = activeGoal ? goalSeries(activeGoal) : null
   const activeGoalProgress = activeGoal && goalTracking ? goalProgress(Number(activeGoal.target), goalTracking.series) : null
@@ -167,6 +184,12 @@ export default async function DashboardPage() {
         return null
     }
   }
+
+  const reminder = monthEndReminder(todayKst, month => {
+    if (!budgets.some(budget => budget.month === month)) return false
+    const recorded = new Set(accountSnapshots.filter(snapshot => snapshot.month === month).map(snapshot => snapshot.account_id))
+    return accounts.filter(account => isAccountActiveAtMonth(account, month)).every(account => recorded.has(account.id))
+  })
 
   const today = new Intl.DateTimeFormat('ko-KR', {
     year: 'numeric',
@@ -206,6 +229,16 @@ export default async function DashboardPage() {
           />
         </section>
 
+        <MonthEndBanner reminder={reminder} />
+
+        {pensionAccounts.length > 0 ? (
+          <PensionYearEndBanner
+            persons={[{ label: '나', pension: mePensionSavings, irp: meIrp }, { label: '아내', pension: spousePensionSavings, irp: spouseIrp }]}
+            today={todayKst}
+            recordMonth={pensionRecordMonth}
+          />
+        ) : null}
+
         <section aria-label="목표와 이번 달 변화" className="mt-4 grid grid-cols-1 gap-4 lg:mt-0 lg:grid-cols-2 lg:gap-3">
           <GoalCard goal={activeGoal} progress={activeGoalProgress} basis={goalTracking?.basis ?? null} />
           <ChangeDriversCard
@@ -233,7 +266,7 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        <section className="mt-4 grid grid-cols-1 gap-4 lg:mt-0 lg:grid-cols-3 lg:gap-3">
+        <section className="mt-4 grid grid-cols-1 gap-4 lg:mt-0 lg:grid-cols-2 lg:gap-3 xl:grid-cols-4">
           <ProgressCard
             eyebrow={`비상금 ${emergencyStage}`}
             title="비상금 목표"
@@ -243,6 +276,8 @@ export default async function DashboardPage() {
             footer={emergencyFund >= stage2Target ? '5천만 원 목표를 달성했습니다' : `목표까지 ${krw(Math.max(emergencyTarget - emergencyFund, 0))}`}
             href="/budget"
           />
+
+          <SavingsCard points={savingsPoints} average={savingsAverage} hasIncome={monthlyIncome > 0} />
 
           <PensionProgressCard
             year={currentYear}
@@ -596,6 +631,9 @@ function MonthlyCheckCard({
         <CheckRow label="밸런스 시트" href="/net-worth" done={netWorthMonth === currentMonth} detail={netWorthMonth ? `${formatMonth(netWorthMonth)} 기록` : '기록 없음'} />
         <CheckRow label="연금 누적 납입" href="/budget" done={hasCurrentPensionRecord} detail={hasCurrentPensionRecord ? `${year}년 누적액 반영` : `${formatMonth(currentMonth)} 입력 필요`} />
       </div>
+      <a href="/api/calendar/month-end" download className="mt-3 flex items-center justify-center gap-1.5 rounded-sm border border-dashed border-[var(--color-border)] py-2 text-[10px] font-semibold text-[var(--color-primary)] hover:border-[var(--color-primary)] lg:mt-2">
+        <CalendarPlus size={12} aria-hidden="true" /> 휴대폰 캘린더에 매달 말일 알림 추가
+      </a>
     </article>
   )
 }

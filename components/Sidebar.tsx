@@ -7,7 +7,9 @@ import BrandLockup from './BrandLockup'
 import {
   CalendarRange,
   ExternalLink,
+  FileText,
   Gift,
+  Landmark,
   LayoutDashboard,
   LockKeyhole,
   Menu,
@@ -31,7 +33,9 @@ const NAV_ITEMS: NavItemData[] = [
   { href: '/budget', label: '월간 기록', description: '자금·계좌 월말 입력', icon: CalendarRange },
   { href: '/net-worth', label: '밸런스 시트', description: '자산·부채와 순자산', icon: Scale },
   { href: '/pension', label: '연금 현황', description: '부부 납입 달성률', icon: Sprout },
+  { href: '/mortgage', label: '대출 상환', description: '완납 시점·추가 상환 효과', icon: Landmark },
   { href: '/children', label: '자녀 증여', description: '자녀 계좌·증여 한도', icon: Gift },
+  { href: '/report', label: '연간 리포트', description: '한 해 결산·인쇄', icon: FileText },
   { href: '/settings', label: '설정', description: '목표·백업 관리', icon: Settings },
 ]
 

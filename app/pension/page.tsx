@@ -4,6 +4,7 @@ import { getHouseholdContext } from '@/lib/supabase/server'
 import type { Account, AccountMonthlySnapshot } from '@/lib/types'
 
 import { calcDeductible, TOTAL_DEDUCT_LIMIT } from '@/lib/calc/pension'
+import { PensionYearEndPlan } from '@/components/PensionYearEnd'
 
 interface YearData {
   year: string
@@ -86,6 +87,9 @@ export default async function PensionPage() {
   const totalDeductible = persons.reduce((sum, person) => sum + calcDeductible(person.pensionContribution, person.irpContribution).total, 0)
   const estimatedTaxCredit = Math.round(totalDeductible * 0.165)
   const yearlyData = buildYearlyData(accounts, snapshots, accountMap, currentMonth)
+  const todayKst = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(now)
+  const contributionRecordMonth = [...currentContributions.values()].reduce<string | null>(
+    (latest, snapshot) => (!latest || snapshot.month > latest ? snapshot.month : latest), null)
 
   return (
     <>
@@ -106,6 +110,12 @@ export default async function PensionPage() {
           <SummaryCard label="연금계좌 평가금액" value={totalEvaluation} sub="최근 월말 기록 합계" />
           <SummaryCard label="예상 세액공제" value={estimatedTaxCredit} sub="16.5% 단순 적용" accent />
         </section>
+
+        <PensionYearEndPlan
+          persons={persons.map(person => ({ label: person.label, pension: person.pensionContribution, irp: person.irpContribution }))}
+          today={todayKst}
+          recordMonth={contributionRecordMonth}
+        />
 
         <section className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           {persons.map(person => <PersonCard key={person.owner} person={person} />)}
