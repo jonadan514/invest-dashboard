@@ -123,7 +123,6 @@ a {
 @media (min-width: 1280px) {
   .dashboard-layout {
     min-height: min(100dvh, 980px);
-    grid-template-rows: max-content max-content max-content minmax(280px, auto) max-content;
     padding-block: 24px;
   }
 }
@@ -229,5 +228,21 @@ a {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  body,
+  main {
+    background: #ffffff !important;
+  }
+
+  .app-card,
+  .metric-strip {
+    box-shadow: none !important;
   }
 }

@@ -94,7 +94,7 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
     <div className="space-y-5">
       <section className="app-card p-5">
         <h2 className="text-sm font-semibold">월 소득</h2>
-        <p className="mt-1 text-[10px] text-[var(--color-muted)]">향후 가계 저축률 계산에 사용합니다.</p>
+        <p className="mt-1 text-[10px] text-[var(--color-muted)]">대시보드 저축률 계산에 사용합니다. 실제로 들어오는 부부 합산 세후 월급을 입력하세요. 성과급은 월간 기록에 따로 입력합니다.</p>
         <div className="mt-3 flex items-center gap-2">
           <input value={monthlyIncome > 0 ? formatNumber(monthlyIncome) : ''} onChange={event => setMonthlyIncome(parseNumber(event.target.value))} inputMode="numeric" className="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-right text-sm" />
           <span className="text-xs text-[var(--color-muted)]">원</span>
