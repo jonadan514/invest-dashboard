@@ -65,9 +65,8 @@ GitHub의 전용 DB 대안 SQL은 `supabase/reference/002_asset_management_sync.
 생성되는 주요 테이블은 다음과 같습니다.
 
 - `accounts`: 투자·연금·예적금·대출 계좌
-- `assets`: 종목 마스터
-- `transactions`: 거래 원장
-- `prices`, `fx_rates`: 시세와 환율 캐시
+- `assets`, `transactions`: 이전 거래 원장 데이터(화면에서는 제거됨, 백업·CSV 내보내기용으로 보존)
+- `prices`, `fx_rates`: 이전 시세·환율 캐시(더 이상 갱신하지 않음)
 - `balances`: 예적금·대출 잔액 이력
 - `monthly_budgets`: 월별 가계 재무계획
 - `financial_plan_settings`: 가계 재무계획 기준값과 단계별 배분 비율
@@ -83,7 +82,6 @@ GitHub의 전용 DB 대안 SQL은 `supabase/reference/002_asset_management_sync.
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SECRET_KEY=sb_secret_your-secret-key
 DASHBOARD_ACCESS_PASSWORD=10자-이상의-가족-공용-비밀번호
-FINNHUB_API_KEY=your-finnhub-key
 ```
 
 Secret API Key는 Supabase Dashboard의 **Settings → API Keys → Secret keys**에서 생성하거나 복사할 수 있습니다. 기존 프로젝트의 legacy `service_role` 키도 `SUPABASE_SERVICE_ROLE_KEY` 이름으로 사용할 수 있지만 새 Secret API Key가 권장됩니다.
@@ -96,7 +94,6 @@ Supabase Auth 사용자가 정확히 한 명이면 앱이 해당 ID를 자동으
 SUPABASE_HOUSEHOLD_USER_ID=사용할-사용자-UUID
 ```
 
-`FINNHUB_API_KEY`가 없으면 미국 주식 자동 시세 조회만 생략됩니다. 국내 주식, 코인과 환율 조회에는 필요하지 않습니다.
 
 ## 3. 설치 및 실행
 

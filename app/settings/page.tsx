@@ -1,5 +1,4 @@
 import { getHouseholdContext } from '@/lib/supabase/server'
-import { DEFAULT_TARGET_ALLOCATION } from '@/lib/settings'
 import type { HouseholdGoal, HouseholdSettings } from '@/lib/types'
 import SettingsClient from './SettingsClient'
 
@@ -17,12 +16,11 @@ export default async function SettingsPage() {
     <>
       <div className="page-container max-w-3xl">
         <h1 className="page-title">설정</h1>
-        <p className="page-subtitle mb-6">가계 목표와 투자 기준을 Supabase에 안전하게 저장합니다.</p>
+        <p className="page-subtitle mb-6">가계 목표, 월 소득과 전체 데이터 백업을 관리합니다.</p>
         <SettingsClient
           key={renderKey}
           initialSettings={{
             monthlyIncome: Number(settings?.monthly_income ?? 0),
-            targetAllocation: settings?.target_allocation ?? DEFAULT_TARGET_ALLOCATION,
           }}
           initialGoals={goals}
           canImportLegacy={!settings && goals.length === 0}

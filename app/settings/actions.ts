@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache'
 import { getHouseholdContext } from '@/lib/supabase/server'
-import { ALLOCATION_CLASSES, DEFAULT_TARGET_ALLOCATION } from '@/lib/settings'
 import type { HouseholdGoal } from '@/lib/types'
 
 function nonNegative(value: unknown, label: string) {
@@ -11,20 +10,11 @@ function nonNegative(value: unknown, label: string) {
   return number
 }
 
-function validateAllocation(value: unknown) {
-  const input = value && typeof value === 'object' ? value as Record<string, unknown> : DEFAULT_TARGET_ALLOCATION
-  const allocation = Object.fromEntries(ALLOCATION_CLASSES.map(item => [item.key, nonNegative(input[item.key], item.label)]))
-  const total = Object.values(allocation).reduce((sum, ratio) => sum + ratio, 0)
-  if (Math.abs(total - 100) > 0.001) throw new Error('목표 자산배분의 합은 100%여야 합니다.')
-  return allocation
-}
-
-export async function saveHouseholdSettings(input: { monthlyIncome: number; targetAllocation: Record<string, number> }) {
+export async function saveHouseholdSettings(input: { monthlyIncome: number }) {
   const { supabase, userId } = await getHouseholdContext()
   const { error } = await supabase.from('household_settings').upsert({
     user_id: userId,
     monthly_income: nonNegative(input.monthlyIncome, '월 소득'),
-    target_allocation: validateAllocation(input.targetAllocation),
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' })
   if (error) throw new Error(error.message)
@@ -88,15 +78,12 @@ export async function deleteHouseholdGoal(id: string) {
 
 export async function migrateLegacySettings(input: {
   monthlyIncome: number
-  targetAllocation: Record<string, number> | null
   goals: Array<Record<string, unknown>>
 }) {
   const { supabase, userId } = await getHouseholdContext()
-  const allocation = validateAllocation(input.targetAllocation ?? DEFAULT_TARGET_ALLOCATION)
   const settingsResult = await supabase.from('household_settings').upsert({
     user_id: userId,
     monthly_income: nonNegative(input.monthlyIncome, '월 소득'),
-    target_allocation: allocation,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' })
   if (settingsResult.error) throw new Error(settingsResult.error.message)
