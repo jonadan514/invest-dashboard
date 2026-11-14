@@ -143,11 +143,30 @@ a {
   text-transform: uppercase;
 }
 
-.app-card {
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface-strong);
-  box-shadow: var(--shadow-card);
+@layer components {
+  /* 컴포넌트 단계에 두어, 화면에서 준 border-dashed·border-t 같은 유틸리티가 덮어쓸 수 있게 한다. */
+  .app-card {
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-surface-strong);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* 요약 숫자 띠: 칸 사이 1px 틈이 구분선이 되어 1·2·3·4열 어느 배치든 선이 맞는다. */
+  .metric-strip {
+    gap: 1px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-border);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+
+  .metric-cell {
+    position: relative;
+    min-width: 0;
+    background: var(--color-surface-strong);
+  }
 }
 
 /* Dense financial-workspace geometry. Circular status badges and charts keep rounded-full. */
@@ -157,55 +176,6 @@ a {
 
 :where(.rounded-lg) {
   border-radius: 4px !important;
-}
-
-.metric-strip {
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface-strong);
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
-}
-
-.metric-cell {
-  position: relative;
-  min-width: 0;
-  background: var(--color-surface-strong);
-}
-
-.metric-strip.dashboard-metrics .metric-cell::after,
-.metric-strip:not(.dashboard-metrics) .metric-cell::after {
-  position: absolute;
-  right: 0;
-  top: 18%;
-  width: 1px;
-  height: 64%;
-  background: var(--color-border);
-  content: "";
-}
-
-.metric-cell:last-child::after {
-  display: none;
-}
-
-.metric-strip:not(.dashboard-metrics) .metric-cell:not(:last-child) {
-  border-bottom: 1px solid var(--color-border);
-}
-
-@media (max-width: 1023px) {
-  .dashboard-metrics .metric-cell:nth-child(2)::after {
-    display: none;
-  }
-
-  .dashboard-metrics .metric-cell:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--color-border);
-  }
-}
-
-@media (min-width: 640px) {
-  .metric-strip:not(.dashboard-metrics) .metric-cell:not(:last-child) {
-    border-bottom: 0;
-  }
 }
 
 @media (min-width: 768px) {

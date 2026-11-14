@@ -17,6 +17,7 @@ import { compactKrw, formatMonth, krw } from '@/lib/labels'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import ChangeDriversCard from '@/components/ChangeDriversCard'
 import GoalCard from '@/components/GoalCard'
+import { Stat, StatStrip, toneOf } from '@/components/Stat'
 import MonthEndBanner from '@/components/MonthEndBanner'
 import { monthEndReminder } from '@/lib/calc/reminder'
 import SavingsCard from '@/components/SavingsCard'
@@ -216,18 +217,17 @@ export default async function DashboardPage() {
           </Link>
         </header>
 
-        <section aria-label="자산 요약" className="metric-strip dashboard-metrics grid grid-cols-2 lg:grid-cols-4">
-          <MetricCard label="순자산" value={current.netWorth} description={`${formatMonth(current.month)} 기준`} tone="net" />
-          <MetricCard label="총자산" value={current.assets} description="금융계좌 포함" tone="asset" />
-          <MetricCard label="총부채" value={current.liabilities} description="현재 잔액 기준" tone="liability" />
-          <MetricCard
+        <StatStrip columns={4} label="자산 요약" className="dashboard-metrics">
+          <Stat label="순자산" value={krw(current.netWorth)} detail={`${formatMonth(current.month)} 기준`} tone="net" />
+          <Stat label="총자산" value={krw(current.assets)} detail="금융계좌 포함" tone="asset" />
+          <Stat label="총부채" value={krw(current.liabilities)} detail="현재 잔액 기준" tone="liability" />
+          <Stat
             label="최근 월 변화"
-            value={netWorthChange}
-            description={previous ? `${formatMonth(previous.month)} 대비` : '비교 기록 필요'}
-            signed
-            unavailable={!previous}
+            value={previous ? `${netWorthChange > 0 ? '+' : ''}${krw(netWorthChange)}` : '—'}
+            detail={previous ? `${formatMonth(previous.month)} 대비` : '비교 기록 필요'}
+            tone={previous ? toneOf(netWorthChange) : 'neutral'}
           />
-        </section>
+        </StatStrip>
 
         <MonthEndBanner reminder={reminder} />
 
@@ -299,69 +299,6 @@ export default async function DashboardPage() {
         </section>
       </div>
     </>
-  )
-}
-
-function MetricCard({
-  label,
-  value,
-  description,
-  tone,
-  signed = false,
-  unavailable = false,
-}: {
-  label: string
-  value: number
-  description: string
-  tone?: 'net' | 'asset' | 'liability'
-  signed?: boolean
-  unavailable?: boolean
-}) {
-  const valueColor = tone === 'net'
-    ? 'text-[var(--color-positive-strong)]'
-    : tone === 'asset'
-      ? 'text-[var(--color-primary)]'
-      : tone === 'liability'
-        ? 'text-[var(--color-negative)]'
-        : value > 0
-          ? 'text-[var(--color-positive-strong)]'
-          : value < 0
-            ? 'text-[var(--color-negative)]'
-            : 'text-[var(--color-ink)]'
-  const accentColor = tone === 'net'
-    ? 'border-t-[var(--color-positive-bright)]'
-    : tone === 'asset'
-      ? 'border-t-[var(--color-primary)]'
-      : tone === 'liability'
-        ? 'border-t-[var(--color-negative)]'
-        : value > 0
-          ? 'border-t-[var(--color-positive)]'
-          : value < 0
-            ? 'border-t-[var(--color-negative)]'
-            : 'border-t-[var(--color-border)]'
-  const markerColor = tone === 'net'
-    ? 'bg-[var(--color-positive-bright)]'
-    : tone === 'asset'
-      ? 'bg-[var(--color-primary)]'
-      : tone === 'liability'
-        ? 'bg-[var(--color-negative)]'
-        : value > 0
-          ? 'bg-[var(--color-positive)]'
-          : value < 0
-            ? 'bg-[var(--color-negative)]'
-            : 'bg-[var(--color-subtle)]'
-
-  return (
-    <article className={`metric-cell border-t-[3px] px-4 py-4 sm:px-5 sm:py-5 lg:py-3.5 ${accentColor}`}>
-      <div className="flex items-center gap-2">
-        <span className={`h-2.5 w-2.5 rounded-sm ${markerColor}`} aria-hidden="true" />
-        <h2 className="text-sm font-extrabold tracking-[-0.015em] text-[var(--color-ink)]">{label}</h2>
-      </div>
-      <p className={`mt-2.5 text-xl font-bold tracking-[-0.035em] tabular-nums sm:text-2xl ${valueColor}`}>
-        {unavailable ? '—' : `${signed && value > 0 ? '+' : ''}${krw(value)}`}
-      </p>
-      <p className="mt-1.5 text-[11px] font-medium text-[var(--color-muted)]">{description}</p>
-    </article>
   )
 }
 

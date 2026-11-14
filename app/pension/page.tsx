@@ -5,6 +5,7 @@ import type { Account, AccountMonthlySnapshot } from '@/lib/types'
 
 import { calcDeductible, TOTAL_DEDUCT_LIMIT } from '@/lib/calc/pension'
 import { PensionYearEndPlan } from '@/components/PensionYearEnd'
+import { Stat, StatStrip } from '@/components/Stat'
 
 interface YearData {
   year: string
@@ -105,11 +106,11 @@ export default async function PensionPage() {
           </Link>
         </header>
 
-        <section className="metric-strip mb-4 grid grid-cols-1 sm:grid-cols-3">
-          <SummaryCard label="부부 누적 납입" value={totalContribution} sub={`목표 ${fmtKrw(TOTAL_DEDUCT_LIMIT * 2)}`} />
-          <SummaryCard label="연금계좌 평가금액" value={totalEvaluation} sub="최근 월말 기록 합계" />
-          <SummaryCard label="예상 세액공제" value={estimatedTaxCredit} sub="16.5% 단순 적용" accent />
-        </section>
+        <StatStrip columns={3} label="연금 요약" className="mb-4">
+          <Stat label="부부 누적 납입" value={fmtKrw(totalContribution)} detail={`목표 ${fmtKrw(TOTAL_DEDUCT_LIMIT * 2)}`} tone="asset" />
+          <Stat label="연금계좌 평가금액" value={fmtKrw(totalEvaluation)} detail="최근 월말 기록 합계" tone="neutral" />
+          <Stat label="예상 세액공제" value={fmtKrw(estimatedTaxCredit)} detail="16.5% 단순 적용" tone="net" wide />
+        </StatStrip>
 
         <PensionYearEndPlan
           persons={persons.map(person => ({ label: person.label, pension: person.pensionContribution, irp: person.irpContribution }))}
@@ -164,16 +165,6 @@ export default async function PensionPage() {
         <p className="mt-3 text-center text-[11px] text-[var(--color-subtle)]">세액공제는 총급여와 개인 상황에 따라 달라질 수 있습니다. 화면의 금액은 관리용 참고치입니다.</p>
       </div>
     </>
-  )
-}
-
-function SummaryCard({ label, value, sub, accent = false }: { label: string; value: number; sub: string; accent?: boolean }) {
-  return (
-    <article className={`metric-cell p-4 ${accent ? 'bg-[var(--color-accent-soft)]' : ''}`}>
-      <p className={`text-xs font-semibold ${accent ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]'}`}>{label}</p>
-      <p className={`mt-1 text-xl font-bold tracking-[-0.025em] tabular-nums lg:text-2xl ${accent ? 'text-[var(--color-primary)]' : 'text-[var(--color-ink)]'}`}>{fmtKrw(value)}</p>
-      <p className="mt-1 text-[11px] text-[var(--color-subtle)]">{sub}</p>
-    </article>
   )
 }
 

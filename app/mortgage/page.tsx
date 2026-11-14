@@ -53,7 +53,7 @@ export default async function MortgagePage() {
   })
 
   return (
-    <div className="page-container max-w-[1040px]">
+    <div className="page-container max-w-[1240px]">
       <header className="mb-5">
         <p className="page-eyebrow">Mortgage payoff</p>
         <h1 className="page-title">대출 상환 계획</h1>

@@ -2,6 +2,8 @@ import { getHouseholdContext } from '@/lib/supabase/server'
 import { buildAccountTotalTrend, isAccountActiveAtMonth, latestSnapshotsAtMonth } from '@/lib/calc/account-snapshots'
 import { DEFAULT_FINANCIAL_PLAN } from '@/lib/calc/budget'
 import type { Account, AccountMonthlySnapshot, FinancialPlanSettingsRow, MonthlyBudget, NetWorthItem, NetWorthSnapshot } from '@/lib/types'
+import { Stat, StatStrip } from '@/components/Stat'
+import { krw as formatWon } from '@/lib/labels'
 import NetWorthChart from './NetWorthChart'
 import NetWorthManager from './NetWorthManager'
 
@@ -128,11 +130,11 @@ export default async function NetWorthPage({
           key={month}
           overview={(
             <>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <StatStrip columns={3} label="밸런스 시트 요약">
                 <SummaryCard label="총자산" value={current?.assets ?? 0} change={assetChange} tone="asset" hasPrevious={Boolean(previous)} />
                 <SummaryCard label="총부채" value={current?.liabilities ?? 0} change={debtReduction} tone="liability" hasPrevious={Boolean(previous)} />
-                <SummaryCard label="순자산" value={current?.netWorth ?? 0} change={netWorthChange} tone="net" hasPrevious={Boolean(previous)} />
-              </div>
+                <SummaryCard label="순자산" value={current?.netWorth ?? 0} change={netWorthChange} tone="net" hasPrevious={Boolean(previous)} wide />
+              </StatStrip>
               {current && current.month !== month ? (
                 <p className="text-right text-[11px] text-[var(--color-muted)]">상단 합계는 가장 최근 저장 기록인 {current.month.replace('-', '년 ')}월 기준입니다.</p>
               ) : null}
@@ -148,7 +150,7 @@ export default async function NetWorthPage({
                       순자산 {signedKrw(netWorthChange)}
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                     <FlowItem label="자산 증감" value={assetChange} description="현금·투자·부동산 등" />
                     <FlowItem label="부채 상환" value={debtReduction} description="양수면 부채가 줄어든 금액" />
                     <FlowItem label="재무계획 배분액" value={plannedAllocation} description="공금−고정비+포함 성과급" />
@@ -191,42 +193,46 @@ export default async function NetWorthPage({
   )
 }
 
-function SummaryCard({ label, value, change, tone, hasPrevious }: { label: string; value: number; change: number; tone: 'asset' | 'liability' | 'net'; hasPrevious: boolean }) {
-  const color = tone === 'asset' ? 'text-[var(--color-primary)]' : tone === 'liability' ? 'text-[var(--color-negative)]' : 'text-[var(--color-positive-strong)]'
-  const accent = tone === 'asset' ? 'border-t-[var(--color-primary)]' : tone === 'liability' ? 'border-t-[var(--color-negative)]' : 'border-t-[var(--color-positive-bright)]'
-  const labelColor = tone === 'liability' ? 'text-[var(--color-negative-strong)]' : tone === 'net' ? 'text-[var(--color-positive-strong)]' : 'text-[var(--color-ink)]'
+function SummaryCard({ label, value, change, tone, hasPrevious, wide = false }: { label: string; value: number; change: number; tone: 'asset' | 'liability' | 'net'; hasPrevious: boolean; wide?: boolean }) {
+  // 부채의 change는 '줄어든 금액'(양수 = 감소)이다. 증감률은 잔액 기준 부호로 보여 준다.
   const previousValue = tone === 'liability' ? value + change : value - change
-  const percent = hasPrevious && Math.abs(previousValue) > 0 ? change / Math.abs(previousValue) * 100 : 0
-  const favorable = change > 0
+  const balanceChange = tone === 'liability' ? -change : change
+  const percent = hasPrevious && Math.abs(previousValue) > 0 ? balanceChange / Math.abs(previousValue) * 100 : 0
+  const percentText = `${percent > 0 ? '+' : ''}${percent.toFixed(1)}%`
   const changeText = tone === 'liability'
-    ? `전월 대비 ${change >= 0 ? '감소' : '증가'} ${krw(Math.abs(change))} (${percent >= 0 ? '+' : ''}${percent.toFixed(1)}%)`
-    : `전월 대비 ${signedKrw(change)} (${percent > 0 ? '+' : ''}${percent.toFixed(1)}%)`
+    ? `전월 대비 ${change > 0 ? `${krw(change)} 감소` : change < 0 ? `${krw(-change)} 증가` : '변동 없음'} (${percentText})`
+    : `전월 대비 ${signedKrw(change)} (${percentText})`
+  const favorable = change > 0
   return (
-    <div className={`app-card border-t-4 p-4 ${accent}`}>
-      <p className={`text-sm font-extrabold ${labelColor}`}>{label}</p>
-      <p className={`mt-1 text-xl font-bold tracking-[-0.025em] tabular-nums lg:text-2xl ${color}`}>{krw(value)}</p>
-      <p className={`mt-2 text-[11px] font-medium tabular-nums ${!hasPrevious ? 'text-[var(--color-subtle)]' : favorable ? 'text-[var(--color-positive-strong)]' : change < 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-muted)]'}`}>
-        {hasPrevious ? changeText : '전월 기록 없음'}
-      </p>
-    </div>
+    <Stat
+      label={label}
+      value={krw(value)}
+      tone={tone}
+      wide={wide}
+      detail={(
+        <span className={!hasPrevious ? 'text-[var(--color-subtle)]' : favorable ? 'text-[var(--color-positive-strong)]' : change < 0 ? 'text-[var(--color-negative)]' : ''}>
+          {hasPrevious ? changeText : '전월 기록 없음'}
+        </span>
+      )}
+    />
   )
 }
 
 function FlowItem({ label, value, description }: { label: string; value: number; description: string }) {
   return (
-    <div className="rounded-xl bg-white/60 px-4 py-3">
+    <div className="rounded-xl bg-white/60 px-3 py-3 sm:px-4">
       <p className="text-[11px] text-[var(--color-muted)]">{label}</p>
-      <p className={`mt-1 text-base font-bold ${value > 0 ? 'text-[var(--color-positive-strong)]' : value < 0 ? 'text-[var(--color-negative)]' : ''}`}>{signedKrw(value)}</p>
+      <p className={`mt-1 whitespace-nowrap text-sm font-bold tabular-nums sm:text-base ${value > 0 ? 'text-[var(--color-positive-strong)]' : value < 0 ? 'text-[var(--color-negative)]' : ''}`}>{signedKrw(value)}</p>
       <p className="mt-1 text-[10px] text-[var(--color-subtle)]">{description}</p>
     </div>
   )
 }
 
 function krw(value: number) {
-  return `${new Intl.NumberFormat('ko-KR').format(Math.round(value))}원`
+  return formatWon(value)
 }
 
 function signedKrw(value: number) {
-  const sign = value > 0 ? '+' : value < 0 ? '−' : ''
+  const sign = value > 0 ? '+' : value < 0 ? '-' : ''
   return `${sign}${krw(Math.abs(value))}`
 }

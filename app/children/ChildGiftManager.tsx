@@ -5,6 +5,8 @@ import { calculateChildGiftStatus } from '@/lib/calc/child-gifts'
 import type { GiftDeductionBucket } from '@/lib/calc/child-gifts'
 import type { ChildAccount, ChildGiftDeposit, ChildGiftDonor, ChildGiftTransferType, ChildProfile } from '@/lib/types'
 import { createChild, createChildGift, deleteChildGift } from './actions'
+import { Stat, StatStrip } from '@/components/Stat'
+import { krw } from '@/lib/labels'
 
 const INPUT = 'w-full min-w-0 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]'
 const DONOR_LABEL: Record<ChildGiftDonor, string> = {
@@ -99,12 +101,12 @@ export default function ChildGiftManager({
     <div className="space-y-4">
       {view === 'overview' ? (
         <>
-          <section aria-label="자녀 증여 요약" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <StatStrip columns={4} label="자녀 증여 요약">
             <SummaryCard label="등록 자녀" value={`${childProfiles.length}명`} description="별도 자녀 재산으로 관리" />
             <SummaryCard label="누적 납입액" value={formatKrw(totalDeposited)} description="증여·생활비·용돈 전체" />
             <SummaryCard label="최근 10년 증여" value={formatKrw(totalTaxableWindow)} description={`한도 제외 분류 ${formatKrw(totalNonTaxableWindow)}`} />
             <SummaryCard label="남은 관계별 공제" value={formatKrw(totalRemaining)} description="직계존속·기타 친족 한도 합계" positive />
-          </section>
+          </StatStrip>
 
           {childProfiles.length > 0 ? (
             <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -313,13 +315,7 @@ function DeductionBucketCard({
 }
 
 function SummaryCard({ label, value, description, positive = false }: { label: string; value: string; description: string; positive?: boolean }) {
-  return (
-    <article className={`app-card border-t-4 p-4 ${positive ? 'border-t-[var(--color-positive-bright)]' : 'border-t-[var(--color-primary)]'}`}>
-      <p className="text-sm font-extrabold text-[var(--color-ink)]">{label}</p>
-      <p className={`mt-2 text-xl font-bold tracking-[-0.03em] tabular-nums ${positive ? 'text-[var(--color-positive-strong)]' : 'text-[var(--color-primary)]'}`}>{value}</p>
-      <p className="mt-1 text-[11px] text-[var(--color-muted)]">{description}</p>
-    </article>
-  )
+  return <Stat label={label} value={value} detail={description} tone={positive ? 'net' : 'asset'} />
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -327,7 +323,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function formatKrw(value: number) {
-  return `${new Intl.NumberFormat('ko-KR').format(Math.round(value))}원`
+  return krw(value)
 }
 
 function formatDate(value: string) {
