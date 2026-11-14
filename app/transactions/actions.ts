@@ -1,7 +1,9 @@
 'use server'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { buildTransactionUpdate } from '@/lib/transaction-edit'
+import { buildNewAsset, buildTransactionInsert, buildTransactionUpdate } from '@/lib/transaction-edit'
+
+type HouseholdClient = Awaited<ReturnType<typeof getHouseholdContext>>['supabase']
 
 export async function deleteTransaction(id: string) {
   const { supabase, userId } = await getHouseholdContext()
@@ -41,94 +43,77 @@ export async function updateTransaction(id: string, formData: FormData) {
   revalidatePath('/holdings')
 }
 
+async function loadOwnedAccount(supabase: HouseholdClient, userId: string, formData: FormData) {
+  const accountId = formData.get('account_id')
+  if (typeof accountId !== 'string' || !accountId) return null
+  const { data, error } = await supabase.from('accounts').select('id, user_id')
+    .eq('id', accountId).eq('user_id', userId).maybeSingle()
+  if (error) throw new Error(error.message)
+  return data
+}
+
 export async function createTransaction(formData: FormData) {
   const { supabase, userId } = await getHouseholdContext()
 
-  const type = formData.get('type') as string
-  const needsAsset = ['buy', 'sell', 'dividend'].includes(type)
-  const qty = formData.get('quantity') ? Number(formData.get('quantity')) : null
-  const price = formData.get('price') ? Number(formData.get('price')) : null
-  const cashAmount = formData.get('cash_amount') ? Number(formData.get('cash_amount')) : null
-  const amount = needsAsset && qty && price ? qty * price : cashAmount
-  const currency = (formData.get('currency') as string) || 'KRW'
+  const account = await loadOwnedAccount(supabase, userId, formData)
+  const assetId = formData.get('asset_id')
+  let asset = null
+  if (typeof assetId === 'string' && assetId) {
+    const { data, error } = await supabase.from('assets').select('id, currency, user_id')
+      .eq('id', assetId).eq('user_id', userId).maybeSingle()
+    if (error) throw new Error(error.message)
+    asset = data
+  }
+  const insert = buildTransactionInsert(account, asset, userId, formData)
 
-  const { error } = await supabase.from('transactions').insert({
-    user_id: userId,
-    date: formData.get('date') as string,
-    account_id: formData.get('account_id') as string,
-    asset_id: (formData.get('asset_id') as string) || null,
-    type,
-    quantity: qty,
-    price,
-    amount,
-    fee: Number(formData.get('fee') ?? 0),
-    tax: Number(formData.get('tax') ?? 0),
-    fx_rate: currency === 'USD' ? Number(formData.get('fx_rate') ?? 0) || 1 : 1,
-    currency,
-  })
+  const { error } = await supabase.from('transactions').insert(insert)
   if (error) throw new Error(error.message)
 
   revalidatePath('/')
   revalidatePath('/holdings')
+  revalidatePath('/transactions')
 }
 
 export async function createAssetAndTransaction(formData: FormData) {
   const { supabase, userId } = await getHouseholdContext()
 
-  const assetCurrency = (formData.get('asset_currency') as string) || 'KRW'
+  const account = await loadOwnedAccount(supabase, userId, formData)
+  const newAsset = buildNewAsset(userId, formData)
+  // 종목을 만들기 전에 거래 입력부터 검증해 잘못된 입력으로 빈 종목이 남지 않게 한다.
+  buildTransactionInsert(account, { currency: newAsset.currency }, userId, formData)
 
   // 같은 심볼이 이미 있으면 새로 만들지 않고 기존 것 사용
-  const symbol = (formData.get('asset_symbol') as string) || null
-  let asset: { id: string } | null = null
-
-  if (symbol) {
-    const { data: existing } = await supabase
+  let asset: { id: string; currency: string; user_id: string } | null = null
+  if (newAsset.symbol) {
+    const { data: existing, error } = await supabase
       .from('assets')
-      .select('id')
-      .eq('symbol', symbol)
+      .select('id, currency, user_id')
+      .eq('symbol', newAsset.symbol)
       .eq('user_id', userId)
       .maybeSingle()
+    if (error) throw new Error(error.message)
     asset = existing ?? null
   }
 
   if (!asset) {
-    const { data: newAsset, error: assetErr } = await supabase
+    const { data: created, error: assetErr } = await supabase
       .from('assets')
-      .insert({
-        user_id: userId,
-        name: formData.get('asset_name') as string,
-        symbol,
-        asset_class: formData.get('asset_class') as string,
-        currency: assetCurrency,
-        price_source: 'manual',
-      })
-      .select()
+      .insert(newAsset)
+      .select('id, currency, user_id')
       .single()
     if (assetErr) throw new Error(assetErr.message)
-    asset = newAsset
+    asset = created
   }
 
   if (!asset) throw new Error('종목 생성에 실패했습니다')
 
-  const qty = Number(formData.get('quantity'))
-  const price = Number(formData.get('price'))
-
-  const { error: txErr } = await supabase.from('transactions').insert({
-    user_id: userId,
-    date: formData.get('date') as string,
-    account_id: formData.get('account_id') as string,
-    asset_id: asset.id,
-    type: formData.get('type') as string,
-    quantity: qty,
-    price,
-    amount: qty * price,
-    fee: Number(formData.get('fee') ?? 0),
-    tax: Number(formData.get('tax') ?? 0),
-    fx_rate: assetCurrency === 'USD' ? Number(formData.get('fx_rate') ?? 0) || 1 : 1,
-    currency: assetCurrency,
-  })
+  // 기존 종목을 재사용했다면 그 종목의 통화로 다시 검증한다.
+  formData.set('asset_id', asset.id)
+  const insert = buildTransactionInsert(account, asset, userId, formData)
+  const { error: txErr } = await supabase.from('transactions').insert(insert)
   if (txErr) throw new Error(txErr.message)
 
   revalidatePath('/')
   revalidatePath('/holdings')
+  revalidatePath('/transactions')
 }
