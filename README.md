@@ -1,8 +1,8 @@
 # Asset Management Dashboard
 
-이 앱의 소스 저장소와 로컬 폴더 이름은 `invest-dashboard`입니다. 동기화 기준으로 확인한 배포는 `https://invest-dashboard-249znm7dr-jyh438190-2515s-projects.vercel.app/access`이며, 가족 공용 비밀번호와 자산 편집 기능을 유지합니다.
+이 앱의 소스 저장소와 로컬 폴더 이름은 `invest-dashboard`입니다. 운영 주소는 `https://invest-dashboard-orpin.vercel.app`(Vercel 프로젝트 `asset-management-dashboard`의 Production 도메인)이며, 가족 공용 비밀번호와 자산 편집 기능을 유지합니다.
 
-부부의 계좌, 거래, 자산배분, 연금, 배당과 월별 가계 재무계획을 한곳에서 관리하는 개인용 대시보드입니다.
+부부의 계좌, 자산·부채, 연금, 자녀 증여와 월별 가계 재무계획을 월 1회 기록으로 한곳에서 관리하는 개인용 대시보드입니다.
 
 실제 입력 순서와 항목별 의미는 [사용 가이드](./USER_GUIDE.md)를 참고하세요.
 
@@ -11,21 +11,19 @@
 - Next.js 16 App Router, React 19, TypeScript
 - Tailwind CSS 4
 - Supabase PostgreSQL, 서버 전용 Secret API Key
-- Upbit, Yahoo Finance, Finnhub, Frankfurter 시세/환율 연동
 
 ## 주요 기능
 
-- 계좌 및 종목 관리
-- 매수·매도·배당·입출금 거래 원장
-- 거래 당시 환율·수수료·세금을 반영한 이동평균 원가와 실현/미실현 손익
-- 자산배분과 리밸런싱 알림
+- 계좌 관리와 계좌별 월말 평가금액 기록
 - 월별 공금·성과급 배분 및 비상금 추적
 - 월 1회 직접 입력하는 가족 자산·부채와 순자산 추이
 - 부부별 연금저축·IRP 세액공제 현황
-- 배당 현금흐름
-- 예적금·대출 잔액 이력
-- 거래 내역 CSV 내보내기
-- 계좌·거래·월간 기록·순자산·설정을 포함한 전체 JSON 백업 및 복원
+- 자녀 계좌와 증여 한도 관리
+- 가족 목표 진행률과 달성 예상 시점, 전월 대비 순자산 변화 요인
+- 계좌·월간 기록·순자산·설정을 포함한 전체 JSON 백업 및 복원
+- 이전 거래 원장 데이터의 CSV 내보내기
+
+종목별 매수·매도 거래 원장, 보유종목·배당 화면과 시세 연동은 월 1회 기록 방식으로 전환하면서 제거했습니다. DB의 `assets`, `transactions` 데이터는 삭제하지 않았으며 전체 백업과 거래 CSV로 계속 내보낼 수 있습니다.
 
 ## 로컬 실행
 
@@ -43,7 +41,7 @@ npm.cmd run dev
 
 ## Vercel 배포
 
-Vercel의 Production 환경에 `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_HOUSEHOLD_USER_ID`, `DASHBOARD_ACCESS_PASSWORD`를 등록합니다. 배포 대상은 전용 Asset Management Dashboard DB(`hibkysovkhcehfalzdag`)이며, URL·서버 키·사용자 ID는 모두 이 프로젝트의 값을 사용합니다. `FINNHUB_API_KEY`는 미국 주식 자동 시세를 사용할 때만 추가합니다. Preview 환경에는 운영 Supabase 비밀키를 등록하지 않는 것을 권장합니다.
+Vercel의 Production 환경에 `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_HOUSEHOLD_USER_ID`, `DASHBOARD_ACCESS_PASSWORD`를 등록합니다. 배포 대상은 전용 Asset Management Dashboard DB(`hibkysovkhcehfalzdag`)이며, URL·서버 키·사용자 ID는 모두 이 프로젝트의 값을 사용합니다. Preview 환경에는 운영 Supabase 비밀키를 등록하지 않는 것을 권장합니다.
 
 ## 검사
 
@@ -55,8 +53,8 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-계산 회귀 테스트는 해외 거래 환율과 비용, 같은 날 거래 순서, 과거 환율 누락, 월말 계좌 기록과 자녀 자산 평가를 확인합니다. 과거 USD 거래의 `fx_rate=1`은 실제 환율이 없는 기록으로 처리하며 현재 환율을 대신 사용합니다. 정확한 원화 원가와 손익이 필요하면 거래 수정 화면에서 당시 환율을 입력하세요.
+계산 회귀 테스트는 월말 계좌 기록, 연금 세액공제, 자녀 자산 평가, 백업 복원과 대시보드 목표·순자산 변화 요인 계산을 확인합니다.
 
 전용 Asset Management Dashboard DB는 접두사 없는 테이블과 RPC를 사용합니다. 이전 공용 Supabase 연결도 호환되지만, 공용 DB의 키나 사용자 ID를 전용 DB에 섞어 쓰면 안 됩니다. 상세 설정은 [SETUP.md](./SETUP.md)를 참고하세요. 소스 동기화만으로 DB 마이그레이션이 자동 적용되지는 않습니다.
 
-목표 자산배분, 월 소득, 목표 마일스톤과 재무 기준은 Supabase에 저장됩니다. 이전 버전의 브라우저 설정은 설정 화면을 처음 열 때 자동으로 이전됩니다.
+월 소득, 목표 마일스톤과 재무 기준은 Supabase에 저장됩니다. 이전 버전의 브라우저 설정은 설정 화면을 처음 열 때 자동으로 이전됩니다.

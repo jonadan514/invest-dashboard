@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ALLOCATION_CLASSES, DEFAULT_TARGET_ALLOCATION } from '@/lib/settings'
 import type { HouseholdGoal } from '@/lib/types'
 import {
   deleteHouseholdGoal,
@@ -13,7 +12,7 @@ import {
 } from './actions'
 
 interface Props {
-  initialSettings: { monthlyIncome: number; targetAllocation: Record<string, number> }
+  initialSettings: { monthlyIncome: number }
   initialGoals: HouseholdGoal[]
   canImportLegacy: boolean
 }
@@ -21,26 +20,22 @@ interface Props {
 export default function SettingsClient({ initialSettings, initialGoals, canImportLegacy }: Props) {
   const router = useRouter()
   const importRef = useRef<HTMLInputElement>(null)
-  const [allocation, setAllocation] = useState(initialSettings.targetAllocation)
   const [monthlyIncome, setMonthlyIncome] = useState(initialSettings.monthlyIncome)
   const [editingGoal, setEditingGoal] = useState<HouseholdGoal | null>(null)
   const [showGoalForm, setShowGoalForm] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
-  const total = Object.values(allocation).reduce((sum, value) => sum + value, 0)
 
   useEffect(() => {
     if (!canImportLegacy || localStorage.getItem('supabase_settings_migrated') === '1') return
-    let targetAllocation: Record<string, number> | null = null
     let goals: Array<Record<string, unknown>> = []
-    try { targetAllocation = JSON.parse(localStorage.getItem('target_allocation') ?? 'null') } catch {}
     try { goals = JSON.parse(localStorage.getItem('goals') ?? '[]') } catch {}
     const monthlyIncome = Number(localStorage.getItem('monthly_income') ?? 0)
-    if (!targetAllocation && goals.length === 0 && monthlyIncome === 0) return
+    if (goals.length === 0 && monthlyIncome === 0) return
 
     startTransition(async () => {
       try {
-        await migrateLegacySettings({ monthlyIncome, targetAllocation, goals })
+        await migrateLegacySettings({ monthlyIncome, goals })
         localStorage.setItem('supabase_settings_migrated', '1')
         router.refresh()
       } catch {
@@ -53,7 +48,7 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
     setMessage(null)
     startTransition(async () => {
       try {
-        await saveHouseholdSettings({ monthlyIncome, targetAllocation: allocation })
+        await saveHouseholdSettings({ monthlyIncome })
         setMessage('가계 설정을 Supabase에 저장했습니다.')
         router.refresh()
       } catch (error) {
@@ -98,31 +93,13 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
   return (
     <div className="space-y-5">
       <section className="app-card p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div><h2 className="text-sm font-semibold">목표 자산배분</h2><p className="mt-1 text-[10px] text-[var(--color-muted)]">5%p 이상 벗어나면 대시보드에 표시합니다.</p></div>
-          <span className={`text-sm font-bold ${Math.abs(total - 100) < 0.001 ? 'text-[var(--color-primary)]' : 'text-red-600'}`}>{total}%</span>
-        </div>
-        <div className="mt-4 space-y-3">
-          {ALLOCATION_CLASSES.map(item => (
-            <div key={item.key} className="flex items-center gap-3">
-              <label htmlFor={`allocation-${item.key}`} className="w-16 shrink-0 text-xs">{item.label}</label>
-              <input id={`allocation-${item.key}`} type="range" min="0" max="100" value={allocation[item.key] ?? 0} onChange={event => setAllocation(current => ({ ...current, [item.key]: Number(event.target.value) }))} className="h-1.5 flex-1 accent-[var(--color-primary)]" />
-              <input aria-label={`${item.label} 목표 비율`} type="number" min="0" max="100" value={allocation[item.key] ?? 0} onChange={event => setAllocation(current => ({ ...current, [item.key]: Number(event.target.value) }))} className="w-14 rounded-md border border-[var(--color-border)] bg-white px-2 py-1 text-right text-xs" />
-              <span className="text-xs text-[var(--color-muted)]">%</span>
-            </div>
-          ))}
-        </div>
-        <button type="button" onClick={() => setAllocation(DEFAULT_TARGET_ALLOCATION)} className="mt-3 text-[10px] text-[var(--color-muted)]">기본값으로 되돌리기</button>
-      </section>
-
-      <section className="app-card p-5">
         <h2 className="text-sm font-semibold">월 소득</h2>
         <p className="mt-1 text-[10px] text-[var(--color-muted)]">향후 가계 저축률 계산에 사용합니다.</p>
         <div className="mt-3 flex items-center gap-2">
           <input value={monthlyIncome > 0 ? formatNumber(monthlyIncome) : ''} onChange={event => setMonthlyIncome(parseNumber(event.target.value))} inputMode="numeric" className="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-right text-sm" />
           <span className="text-xs text-[var(--color-muted)]">원</span>
         </div>
-        <button type="button" onClick={saveSettings} disabled={pending || Math.abs(total - 100) > 0.001} className="mt-4 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">
+        <button type="button" onClick={saveSettings} disabled={pending} className="mt-4 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">
           {pending ? '저장 중…' : '설정 저장'}
         </button>
       </section>

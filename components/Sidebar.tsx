@@ -13,6 +13,7 @@ import {
   Menu,
   Plus,
   Scale,
+  Settings,
   Sprout,
   X,
   type LucideIcon,
@@ -31,12 +32,11 @@ const NAV_ITEMS: NavItemData[] = [
   { href: '/net-worth', label: '밸런스 시트', description: '자산·부채와 순자산', icon: Scale },
   { href: '/pension', label: '연금 현황', description: '부부 납입 달성률', icon: Sprout },
   { href: '/children', label: '자녀 증여', description: '자녀 계좌·증여 한도', icon: Gift },
+  { href: '/settings', label: '설정', description: '목표·백업 관리', icon: Settings },
 ]
 
 function getCurrentLabel(pathname: string) {
   if (pathname === '/guide') return '사용 가이드'
-  if (pathname === '/transactions/new') return '거래 입력'
-  if (pathname.startsWith('/transactions/edit')) return '거래 수정'
 
   return [...NAV_ITEMS]
     .sort((a, b) => b.href.length - a.href.length)
