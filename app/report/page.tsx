@@ -3,7 +3,7 @@ import { buildAccountTotalTrend, latestYearContributions } from '@/lib/calc/acco
 import { annualNetWorth, reportYears } from '@/lib/calc/annual-report'
 import { DEFAULT_FINANCIAL_PLAN } from '@/lib/calc/budget'
 import { buildTrend, netWorthChangeDrivers, type ChangeDriver } from '@/lib/calc/home-insights'
-import { calcDeductible, PENSION_CREDIT_RATE, PENSION_CREDIT_RATE_LOW_INCOME, TOTAL_DEDUCT_LIMIT } from '@/lib/calc/pension'
+import { calcDeductible, PENSION_CREDIT_RATE, TOTAL_DEDUCT_LIMIT } from '@/lib/calc/pension'
 import { averageSavingsRate, buildSavingsSeries } from '@/lib/calc/savings'
 import { compactKrw, formatMonth, krw, signedCompactKrw, signedWonShort, wonShort } from '@/lib/labels'
 import { getHouseholdContext } from '@/lib/supabase/server'
@@ -181,7 +181,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
                 {pensionByOwner.map(person => (
                   <Row key={person.label} label={`${person.label} 납입`} value={`${krw(person.total)} (${Math.round(person.deductible / TOTAL_DEDUCT_LIMIT * 100)}%)`} />
                 ))}
-                <Row label="예상 세액공제" value={`약 ${compactKrw(pensionDeductible * PENSION_CREDIT_RATE)}~${compactKrw(pensionDeductible * PENSION_CREDIT_RATE_LOW_INCOME)}`} />
+                <Row label="예상 세액공제(13.2%)" value={`약 ${compactKrw(pensionDeductible * PENSION_CREDIT_RATE)}`} />
               </dl>
             </section>
 

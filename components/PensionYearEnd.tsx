@@ -20,9 +20,8 @@ function summarize(persons: PensionPerson[], today: string) {
   const schedule = yearEndSchedule(today)
   const rows = persons.map(person => ({ ...person, room: pensionRoom(person.pension, person.irp) }))
   const remaining = rows.reduce((sum, row) => sum + row.room.remaining, 0)
-  const creditLow = rows.reduce((sum, row) => sum + row.room.extraCredit.low, 0)
-  const creditHigh = rows.reduce((sum, row) => sum + row.room.extraCredit.high, 0)
-  return { schedule, rows, remaining, creditLow, creditHigh }
+  const credit = rows.reduce((sum, row) => sum + row.room.extraCredit, 0)
+  return { schedule, rows, remaining, credit }
 }
 
 function dDay(daysLeft: number) {
@@ -38,7 +37,7 @@ function staleNote(recordMonth: string | null, today: string) {
 
 /** 홈 상단 알림 띠. 10~12월에 남은 한도가 있을 때만 보인다. */
 export function PensionYearEndBanner({ persons, today, recordMonth }: Props) {
-  const { schedule, remaining, creditLow, creditHigh } = summarize(persons, today)
+  const { schedule, remaining, credit } = summarize(persons, today)
   if (!schedule.isYearEndSeason || remaining <= 0) return null
   return (
     <section aria-label="연금 세액공제 연말 알림" className="app-card relative flex flex-col gap-3 overflow-hidden px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:py-3">
@@ -48,7 +47,7 @@ export function PensionYearEndBanner({ persons, today, recordMonth }: Props) {
           연금 세액공제 마감 {dDay(schedule.daysLeft)}
         </p>
         <p className="mt-1 text-sm font-bold leading-snug text-[var(--color-ink)]">
-          12월 31일까지 부부 합계 {compactKrw(remaining)}을 더 넣으면 세금을 약 {compactKrw(creditLow)}~{compactKrw(creditHigh)} 더 돌려받아요
+          12월 31일까지 부부 합계 {compactKrw(remaining)}을 더 넣으면 세금을 약 {compactKrw(credit)} 더 돌려받아요
         </p>
         <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">
           남은 {schedule.weeksLeft}주 동안 주당 약 {compactKrw(remaining / schedule.weeksLeft)} · {staleNote(recordMonth, today)}
@@ -63,7 +62,7 @@ export function PensionYearEndBanner({ persons, today, recordMonth }: Props) {
 
 /** 연금 화면의 사람별 남은 한도 계획. */
 export function PensionYearEndPlan({ persons, today, recordMonth }: Props) {
-  const { schedule, rows, remaining, creditLow, creditHigh } = summarize(persons, today)
+  const { schedule, rows, remaining, credit } = summarize(persons, today)
   const year = today.slice(0, 4)
   return (
     <section className="app-card mb-4 p-5" aria-label="올해 남은 공제 한도">
@@ -80,7 +79,7 @@ export function PensionYearEndPlan({ persons, today, recordMonth }: Props) {
         {remaining > 0 ? (
           <div className="rounded-lg bg-[var(--color-accent-soft)] px-3 py-2 text-right">
             <p className="text-[11.5px] text-[var(--color-primary)]">모두 채우면 추가 세액공제</p>
-            <p className="text-sm font-bold tabular-nums text-[var(--color-primary)]">약 {compactKrw(creditLow)}~{compactKrw(creditHigh)}</p>
+            <p className="text-sm font-bold tabular-nums text-[var(--color-primary)]">약 {compactKrw(credit)}</p>
           </div>
         ) : null}
       </div>
@@ -103,7 +102,7 @@ export function PensionYearEndPlan({ persons, today, recordMonth }: Props) {
                         : '연금저축 한도(600만)는 다 찼어요. IRP로 넣어야 인정돼요.'}
                   </li>
                   {schedule.isYearEndSeason ? <li>남은 {schedule.weeksLeft}주 동안 주당 약 <strong className="tabular-nums text-[var(--color-ink)]">{compactKrw(row.room.remaining / schedule.weeksLeft)}</strong></li> : null}
-                  <li>추가 세액공제 약 {compactKrw(row.room.extraCredit.low)}~{compactKrw(row.room.extraCredit.high)}</li>
+                  <li>추가 세액공제 약 {compactKrw(row.room.extraCredit)}</li>
                 </ul>
               ) : null}
             </div>
@@ -112,7 +111,7 @@ export function PensionYearEndPlan({ persons, today, recordMonth }: Props) {
       ) : null}
 
       <p className="mt-3 text-[11.5px] leading-4 text-[var(--color-subtle)]">
-        연금저축 600만 원, 연금저축+IRP 합산 900만 원 한도 기준이에요. 세액공제율은 총급여 5,500만 원 이하 16.5%, 초과 13.2%이며 실제 금액은 개인 상황에 따라 달라요.
+        연금저축 600만 원, 연금저축+IRP 합산 900만 원 한도 기준이에요. 세액공제는 총급여 5,500만 원 초과 기준 13.2%로 계산했어요.
       </p>
     </section>
   )
