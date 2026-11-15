@@ -148,7 +148,7 @@ export default function NetWorthManager({
               <span aria-hidden="true" className={`grid size-7 shrink-0 place-items-center ${active ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]'}`}><Icon size={17} strokeWidth={active ? 2.2 : 1.7} /></span>
               <span className="min-w-0">
                 <span className={`block text-xs font-extrabold ${active ? 'text-[var(--color-primary)]' : 'text-[var(--color-ink)]'}`}>{item.label}</span>
-                <span className="mt-0.5 hidden truncate text-[10.5px] text-[var(--color-muted)] sm:block">{item.description}</span>
+                <span className="mt-0.5 hidden truncate text-[11.5px] text-[var(--color-muted)] sm:block">{item.description}</span>
               </span>
             </button>
           )
@@ -496,10 +496,10 @@ function SnapshotGroup({
 
 function OwnerBadge({ owner }: { owner: string }) {
   const tone = owner === 'spouse'
-    ? 'bg-purple-100 text-purple-700'
+    ? 'bg-[var(--color-spouse-soft)] text-[var(--color-spouse)]'
     : owner === 'household'
       ? 'bg-slate-200 text-slate-700'
-      : 'bg-blue-100 text-blue-700'
+      : 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]'
 
   return (
     <span className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[11.5px] font-semibold ${tone}`}>

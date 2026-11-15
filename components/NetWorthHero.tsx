@@ -34,6 +34,7 @@ export default function NetWorthHero({ current, previous, trend, composition }: 
       style={{ background: 'radial-gradient(120% 140% at 100% 0%, #2c4f80 0%, #172b46 55%, #10203a 100%)' }}
     >
       <div className="min-w-0">
+        <h1 className="sr-only">샘훈호 자산현황</h1>
         <p className="text-[11.5px] font-bold tracking-[0.16em] text-[var(--color-gold)]">SAEMHUNHO · {formatMonth(current.month)}</p>
 
         <div className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-2">
@@ -71,8 +72,8 @@ export default function NetWorthHero({ current, previous, trend, composition }: 
             <li className="flex items-center gap-1.5"><Dot color={HERO_COLORS.liabilities} />총부채</li>
           </ul>
           <div className="flex items-center gap-3">
-            <Link href="/net-worth" className="text-[12.5px] font-semibold text-white/70 hover:text-white">밸런스 시트 →</Link>
-            <Link href="/budget" className="rounded-lg bg-white px-3 py-1.5 text-[12.5px] font-bold text-[var(--color-sidebar)] hover:bg-white/90">이번 달 기록하기</Link>
+            <Link href="/net-worth" className="inline-flex min-h-8 items-center text-[12.5px] font-semibold text-white/70 hover:text-white">밸런스 시트 →</Link>
+            <Link href="/budget" className="inline-flex min-h-8 items-center rounded-lg bg-white px-3 py-1.5 text-[12.5px] font-bold text-[var(--color-sidebar)] hover:bg-white/90">이번 달 기록하기</Link>
           </div>
         </div>
         {trend.length < 2 ? (
@@ -178,7 +179,7 @@ function TrendArea({ data, width }: { data: TrendPoint[]; width: number }) {
         return (
           <g key={ratio}>
             <line x1="0" x2={width} y1={lineY} y2={lineY} stroke="rgb(255 255 255 / 0.07)" />
-            <text x="2" y={lineY - 4} fill="rgb(255 255 255 / 0.38)" fontSize="10.5">{compactKrw(value)}</text>
+            <text x="2" y={lineY - 4} fill="rgb(255 255 255 / 0.38)" fontSize="11.5">{compactKrw(value)}</text>
           </g>
         )
       })}

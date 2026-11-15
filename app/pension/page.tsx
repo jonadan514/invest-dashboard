@@ -8,6 +8,8 @@ import { PensionYearEndPlan } from '@/components/PensionYearEnd'
 import { Stat, StatStrip } from '@/components/Stat'
 import { wonShort } from '@/lib/labels'
 
+export const metadata = { title: '연금 현황' }
+
 interface YearData {
   year: string
   me: number
@@ -146,7 +148,7 @@ export default async function PensionPage() {
                 <div key={account.id} className="grid grid-cols-1 gap-3 border-b border-[var(--color-border)] px-5 py-4 last:border-0 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-6">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-semibold ${account.owner === 'spouse' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-semibold ${account.owner === 'spouse' ? 'bg-[var(--color-spouse-soft)] text-[var(--color-spouse)]' : 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]'}`}>
                         {account.owner === 'spouse' ? '아내' : '나'}
                       </span>
                       <p className="truncate text-sm font-semibold text-[var(--color-ink)]">{account.name}</p>
@@ -173,12 +175,12 @@ function PersonCard({ person }: { person: PersonStats }) {
   const deductible = calcDeductible(person.pensionContribution, person.irpContribution)
   const percent = Math.min(deductible.total / TOTAL_DEDUCT_LIMIT * 100, 100)
   const isSpouse = person.owner === 'spouse'
-  const color = isSpouse ? '#6b3fa0' : '#3f7fc3'
+  const color = isSpouse ? 'var(--color-spouse)' : 'var(--color-primary)'
   return (
     <article className="app-card p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${isSpouse ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>{person.label}</span>
+          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${isSpouse ? 'bg-[var(--color-spouse-soft)] text-[var(--color-spouse)]' : 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]'}`}>{person.label}</span>
           <h2 className="mt-3 text-base font-bold text-[var(--color-ink)]">연금 납입 달성률</h2>
         </div>
         <strong className="text-2xl tabular-nums text-[var(--color-ink)]">{Math.round(percent)}%</strong>
@@ -218,7 +220,7 @@ function YearlyChart({ data, currentYear }: { data: YearData[]; currentYear: str
             <div key={point.year} className="flex h-full flex-1 flex-col justify-end">
               <div className="mb-1 text-center text-[11.5px] font-semibold tabular-nums text-[var(--color-muted)]">{compactKrw(point.total)}</div>
               <div className="mx-auto flex w-full max-w-20 flex-col justify-end overflow-hidden rounded-t-md" style={{ height: `${height}%` }}>
-                {point.spouse > 0 ? <div className="bg-[#6b3fa0]" style={{ height: `${100 - mePercent}%` }} /> : null}
+                {point.spouse > 0 ? <div className="bg-[var(--color-spouse)]" style={{ height: `${100 - mePercent}%` }} /> : null}
                 {point.me > 0 ? <div className="bg-[var(--color-primary)]" style={{ height: `${mePercent}%` }} /> : null}
               </div>
             </div>

@@ -1,7 +1,7 @@
 import BrandLockup from '@/components/BrandLockup'
 
 export const metadata = {
-  title: '접근 확인 | 샘훈호 FAMILY OFFICE',
+  title: '접근 확인',
   robots: { index: false, follow: false },
 }
 

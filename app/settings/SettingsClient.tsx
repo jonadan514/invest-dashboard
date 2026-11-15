@@ -98,12 +98,12 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
       {message ? <p className="rounded-xl bg-blue-50 px-4 py-3 text-xs text-[var(--color-primary)]" role="status">{message}</p> : null}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
       <div className="space-y-4">
-      <p className="text-[12.5px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted)]">가계 설정</p>
+      <p className="text-[13px] font-bold text-[var(--color-muted)]">가계 설정</p>
       <section className="app-card p-5">
         <h2 className="text-sm font-semibold">월 소득</h2>
         <p className="mt-1 text-[11.5px] text-[var(--color-muted)]">대시보드 저축률 계산에 사용합니다. 실제로 들어오는 부부 합산 세후 월급을 입력하세요. 성과급은 월간 기록에 따로 입력합니다.</p>
         <div className="mt-3 flex items-center gap-2">
-          <input value={monthlyIncome > 0 ? formatNumber(monthlyIncome) : ''} onChange={event => setMonthlyIncome(parseNumber(event.target.value))} inputMode="numeric" className="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-right text-sm" />
+          <input aria-label="월 소득(원)" value={monthlyIncome > 0 ? formatNumber(monthlyIncome) : ''} onChange={event => setMonthlyIncome(parseNumber(event.target.value))} inputMode="numeric" className="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-right text-sm" />
           <span className="text-xs text-[var(--color-muted)]">원</span>
         </div>
         <button type="button" onClick={saveSettings} disabled={pending} className="mt-4 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">
@@ -137,7 +137,7 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
       </div>
 
       <div className="space-y-4">
-      <p className="text-[12.5px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted)]">데이터 관리</p>
+      <p className="text-[13px] font-bold text-[var(--color-muted)]">데이터 관리</p>
       <section className="app-card p-5">
         <h2 className="text-sm font-semibold">전체 데이터 백업·복원</h2>
         <p className="mt-1 text-[11.5px] leading-5 text-[var(--color-muted)]">금융계좌, 거래, 월간 기록, 밸런스 시트, 목표와 설정을 하나의 JSON 파일로 보관합니다.</p>

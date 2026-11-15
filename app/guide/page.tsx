@@ -1,5 +1,7 @@
 import Link from 'next/link'
 
+export const metadata = { title: '사용 가이드' }
+
 const MONTHLY_STEPS = [
   ['1', '월간 기록', '공금·성과급·주담대와 모든 금융계좌의 월말 평가금액을 입력합니다.'],
   ['2', '밸런스 시트', '부동산·보증금·차량·대출처럼 계좌 밖 항목의 월말 잔액을 확인합니다.'],

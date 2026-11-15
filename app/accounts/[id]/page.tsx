@@ -5,6 +5,8 @@ import type { Account, AccountMonthlySnapshot } from '@/lib/types'
 import { Stat, StatStrip, toneOf } from '@/components/Stat'
 import { wonShort } from '@/lib/labels'
 
+export const metadata = { title: '계좌 기록' }
+
 const TYPE_LABEL: Partial<Record<Account['type'], string>> = {
   cash: '입출금·공동계좌', mmf: 'CMA·MMF', general: '주식·증권계좌', pension: '연금저축', irp: 'IRP', isa: 'ISA', crypto: '코인',
 }
@@ -32,12 +34,12 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
   return (
     <>
       <div className="page-container max-w-[1240px]">
-        <Link href="/net-worth" className="mb-4 inline-block text-xs text-[var(--color-muted)] hover:text-[var(--color-primary)]">← 밸런스 시트</Link>
+        <Link href="/net-worth" className="mb-3 inline-flex min-h-8 items-center text-[13px] text-[var(--color-muted)] hover:text-[var(--color-primary)]">← 밸런스 시트</Link>
 
         <header className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              <span className={`rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${account.owner === 'spouse' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+              <span className={`rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${account.owner === 'spouse' ? 'bg-[var(--color-spouse-soft)] text-[var(--color-spouse)]' : 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]'}`}>
                 {account.owner === 'spouse' ? '아내' : '나'}
               </span>
               <span className="rounded-full bg-[var(--color-canvas)] px-2.5 py-1 text-[11.5px] text-[var(--color-muted)]">{TYPE_LABEL[account.type] ?? account.type}</span>

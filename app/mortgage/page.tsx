@@ -5,6 +5,8 @@ import { getHouseholdContext } from '@/lib/supabase/server'
 import type { FinancialPlanSettingsRow, MonthlyBudget, NetWorthItem, NetWorthSnapshot } from '@/lib/types'
 import MortgageSimulator, { type MortgageLoan } from './MortgageSimulator'
 
+export const metadata = { title: '대출 상환' }
+
 export default async function MortgagePage() {
   const { supabase, userId } = await getHouseholdContext()
   const currentMonth = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date())

@@ -330,14 +330,14 @@ function MonthlyCheckCard({
             <Link
               href={item.href}
               title={item.detail}
-              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12.5px] font-semibold ${item.done ? 'border-transparent bg-[var(--color-section)] text-[var(--color-muted)]' : 'border-[var(--color-negative)]/40 bg-white text-[var(--color-negative)]'}`}
+              className={`inline-flex min-h-8 items-center gap-1 rounded-full border px-3 py-1 text-[12.5px] font-semibold ${item.done ? 'border-transparent bg-[var(--color-section)] text-[var(--color-muted)]' : 'border-[var(--color-negative)]/40 bg-white text-[var(--color-negative)]'}`}
             >
               {item.done ? '✓' : '!'} {item.label}
             </Link>
           </li>
         ))}
       </ul>
-      <a href="/api/calendar/month-end" download className="mt-auto flex items-center gap-1.5 pt-3 text-[12.5px] font-semibold text-[var(--color-primary)] hover:underline">
+      <a href="/api/calendar/month-end" download className="mt-auto flex min-h-10 items-center gap-1.5 pt-2 text-[12.5px] font-semibold text-[var(--color-primary)] hover:underline">
         <CalendarPlus size={14} aria-hidden="true" /> 휴대폰 캘린더에 매달 말일 알림 추가
       </a>
     </article>

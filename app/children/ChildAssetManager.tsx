@@ -131,7 +131,7 @@ export default function ChildAssetManager({
                       <div key={account.id} className="flex items-center justify-between gap-3 text-[12.5px]">
                         <div className="min-w-0">
                           <p className="truncate font-bold text-[var(--color-ink)]">{account.name}</p>
-                          <p className="text-[10.5px] text-[var(--color-subtle)]">{account.asset_type === 'cash' ? '현금성' : '투자'} · {latest ? formatMonth(latest.month) : '평가 기록 없음'}</p>
+                          <p className="text-[11.5px] text-[var(--color-subtle)]">{account.asset_type === 'cash' ? '현금성' : '투자'} · {latest ? formatMonth(latest.month) : '평가 기록 없음'}</p>
                         </div>
                         <p className="shrink-0 font-bold tabular-nums text-[var(--color-primary)]">{latest ? formatKrw(latest.evaluation_amount) : '-'}</p>
                       </div>
@@ -150,7 +150,7 @@ export default function ChildAssetManager({
                 <h3 className="text-sm font-extrabold text-[var(--color-ink)]">월말 평가 기록</h3>
                 <p className="mt-1 text-[11.5px] text-[var(--color-muted)]">같은 계좌·같은 월을 다시 저장하면 금액이 수정됩니다.</p>
               </div>
-              {unrecordedCount > 0 ? <span className="rounded-full bg-red-50 px-2.5 py-1 text-[10.5px] font-bold text-[var(--color-negative-strong)]">최초 평가 필요 {unrecordedCount}개</span> : null}
+              {unrecordedCount > 0 ? <span className="rounded-full bg-red-50 px-2.5 py-1 text-[11.5px] font-bold text-[var(--color-negative-strong)]">최초 평가 필요 {unrecordedCount}개</span> : null}
             </div>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <Field label="평가월 *"><input name="month" type="month" required defaultValue={currentMonth} max={currentMonth} className={INPUT} /></Field>
@@ -177,9 +177,9 @@ export default function ChildAssetManager({
           <button type="button" onClick={() => setShowAccountForm(current => !current)} aria-expanded={showAccountForm} aria-controls="child-account-form" className="flex min-h-14 w-full items-center justify-between gap-4 bg-white px-4 py-3 text-left hover:bg-[var(--color-section)]">
             <span>
               <span className="block text-xs font-extrabold text-[var(--color-ink)]">자녀 운용 계좌 추가</span>
-              <span className="mt-0.5 block text-[10.5px] text-[var(--color-muted)]">새 계좌가 생겼을 때만 사용합니다.</span>
+              <span className="mt-0.5 block text-[11.5px] text-[var(--color-muted)]">새 계좌가 생겼을 때만 사용합니다.</span>
             </span>
-            <span className="rounded-full bg-[var(--color-primary-soft)] px-3 py-1 text-[10.5px] font-bold text-[var(--color-primary)]">{showAccountForm ? '접기 ↑' : '열기 ↓'}</span>
+            <span className="rounded-full bg-[var(--color-primary-soft)] px-3 py-1 text-[11.5px] font-bold text-[var(--color-primary)]">{showAccountForm ? '접기 ↑' : '열기 ↓'}</span>
           </button>
           {showAccountForm ? (
             <form id="child-account-form" ref={accountFormRef} action={submitAccount} className="border-t border-[var(--color-border)] bg-[var(--color-section)]/55 p-4">

@@ -118,7 +118,7 @@ export default function ChildGiftManager({
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <h2 className="text-base font-extrabold text-[var(--color-ink)]">{child.name}</h2>
-                          <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-semibold ${status.isMinor ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-700'}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-semibold ${status.isMinor ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'bg-slate-200 text-slate-700'}`}>
                             {status.isMinor ? '미성년' : '성년'} · 만 {status.age}세
                           </span>
                         </div>
@@ -263,7 +263,7 @@ export default function ChildGiftManager({
                       <td className="whitespace-nowrap px-5 py-3 font-medium">{formatDate(gift.gift_date)}</td>
                       <td className="px-3 py-3 font-bold">{childNameById.get(gift.child_id) ?? '삭제된 자녀'}</td>
                       <td className="px-3 py-3 text-[var(--color-muted)]">{gift.donor_name || DONOR_LABEL[gift.donor]}</td>
-                      <td className="px-3 py-3"><span className={`rounded-full px-2 py-1 text-[11.5px] font-semibold ${gift.transfer_type === 'gift' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-800'}`}>{TRANSFER_LABEL[gift.transfer_type]}</span></td>
+                      <td className="px-3 py-3"><span className={`rounded-full px-2 py-1 text-[11.5px] font-semibold ${gift.transfer_type === 'gift' ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'bg-amber-100 text-amber-800'}`}>{TRANSFER_LABEL[gift.transfer_type]}</span></td>
                       <td className="px-3 py-3 text-[var(--color-muted)]">{gift.account_name || '-'}</td>
                       <td className="whitespace-nowrap px-3 py-3 text-right font-bold tabular-nums text-[var(--color-primary)]">{formatKrw(Number(gift.amount))}</td>
                       <td className="max-w-[180px] truncate px-3 py-3 text-[var(--color-muted)]">{gift.memo || '-'}</td>
@@ -296,7 +296,7 @@ function DeductionBucketCard({
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-xs font-extrabold text-[var(--color-ink)]">{label}</p>
-          <p className="mt-0.5 text-[10.5px] text-[var(--color-subtle)]">{description}</p>
+          <p className="mt-0.5 text-[11.5px] text-[var(--color-subtle)]">{description}</p>
         </div>
         <p className={`text-[11.5px] font-bold ${bucket.overage > 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-positive-strong)]'}`}>
           {bucket.overage > 0 ? `초과 ${formatKrw(bucket.overage)}` : `남음 ${formatKrw(bucket.remaining)}`}
@@ -306,7 +306,7 @@ function DeductionBucketCard({
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
         <div className="h-full rounded-full" style={{ width: `${bucket.percent}%`, backgroundColor: tone }} />
       </div>
-      <div className="mt-2 flex justify-between gap-2 text-[10.5px] text-[var(--color-subtle)]">
+      <div className="mt-2 flex justify-between gap-2 text-[11.5px] text-[var(--color-subtle)]">
         <span>{Math.round(bucket.percent)}% · 한도 {formatKrw(bucket.limit)}</span>
         <span>{bucket.nextReleaseDate ? `${formatDate(bucket.nextReleaseDate)} 회복` : '기록 없음'}</span>
       </div>

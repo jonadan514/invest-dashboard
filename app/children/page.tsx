@@ -2,6 +2,8 @@ import { getHouseholdContext } from '@/lib/supabase/server'
 import type { ChildAccount, ChildAccountMonthlySnapshot, ChildGiftDeposit, ChildProfile } from '@/lib/types'
 import ChildGiftWorkspace from './ChildGiftWorkspace'
 
+export const metadata = { title: '자녀 증여' }
+
 export default async function ChildrenPage() {
   const { supabase, userId } = await getHouseholdContext()
   const today = new Intl.DateTimeFormat('en-CA', {
@@ -38,7 +40,7 @@ export default async function ChildrenPage() {
         <details className="mb-4 overflow-hidden rounded-2xl border border-lime-300 bg-lime-50/70">
           <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-bold text-lime-900 sm:px-5">
             <span>증여 공제·비과세 기준 안내</span>
-            <span className="rounded-full bg-white/70 px-2.5 py-1 text-[10.5px] font-semibold text-lime-800">필요할 때 열어보기</span>
+            <span className="rounded-full bg-white/70 px-2.5 py-1 text-[11.5px] font-semibold text-lime-800">필요할 때 열어보기</span>
           </summary>
           <div className="border-t border-lime-300/70 px-4 pb-4 pt-3 sm:px-5">
             <p className="text-[12.5px] leading-5 text-lime-900/75">
@@ -46,8 +48,8 @@ export default async function ChildrenPage() {
             </p>
             <p className="mt-1 text-[11.5px] leading-4 text-lime-900/60">소액이라고 자동 비과세되는 기준은 없습니다. 생활비·교육비나 통상적 용돈·축하금은 실제 용도와 사회통념에 따라 판단되므로, 자녀 계좌에 적립·투자하는 금액은 ‘증여’로 기록하세요.</p>
             <div className="mt-2 flex flex-wrap gap-3 text-[11.5px] font-semibold text-lime-900/70">
-              <a href="https://nts.go.kr/nts/cm/cntnts/cntntsView.do?cntntsId=7960&mi=6533" target="_blank" rel="noopener noreferrer" className="hover:underline">국세청 공제 기준 ↗</a>
-              <a href="https://www.law.go.kr/lsLinkProc.do?chrClsCd=010202&joLnkStr=%EC%A0%9C53%EC%A1%B0%EC%99%80+%EC%A0%9C54%EC%A1%B0&joNo=005300000%5E005400000&lsId=001561&lsNm=%EC%83%81%EC%86%8D%EC%84%B8+%EB%B0%8F+%EC%A6%9D%EC%97%AC%EC%84%B8%EB%B2%95&mode=2" target="_blank" rel="noopener noreferrer" className="hover:underline">상증세법 제53조 ↗</a>
+              <a href="https://nts.go.kr/nts/cm/cntnts/cntntsView.do?cntntsId=7960&mi=6533" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 items-center hover:underline">국세청 공제 기준 ↗</a>
+              <a href="https://www.law.go.kr/lsLinkProc.do?chrClsCd=010202&joLnkStr=%EC%A0%9C53%EC%A1%B0%EC%99%80+%EC%A0%9C54%EC%A1%B0&joNo=005300000%5E005400000&lsId=001561&lsNm=%EC%83%81%EC%86%8D%EC%84%B8+%EB%B0%8F+%EC%A6%9D%EC%97%AC%EC%84%B8%EB%B2%95&mode=2" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 items-center hover:underline">상증세법 제53조 ↗</a>
             </div>
           </div>
         </details>

@@ -5,6 +5,8 @@ import type { Account, AccountMonthlySnapshot, FinancialPlanSettingsRow, Monthly
 import MonthlyForm from './MonthlyForm'
 import PlanSettingsForm from './PlanSettingsForm'
 
+export const metadata = { title: '월간 기록' }
+
 function formatKrw(value: number) {
   return `₩${new Intl.NumberFormat('ko-KR').format(Math.round(value))}`
 }
@@ -118,7 +120,31 @@ export default async function BudgetPage({
             <div className="border-b border-[var(--color-border)] bg-[var(--color-section)] px-4 py-3.5">
               <h2 className="text-base font-bold text-[var(--color-ink)]">월별 기록</h2>
             </div>
-            <div className="overflow-x-auto">
+            <ul className="divide-y divide-[var(--color-border)] sm:hidden">
+              {history.map(record => {
+                const emergencyFund = Number(record.cash_balance)
+                const principal = Number(record.mortgage_principal) + Number(record.mortgage_extra_principal)
+                const stage = emergencyFund >= settings.stage2Target ? '5천만 달성' : emergencyFund >= settings.stage1Target ? '3천만 달성' : '달성 전'
+                return (
+                  <li key={record.id} className={`px-4 py-3.5 ${record.month === month ? 'bg-[var(--color-primary-soft)]' : ''}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <a href={`/budget?month=${record.month}`} className="inline-flex min-h-8 items-center text-[14px] font-bold text-[var(--color-ink)]">
+                        {Number(record.month.slice(0, 4))}년 {Number(record.month.slice(5))}월
+                      </a>
+                      <span className="rounded-full bg-[var(--color-section)] px-2 py-0.5 text-[11.5px] font-semibold text-[var(--color-muted)]">비상금 {stage}</span>
+                    </div>
+                    <dl className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1 text-[12.5px]">
+                      <div className="flex justify-between gap-2"><dt className="text-[var(--color-muted)]">비상금</dt><dd className="tabular-nums">{formatKrw(record.cash_balance)}</dd></div>
+                      <div className="flex justify-between gap-2"><dt className="text-[var(--color-muted)]">공금</dt><dd className="tabular-nums">{formatKrw(record.joint_savings)}</dd></div>
+                      <div className="flex justify-between gap-2"><dt className="text-[var(--color-muted)]">성과급</dt><dd className="tabular-nums">{record.bonus_to_plan > 0 ? formatKrw(record.bonus_to_plan) : '-'}</dd></div>
+                      <div className="flex justify-between gap-2"><dt className="text-[var(--color-muted)]">원금 상환</dt><dd className="tabular-nums">{principal > 0 ? formatKrw(principal) : '-'}</dd></div>
+                    </dl>
+                    {record.memo ? <p className="mt-1.5 text-[12.5px] leading-5 text-[var(--color-muted)]">{record.memo}</p> : null}
+                  </li>
+                )
+              })}
+            </ul>
+            <div className="hidden overflow-x-auto sm:block">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-[var(--color-section)] text-[var(--color-muted)]">
@@ -143,16 +169,16 @@ export default async function BudgetPage({
                         </td>
                         <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-ink)]">{formatKrw(record.cash_balance)}</td>
                         <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-ink)]">{formatKrw(record.joint_savings)}</td>
-                        <td className="whitespace-nowrap px-3 py-3 text-right text-[#6b3fa0]">
+                        <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-spouse)]">
                           {record.bonus_to_plan > 0 ? formatKrw(record.bonus_to_plan) : '-'}
                         </td>
                         <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-ink)]">{Number(record.mortgage_principal) + Number(record.mortgage_extra_principal) > 0 ? formatKrw(Number(record.mortgage_principal) + Number(record.mortgage_extra_principal)) : '-'}</td>
                         <td className="px-3 py-3 text-center">
-                          <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-medium ${emergencyFund >= settings.stage2Target ? 'bg-blue-100 text-blue-700' : emergencyFund >= settings.stage1Target ? 'bg-amber-100 text-amber-700' : 'bg-[var(--color-section)] text-[var(--color-muted)]'}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-medium ${emergencyFund >= settings.stage2Target ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : emergencyFund >= settings.stage1Target ? 'bg-amber-100 text-amber-700' : 'bg-[var(--color-section)] text-[var(--color-muted)]'}`}>
                             {emergencyFund >= settings.stage2Target ? '5천만 달성' : emergencyFund >= settings.stage1Target ? '3천만 달성' : '달성 전'}
                           </span>
                         </td>
-                        <td className="max-w-[160px] truncate px-3 py-3 text-[var(--color-muted)]">{record.memo || '-'}</td>
+                        <td className="max-w-[160px] truncate px-3 py-3 text-[var(--color-muted)]" title={record.memo || undefined}>{record.memo || '-'}</td>
                       </tr>
                     )
                   })}

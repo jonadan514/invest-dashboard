@@ -7,6 +7,8 @@ import { krw as formatWon, signedWonShort, wonShort } from '@/lib/labels'
 import NetWorthChart from './NetWorthChart'
 import NetWorthManager from './NetWorthManager'
 
+export const metadata = { title: '밸런스 시트' }
+
 interface TrendPoint {
   month: string
   assets: number
