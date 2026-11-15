@@ -49,7 +49,7 @@ export default function ChildGiftWorkspace({
               <span aria-hidden="true" className={`grid size-7 shrink-0 place-items-center ${active ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]'}`}><Icon size={17} strokeWidth={active ? 2.2 : 1.7} /></span>
               <span className="min-w-0">
                 <span className={`block text-xs font-extrabold ${active ? 'text-[var(--color-primary)]' : 'text-[var(--color-ink)]'}`}>{item.label}</span>
-                <span className="mt-0.5 hidden truncate text-[9px] text-[var(--color-muted)] sm:block">{item.description}</span>
+                <span className="mt-0.5 hidden truncate text-[10.5px] text-[var(--color-muted)] sm:block">{item.description}</span>
               </span>
             </button>
           )

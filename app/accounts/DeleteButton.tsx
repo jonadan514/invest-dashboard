@@ -15,7 +15,7 @@ export default function DeleteButton({ id, name }: { id: string; name: string })
       type="button"
       onClick={handleClick}
       disabled={pending}
-      className="text-xs text-[#93a2b5] hover:text-red-500 disabled:opacity-40 px-2 py-1 transition-colors"
+      className="text-xs text-[var(--color-subtle)] hover:text-red-500 disabled:opacity-40 px-2 py-1 transition-colors"
     >
       {pending ? '…' : '삭제'}
     </button>

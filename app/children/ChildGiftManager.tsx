@@ -6,7 +6,7 @@ import type { GiftDeductionBucket } from '@/lib/calc/child-gifts'
 import type { ChildAccount, ChildGiftDeposit, ChildGiftDonor, ChildGiftTransferType, ChildProfile } from '@/lib/types'
 import { createChild, createChildGift, deleteChildGift } from './actions'
 import { Stat, StatStrip } from '@/components/Stat'
-import { krw } from '@/lib/labels'
+import { krw, wonShort } from '@/lib/labels'
 
 const INPUT = 'w-full min-w-0 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]'
 const DONOR_LABEL: Record<ChildGiftDonor, string> = {
@@ -103,9 +103,9 @@ export default function ChildGiftManager({
         <>
           <StatStrip columns={4} label="자녀 증여 요약">
             <SummaryCard label="등록 자녀" value={`${childProfiles.length}명`} description="별도 자녀 재산으로 관리" />
-            <SummaryCard label="누적 납입액" value={formatKrw(totalDeposited)} description="증여·생활비·용돈 전체" />
-            <SummaryCard label="최근 10년 증여" value={formatKrw(totalTaxableWindow)} description={`한도 제외 분류 ${formatKrw(totalNonTaxableWindow)}`} />
-            <SummaryCard label="남은 관계별 공제" value={formatKrw(totalRemaining)} description="직계존속·기타 친족 한도 합계" positive />
+            <SummaryCard label="누적 납입액" value={wonShort(totalDeposited)} description="증여·생활비·용돈 전체" />
+            <SummaryCard label="최근 10년 증여" value={wonShort(totalTaxableWindow)} description={`한도 제외 분류 ${formatKrw(totalNonTaxableWindow)}`} />
+            <SummaryCard label="남은 관계별 공제" value={wonShort(totalRemaining)} description="직계존속·기타 친족 한도 합계" positive />
           </StatStrip>
 
           {childProfiles.length > 0 ? (
@@ -118,15 +118,15 @@ export default function ChildGiftManager({
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <h2 className="text-base font-extrabold text-[var(--color-ink)]">{child.name}</h2>
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${status.isMinor ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-700'}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-semibold ${status.isMinor ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-700'}`}>
                             {status.isMinor ? '미성년' : '성년'} · 만 {status.age}세
                           </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-[var(--color-muted)]">
+                        <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">
                           {formatDate(child.birth_date)} 출생{child.account_name ? ` · ${child.account_name}` : ''}
                         </p>
                       </div>
-                      <p className="text-right text-[10px] text-[var(--color-subtle)]">최근 10년 기준</p>
+                      <p className="text-right text-[11.5px] text-[var(--color-subtle)]">최근 10년 기준</p>
                     </div>
 
                     <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -134,11 +134,11 @@ export default function ChildGiftManager({
                       <DeductionBucketCard label="기타 친족" description="고모·이모·삼촌 등" bucket={status.otherRelative} />
                     </div>
                     {status.nonRelativeAmount > 0 ? (
-                      <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[10px] font-semibold text-[var(--color-negative-strong)]">
+                      <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[11.5px] font-semibold text-[var(--color-negative-strong)]">
                         친족 외 증여 {formatKrw(status.nonRelativeAmount)}에는 관계별 증여재산공제가 없습니다.
                       </p>
                     ) : null}
-                    <div className="mt-4 grid grid-cols-3 gap-3 border-t border-[var(--color-border)] pt-4 text-[11px]">
+                    <div className="mt-4 grid grid-cols-3 gap-3 border-t border-[var(--color-border)] pt-4 text-[12.5px]">
                       <div>
                         <p className="text-[var(--color-muted)]">전체 누적 납입</p>
                         <p className="mt-1 font-bold tabular-nums text-[var(--color-ink)]">{formatKrw(status.totalDeposited)}</p>
@@ -175,9 +175,9 @@ export default function ChildGiftManager({
         >
           <span>
             <span className="block text-sm font-extrabold text-[var(--color-ink)]">자녀 추가 등록</span>
-            <span className="mt-0.5 block text-[10px] text-[var(--color-muted)]">처음 등록하거나 자녀를 추가할 때만 사용합니다.</span>
+            <span className="mt-0.5 block text-[11.5px] text-[var(--color-muted)]">처음 등록하거나 자녀를 추가할 때만 사용합니다.</span>
           </span>
-          <span className="shrink-0 rounded-full bg-[var(--color-primary-soft)] px-3 py-1 text-[10px] font-bold text-[var(--color-primary)]">
+          <span className="shrink-0 rounded-full bg-[var(--color-primary-soft)] px-3 py-1 text-[11.5px] font-bold text-[var(--color-primary)]">
             {showChildForm ? '접기 ↑' : '열기 ↓'}
           </span>
         </button>
@@ -203,7 +203,7 @@ export default function ChildGiftManager({
       <section>
         <form ref={giftFormRef} action={submitGift} className="app-card p-5">
           <h2 className="text-base font-bold text-[var(--color-ink)]">자녀 계좌 납입 기록</h2>
-          <p className="mt-1 text-[11px] text-[var(--color-muted)]">실제 증여자를 구분하고, 자녀 계좌 적립·투자는 ‘증여’로 기록합니다.</p>
+          <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">실제 증여자를 구분하고, 자녀 계좌 적립·투자는 ‘증여’로 기록합니다.</p>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Field label="자녀 *">
               <select name="child_id" required disabled={childProfiles.length === 0} className={INPUT} value={selectedGiftChildId} onChange={event => setSelectedGiftChildId(event.target.value)}>
@@ -232,7 +232,7 @@ export default function ChildGiftManager({
             </Field>
             <Field label="메모"><input name="memo" placeholder="예: 첫 증여 신고" className={INPUT} /></Field>
           </div>
-          <p className={`mt-3 rounded-xl border px-3 py-2 text-[10px] leading-4 ${selectedTransferType === 'gift' ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
+          <p className={`mt-3 rounded-xl border px-3 py-2 text-[11.5px] leading-4 ${selectedTransferType === 'gift' ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
             {selectedTransferType === 'gift'
               ? '선택한 관계의 최근 10년 공제 한도에 포함됩니다.'
               : '사용자 판단으로 공제 한도 계산에서 제외합니다. 남겨 두거나 투자하는 돈, 반복적으로 쌓이는 돈이라면 증여를 선택하세요.'}
@@ -248,12 +248,12 @@ export default function ChildGiftManager({
       <section className="app-card overflow-hidden">
         <div className="border-b border-[var(--color-border)] bg-[var(--color-section)] px-4 py-4 sm:px-5">
           <h2 className="text-base font-bold text-[var(--color-ink)]">납입 내역</h2>
-          <p className="mt-1 text-[11px] text-[var(--color-muted)]">최신 납입일부터 표시합니다.</p>
+          <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">최신 납입일부터 표시합니다.</p>
         </div>
         {gifts.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[980px] text-left text-xs">
-              <thead className="border-b border-[var(--color-border)] text-[11px] text-[var(--color-muted)]">
+              <thead className="border-b border-[var(--color-border)] text-[12.5px] text-[var(--color-muted)]">
                 <tr><th className="px-5 py-3">납입일</th><th className="px-3 py-3">자녀</th><th className="px-3 py-3">입금자</th><th className="px-3 py-3">입금 성격</th><th className="px-3 py-3">계좌</th><th className="px-3 py-3 text-right">금액</th><th className="px-3 py-3">메모</th><th className="px-5 py-3" /></tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">
@@ -263,11 +263,11 @@ export default function ChildGiftManager({
                       <td className="whitespace-nowrap px-5 py-3 font-medium">{formatDate(gift.gift_date)}</td>
                       <td className="px-3 py-3 font-bold">{childNameById.get(gift.child_id) ?? '삭제된 자녀'}</td>
                       <td className="px-3 py-3 text-[var(--color-muted)]">{gift.donor_name || DONOR_LABEL[gift.donor]}</td>
-                      <td className="px-3 py-3"><span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${gift.transfer_type === 'gift' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-800'}`}>{TRANSFER_LABEL[gift.transfer_type]}</span></td>
+                      <td className="px-3 py-3"><span className={`rounded-full px-2 py-1 text-[11.5px] font-semibold ${gift.transfer_type === 'gift' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-800'}`}>{TRANSFER_LABEL[gift.transfer_type]}</span></td>
                       <td className="px-3 py-3 text-[var(--color-muted)]">{gift.account_name || '-'}</td>
                       <td className="whitespace-nowrap px-3 py-3 text-right font-bold tabular-nums text-[var(--color-primary)]">{formatKrw(Number(gift.amount))}</td>
                       <td className="max-w-[180px] truncate px-3 py-3 text-[var(--color-muted)]">{gift.memo || '-'}</td>
-                      <td className="px-5 py-3 text-right"><button type="button" onClick={() => removeGift(gift.id)} disabled={pending} className="text-[10px] text-[var(--color-subtle)] hover:text-[var(--color-negative)]">삭제</button></td>
+                      <td className="px-5 py-3 text-right"><button type="button" onClick={() => removeGift(gift.id)} disabled={pending} className="text-[11.5px] text-[var(--color-subtle)] hover:text-[var(--color-negative)]">삭제</button></td>
                     </tr>
                   )
                 })}
@@ -296,9 +296,9 @@ function DeductionBucketCard({
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-xs font-extrabold text-[var(--color-ink)]">{label}</p>
-          <p className="mt-0.5 text-[9px] text-[var(--color-subtle)]">{description}</p>
+          <p className="mt-0.5 text-[10.5px] text-[var(--color-subtle)]">{description}</p>
         </div>
-        <p className={`text-[10px] font-bold ${bucket.overage > 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-positive-strong)]'}`}>
+        <p className={`text-[11.5px] font-bold ${bucket.overage > 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-positive-strong)]'}`}>
           {bucket.overage > 0 ? `초과 ${formatKrw(bucket.overage)}` : `남음 ${formatKrw(bucket.remaining)}`}
         </p>
       </div>
@@ -306,7 +306,7 @@ function DeductionBucketCard({
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
         <div className="h-full rounded-full" style={{ width: `${bucket.percent}%`, backgroundColor: tone }} />
       </div>
-      <div className="mt-2 flex justify-between gap-2 text-[9px] text-[var(--color-subtle)]">
+      <div className="mt-2 flex justify-between gap-2 text-[10.5px] text-[var(--color-subtle)]">
         <span>{Math.round(bucket.percent)}% · 한도 {formatKrw(bucket.limit)}</span>
         <span>{bucket.nextReleaseDate ? `${formatDate(bucket.nextReleaseDate)} 회복` : '기록 없음'}</span>
       </div>

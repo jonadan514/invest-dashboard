@@ -6,29 +6,30 @@
 }
 
 :root {
-  --color-canvas: #edf1f4;
-  --color-surface: #f7f8f8;
-  --color-surface-strong: #fffefa;
+  --color-canvas: #eef1f5;
+  --color-surface: #f6f8fa;
+  --color-surface-strong: #ffffff;
   --color-sidebar: #172b46;
-  --color-primary: #315f96;
-  --color-primary-strong: #244a76;
-  --color-primary-soft: #e8eef5;
-  --color-ink: #101b2a;
-  --color-muted: #536477;
-  --color-subtle: #7b8999;
-  --color-border: #b9c4cf;
-  --color-border-strong: #93a2b1;
-  --color-section: #f1f3f4;
-  --color-accent: #a7844e;
-  --color-accent-soft: #f4eee2;
-  --color-positive: #719d27;
-  --color-positive-strong: #557a18;
-  --color-positive-bright: #a8d53f;
-  --color-positive-soft: #f0f6df;
-  --color-negative: #c8434d;
-  --color-negative-strong: #a62f38;
-  --color-negative-soft: #fbebec;
-  --shadow-card: 0 1px 2px rgb(16 27 42 / 0.05);
+  --color-primary: #284b7a;
+  --color-primary-strong: #1c3a62;
+  --color-primary-soft: #eaf0f7;
+  --color-ink: #111c2b;
+  --color-muted: #5b6878;
+  --color-subtle: #8b97a5;
+  --color-border: #dde3ea;
+  --color-border-strong: #b7c2ce;
+  --color-section: #f3f5f8;
+  --color-accent: #b08d57;
+  --color-accent-soft: #f7f1e6;
+  --color-gold: #c4a46b;
+  --color-positive: #2e8061;
+  --color-positive-strong: #23684e;
+  --color-positive-bright: #4ea57f;
+  --color-positive-soft: #e6f3ed;
+  --color-negative: #c44b45;
+  --color-negative-strong: #a33933;
+  --color-negative-soft: #fcedec;
+  --shadow-card: 0 1px 2px rgb(17 28 43 / 0.04), 0 6px 18px rgb(17 28 43 / 0.05);
 }
 
 * {
@@ -60,7 +61,7 @@ input,
 select,
 textarea {
   color: var(--color-ink);
-  border-radius: 4px !important;
+  border-radius: 8px !important;
 }
 
 input::placeholder,
@@ -79,8 +80,8 @@ a {
 }
 
 ::selection {
-  background: #c7dfd0;
-  color: #14261c;
+  background: #d6e2f1;
+  color: var(--color-ink);
 }
 
 .page-container {
@@ -92,7 +93,7 @@ a {
 .page-title {
   color: var(--color-ink);
   font-size: clamp(1.5rem, 2vw, 1.75rem);
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1.2;
 }
@@ -114,12 +115,6 @@ a {
   margin-bottom: 0;
 }
 
-.dashboard-layout .metric-cell > p:first-of-type {
-  font-size: clamp(18px, 1.6vw, 28px);
-  white-space: nowrap;
-  letter-spacing: -0.035em;
-}
-
 @media (min-width: 1280px) {
   .dashboard-layout {
     min-height: min(100dvh, 980px);
@@ -130,14 +125,14 @@ a {
 .page-subtitle {
   margin-top: 0.375rem;
   color: var(--color-muted);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   line-height: 1.55;
 }
 
 .page-eyebrow {
   margin-bottom: 0.375rem;
   color: var(--color-accent);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -146,36 +141,42 @@ a {
 @layer components {
   /* 컴포넌트 단계에 두어, 화면에서 준 border-dashed·border-t 같은 유틸리티가 덮어쓸 수 있게 한다. */
   .app-card {
-    border: 1px solid var(--color-border);
-    border-radius: 6px;
+    border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+    border-radius: 14px;
     background: var(--color-surface-strong);
     box-shadow: var(--shadow-card);
   }
 
-  /* 요약 숫자 띠: 칸 사이 1px 틈이 구분선이 되어 1·2·3·4열 어느 배치든 선이 맞는다. */
+  /* 요약 숫자 카드 묶음: 칸마다 독립된 카드로 보이고, 몇 열이든 간격으로 나뉜다. */
   .metric-strip {
-    gap: 1px;
-    border: 1px solid var(--color-border);
-    border-radius: 6px;
-    background: var(--color-border);
-    box-shadow: var(--shadow-card);
-    overflow: hidden;
+    gap: 12px;
   }
 
   .metric-cell {
     position: relative;
     min-width: 0;
+    border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+    border-radius: 14px;
     background: var(--color-surface-strong);
+    box-shadow: var(--shadow-card);
   }
 }
 
-/* Dense financial-workspace geometry. Circular status badges and charts keep rounded-full. */
-:where(.rounded-3xl, .rounded-2xl, .rounded-xl) {
-  border-radius: 6px !important;
+/* 둥근 모서리 단계를 앱 전체에서 맞춘다. 원형 배지와 차트는 rounded-full을 유지한다. */
+:where(.rounded-3xl, .rounded-2xl) {
+  border-radius: 14px !important;
+}
+
+:where(.rounded-xl) {
+  border-radius: 12px !important;
 }
 
 :where(.rounded-lg) {
-  border-radius: 4px !important;
+  border-radius: 9px !important;
+}
+
+:where(.rounded-sm) {
+  border-radius: 8px !important;
 }
 
 @media (min-width: 768px) {

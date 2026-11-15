@@ -34,7 +34,7 @@ const SIZE = {
     frame: 'h-36 w-[292px]',
     gap: 'gap-2.5',
     name: 'text-[40px]',
-    company: 'text-[9px]',
+    company: 'text-[10.5px]',
     imageSize: '292px',
   },
 } as const

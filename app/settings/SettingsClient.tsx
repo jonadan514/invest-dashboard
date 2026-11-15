@@ -98,10 +98,10 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
       {message ? <p className="rounded-xl bg-blue-50 px-4 py-3 text-xs text-[var(--color-primary)]" role="status">{message}</p> : null}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
       <div className="space-y-4">
-      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted)]">가계 설정</p>
+      <p className="text-[12.5px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted)]">가계 설정</p>
       <section className="app-card p-5">
         <h2 className="text-sm font-semibold">월 소득</h2>
-        <p className="mt-1 text-[10px] text-[var(--color-muted)]">대시보드 저축률 계산에 사용합니다. 실제로 들어오는 부부 합산 세후 월급을 입력하세요. 성과급은 월간 기록에 따로 입력합니다.</p>
+        <p className="mt-1 text-[11.5px] text-[var(--color-muted)]">대시보드 저축률 계산에 사용합니다. 실제로 들어오는 부부 합산 세후 월급을 입력하세요. 성과급은 월간 기록에 따로 입력합니다.</p>
         <div className="mt-3 flex items-center gap-2">
           <input value={monthlyIncome > 0 ? formatNumber(monthlyIncome) : ''} onChange={event => setMonthlyIncome(parseNumber(event.target.value))} inputMode="numeric" className="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-right text-sm" />
           <span className="text-xs text-[var(--color-muted)]">원</span>
@@ -113,7 +113,7 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
 
       <section className="app-card p-5" id="goals">
         <div className="flex items-center justify-between gap-3">
-          <div><h2 className="text-sm font-semibold">목표 마일스톤</h2><p className="mt-1 text-[10px] text-[var(--color-muted)]">첫 번째 미달성 목표가 대시보드에 표시됩니다.</p></div>
+          <div><h2 className="text-sm font-semibold">목표 마일스톤</h2><p className="mt-1 text-[11.5px] text-[var(--color-muted)]">첫 번째 미달성 목표가 대시보드에 표시됩니다.</p></div>
           <button type="button" onClick={() => { setEditingGoal(null); setShowGoalForm(current => !current) }} className="rounded-lg bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white">＋ 목표</button>
         </div>
         {showGoalForm ? <GoalForm initial={editingGoal} nextOrder={initialGoals.length} pending={pending} onSave={input => goalAction(() => saveHouseholdGoal(input), '목표를 저장했습니다.')} onCancel={() => { setShowGoalForm(false); setEditingGoal(null) }} /> : null}
@@ -122,8 +122,8 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
           {initialGoals.map(goal => (
             <div key={goal.id} className={`rounded-xl border border-[var(--color-border)] px-4 py-3 ${goal.achieved_at ? 'opacity-55' : 'bg-white/55'}`}>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                <div><p className="text-xs font-semibold">{goal.name} {goal.achieved_at ? '✓' : ''}</p><p className="mt-1 text-[10px] text-[var(--color-muted)]">{goal.statement} · 목표 {krw(Number(goal.target))}</p></div>
-                <div className="flex shrink-0 gap-1.5 text-[11px] font-semibold">
+                <div><p className="text-xs font-semibold">{goal.name} {goal.achieved_at ? '✓' : ''}</p><p className="mt-1 text-[11.5px] text-[var(--color-muted)]">{goal.statement} · 목표 {krw(Number(goal.target))}</p></div>
+                <div className="flex shrink-0 gap-1.5 text-[12.5px] font-semibold">
                   <button type="button" className="min-h-8 rounded-md border border-[var(--color-border)] bg-white px-2.5" onClick={() => { setEditingGoal(goal); setShowGoalForm(true) }}>수정</button>
                   <button type="button" className="min-h-8 rounded-md border border-[var(--color-border)] bg-white px-2.5 text-[var(--color-primary)]" onClick={() => goalAction(() => setGoalAchieved(goal.id, !goal.achieved_at), goal.achieved_at ? '달성을 취소했습니다.' : '목표를 달성 처리했습니다.')}>{goal.achieved_at ? '되돌리기' : '달성'}</button>
                   <button type="button" className="min-h-8 rounded-md border border-[var(--color-border)] bg-white px-2.5 text-[var(--color-negative)]" onClick={() => { if (confirm('이 목표를 삭제할까요?')) goalAction(() => deleteHouseholdGoal(goal.id), '목표를 삭제했습니다.') }}>삭제</button>
@@ -137,10 +137,10 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
       </div>
 
       <div className="space-y-4">
-      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted)]">데이터 관리</p>
+      <p className="text-[12.5px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted)]">데이터 관리</p>
       <section className="app-card p-5">
         <h2 className="text-sm font-semibold">전체 데이터 백업·복원</h2>
-        <p className="mt-1 text-[10px] leading-5 text-[var(--color-muted)]">금융계좌, 거래, 월간 기록, 밸런스 시트, 목표와 설정을 하나의 JSON 파일로 보관합니다.</p>
+        <p className="mt-1 text-[11.5px] leading-5 text-[var(--color-muted)]">금융계좌, 거래, 월간 기록, 밸런스 시트, 목표와 설정을 하나의 JSON 파일로 보관합니다.</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <a href="/api/export/full" className="rounded-lg bg-[var(--color-ink)] px-4 py-2 text-xs font-semibold text-white">전체 백업 다운로드</a>
           <button type="button" onClick={() => importRef.current?.click()} disabled={pending} className="rounded-lg border border-[var(--color-border)] bg-white px-4 py-2 text-xs font-semibold">백업 복원</button>

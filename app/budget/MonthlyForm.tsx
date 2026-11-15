@@ -132,27 +132,27 @@ export default function MonthlyForm({
             return <option key={value} value={value}>{year}년 {Number(monthNumber)}월</option>
           })}
         </select>
-        {entry || hasAccountSnapshot ? <span className="text-xs text-[#3f7fc3]">● 저장된 기록</span> : null}
+        {entry || hasAccountSnapshot ? <span className="text-xs text-[var(--color-primary)]">● 저장된 기록</span> : null}
       </div>
 
       <div className="metric-strip mb-4 grid grid-cols-2 sm:grid-cols-3">
         <div className="metric-cell col-span-2 p-4 sm:col-span-1">
-          <p className="text-xs text-[#65758a]">현재 비상금</p>
-          <p className="mt-1 whitespace-nowrap text-lg font-bold tracking-[-0.03em] text-[#172233] sm:text-2xl">{formatKrw(emergencyFund)}</p>
+          <p className="text-xs text-[var(--color-muted)]">현재 비상금</p>
+          <p className="mt-1 whitespace-nowrap text-lg font-bold tracking-[-0.03em] text-[var(--color-ink)] sm:text-2xl">{formatKrw(emergencyFund)}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             <GoalBadge label="3천만 달성" achieved={emergencyFund >= settings.stage1Target} />
             <GoalBadge label="5천만 달성" achieved={emergencyFund >= settings.stage2Target} />
           </div>
         </div>
         <div className="metric-cell p-4">
-          <p className="text-xs text-[#65758a]">고정비 방어력</p>
-          <p className="mt-1 whitespace-nowrap text-lg font-bold tracking-[-0.03em] text-[#172233] sm:text-2xl">{coverage.toFixed(1)}개월</p>
-          <p className="mt-1 text-[11px] text-[#65758a]">월 고정비 {formatKrw(settings.monthlyFixedCost)}</p>
+          <p className="text-xs text-[var(--color-muted)]">고정비 방어력</p>
+          <p className="mt-1 whitespace-nowrap text-lg font-bold tracking-[-0.03em] text-[var(--color-ink)] sm:text-2xl">{coverage.toFixed(1)}개월</p>
+          <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">월 고정비 {formatKrw(settings.monthlyFixedCost)}</p>
         </div>
         <div className="metric-cell p-4">
-          <p className="text-xs text-[#65758a]">이달 배분 가능액</p>
-          <p className="mt-1 whitespace-nowrap text-lg font-bold tracking-[-0.03em] text-[#172233] sm:text-2xl">{formatKrw(totalAllocatable)}</p>
-          <p className="mt-1 text-[11px] text-[#65758a]">공금 − 고정비 + 포함 성과급</p>
+          <p className="text-xs text-[var(--color-muted)]">이달 배분 가능액</p>
+          <p className="mt-1 whitespace-nowrap text-lg font-bold tracking-[-0.03em] text-[var(--color-ink)] sm:text-2xl">{formatKrw(totalAllocatable)}</p>
+          <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">공금 − 고정비 + 포함 성과급</p>
         </div>
       </div>
 
@@ -162,13 +162,13 @@ export default function MonthlyForm({
             <h2 className="mb-4 text-base font-bold text-[var(--color-ink)]">이달 자금</h2>
             <div className="space-y-4">
               <MoneyInput label="매월 공금 납입금" value={jointContribution} onChange={setJointContribution} placeholder="7,000,000" />
-              <p className="-mt-2 text-[11px] text-[#93a2b5]">고정비를 제외한 정기 잉여금은 {formatKrw(regularSurplus)}입니다.</p>
+              <p className="-mt-2 text-[12.5px] text-[var(--color-subtle)]">고정비를 제외한 정기 잉여금은 {formatKrw(regularSurplus)}입니다.</p>
               <MoneyInput label="성과급·일시 수입" value={bonusTotal} onChange={value => { setBonusTotal(value); setBonusToPlan(current => Math.min(current, value)) }} placeholder="0" />
               {bonusTotal > 0 ? <MoneyInput label="이번 달 배분에 포함할 성과급" value={bonusToPlan} onChange={value => setBonusToPlan(Math.min(value, bonusTotal))} placeholder="0" /> : null}
               {emergencyAccounts.length === 0 ? (
-                <div className="border-t border-[#edf3f8] pt-4">
+                <div className="border-t border-[var(--color-section)] pt-4">
                   <MoneyInput label="현재 비상금 (임시 수동 입력)" value={manualEmergencyFund} onChange={setManualEmergencyFund} placeholder="13,000,000" />
-                  <p className="mt-1 text-[11px] text-amber-700">밸런스 시트에서 공동계좌나 MMF를 비상금으로 지정하면 자동 합산됩니다.</p>
+                  <p className="mt-1 text-[12.5px] text-amber-700">밸런스 시트에서 공동계좌나 MMF를 비상금으로 지정하면 자동 합산됩니다.</p>
                 </div>
               ) : null}
             </div>
@@ -176,13 +176,13 @@ export default function MonthlyForm({
 
           <section className="app-card p-5">
             <h2 className="mb-1 text-base font-bold text-[var(--color-ink)]">주택담보대출 납부</h2>
-            <p className="mb-4 text-[11px] leading-5 text-[#65758a]">이자와 정기 원금은 고정비의 구성 내역입니다. 다시 비용으로 차감하지 않으며, 원금만 밸런스 시트의 대출 잔액을 줄입니다.</p>
+            <p className="mb-4 text-[12.5px] leading-5 text-[var(--color-muted)]">이자와 정기 원금은 고정비의 구성 내역입니다. 다시 비용으로 차감하지 않으며, 원금만 밸런스 시트의 대출 잔액을 줄입니다.</p>
             <div className="space-y-4">
               <MoneyInput label="이번 달 이자" value={mortgageInterest} onChange={setMortgageInterest} placeholder="2,500,000" />
               <MoneyInput label="이번 달 정기 원금" value={mortgagePrincipal} onChange={setMortgagePrincipal} placeholder="450,000" />
               <MoneyInput label="추가 원금 상환" value={mortgageExtraPrincipal} onChange={setMortgageExtraPrincipal} placeholder="0" />
-              <div className="rounded-xl bg-[#f3f7fb] px-3 py-2.5 text-xs text-[#65758a]">
-                부채 감소 예정 <strong className="float-right text-[#172233]">{formatKrw(mortgagePrincipal + mortgageExtraPrincipal)}</strong>
+              <div className="rounded-xl bg-[var(--color-section)] px-3 py-2.5 text-xs text-[var(--color-muted)]">
+                부채 감소 예정 <strong className="float-right text-[var(--color-ink)]">{formatKrw(mortgagePrincipal + mortgageExtraPrincipal)}</strong>
               </div>
             </div>
           </section>
@@ -192,17 +192,17 @@ export default function MonthlyForm({
           <div className="flex flex-col justify-between gap-2 border-b border-[var(--color-border)] bg-[var(--color-section)] px-5 py-4 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-base font-bold text-[var(--color-ink)]">계좌별 배분과 월말 잔액</h2>
-              <p className="mt-1 text-[11px] text-[#65758a]">실제 보낸 금액은 배분액에, 월말 앱 잔액은 평가금액에 입력합니다. 평가금액만 총자산에 반영됩니다.</p>
+              <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">실제 보낸 금액은 배분액에, 월말 앱 잔액은 평가금액에 입력합니다. 평가금액만 총자산에 반영됩니다.</p>
             </div>
-            <div className="text-right text-[11px]">
-              <p className="text-[#65758a]">배분 {formatKrw(allocatedTotal)} / 가능 {formatKrw(totalAllocatable)}</p>
-              <p className={unallocated < 0 ? 'font-semibold text-red-600' : 'font-semibold text-[#3f7fc3]'}>{unallocated < 0 ? `초과 ${formatKrw(-unallocated)}` : `미배분 ${formatKrw(unallocated)}`}</p>
+            <div className="text-right text-[12.5px]">
+              <p className="text-[var(--color-muted)]">배분 {formatKrw(allocatedTotal)} / 가능 {formatKrw(totalAllocatable)}</p>
+              <p className={unallocated < 0 ? 'font-semibold text-red-600' : 'font-semibold text-[var(--color-primary)]'}>{unallocated < 0 ? `초과 ${formatKrw(-unallocated)}` : `미배분 ${formatKrw(unallocated)}`}</p>
             </div>
           </div>
 
           {accounts.length === 0 ? (
-            <div className="px-5 py-8 text-center text-xs text-[#93a2b5]">
-              <Link href="/net-worth" className="font-semibold text-[#3f7fc3] hover:underline">밸런스 시트에서 금융계좌를 먼저 추가하세요.</Link>
+            <div className="px-5 py-8 text-center text-xs text-[var(--color-subtle)]">
+              <Link href="/net-worth" className="font-semibold text-[var(--color-primary)] hover:underline">밸런스 시트에서 금융계좌를 먼저 추가하세요.</Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-px bg-[var(--color-border)] sm:grid-cols-2">
@@ -213,12 +213,12 @@ export default function MonthlyForm({
                   <div key={account.id} className="bg-white p-5">
                     <div className="mb-4 flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-[#172233]">{account.name}</p>
-                        <p className="mt-1 text-[11px] text-[#65758a]">{account.owner === 'spouse' ? '아내' : '나'} · {accountTypeLabel(account.type)}{account.broker ? ` · ${account.broker}` : ''}</p>
+                        <p className="truncate text-sm font-semibold text-[var(--color-ink)]">{account.name}</p>
+                        <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{account.owner === 'spouse' ? '아내' : '나'} · {accountTypeLabel(account.type)}{account.broker ? ` · ${account.broker}` : ''}</p>
                       </div>
                       <div className="flex shrink-0 gap-1">
-                        {account.is_emergency_fund ? <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-700">비상금</span> : null}
-                        {isPension ? <span className="rounded-full bg-purple-50 px-2 py-1 text-[10px] font-semibold text-purple-700">연금</span> : null}
+                        {account.is_emergency_fund ? <span className="rounded-full bg-amber-100 px-2 py-1 text-[11.5px] font-semibold text-amber-700">비상금</span> : null}
+                        {isPension ? <span className="rounded-full bg-purple-50 px-2 py-1 text-[11.5px] font-semibold text-purple-700">연금</span> : null}
                       </div>
                     </div>
                     <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
@@ -234,17 +234,17 @@ export default function MonthlyForm({
         </section>
 
         <section className="app-card mt-4 p-5">
-          <label htmlFor="budget-memo" className="mb-1 block text-xs text-[#65758a]">월별 메모</label>
-          <textarea id="budget-memo" value={memo} onChange={event => setMemo(event.target.value)} placeholder="이번 달 특이사항" rows={2} className="w-full resize-none rounded-lg border border-[#d7e1eb] bg-white px-3 py-2 text-xs text-[#172233] outline-none focus:border-[#3f7fc3]" />
+          <label htmlFor="budget-memo" className="mb-1 block text-xs text-[var(--color-muted)]">월별 메모</label>
+          <textarea id="budget-memo" value={memo} onChange={event => setMemo(event.target.value)} placeholder="이번 달 특이사항" rows={2} className="w-full resize-none rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs text-[var(--color-ink)] outline-none focus:border-[var(--color-primary)]" />
         </section>
 
-        <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-[#cbddec] bg-[#eaf3fb] p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-primary-soft)] p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-semibold text-[#172233]">이달 정보를 한 번에 저장합니다</p>
-            <p className="mt-1 text-[11px] text-[#65758a]">자금 흐름, 계좌 월말 금액, 연금 누적액, 주담대 원금 감소가 함께 반영됩니다.</p>
-            {error ? <p className="mt-2 text-xs text-[#d31f47]" role="alert">{error}</p> : null}
+            <p className="text-xs font-semibold text-[var(--color-ink)]">이달 정보를 한 번에 저장합니다</p>
+            <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">자금 흐름, 계좌 월말 금액, 연금 누적액, 주담대 원금 감소가 함께 반영됩니다.</p>
+            {error ? <p className="mt-2 text-xs text-[var(--color-negative)]" role="alert">{error}</p> : null}
           </div>
-          <button type="submit" disabled={pending} className="min-h-11 shrink-0 rounded-xl bg-[#3f7fc3] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#326ba6] disabled:opacity-40">
+          <button type="submit" disabled={pending} className="min-h-11 shrink-0 rounded-xl bg-[var(--color-primary)] px-6 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-primary-strong)] disabled:opacity-40">
             {pending ? '저장 중…' : saved ? '저장됨 ✓' : '이달 기록 저장'}
           </button>
         </div>
@@ -254,7 +254,7 @@ export default function MonthlyForm({
 }
 
 function GoalBadge({ label, achieved }: { label: string; achieved: boolean }) {
-  return <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${achieved ? 'bg-blue-100 text-blue-700' : 'bg-[#edf3f8] text-[#93a2b5]'}`}>{achieved ? '✓ ' : ''}{label}</span>
+  return <span className={`rounded-full px-2 py-1 text-[11.5px] font-semibold ${achieved ? 'bg-blue-100 text-blue-700' : 'bg-[var(--color-section)] text-[var(--color-subtle)]'}`}>{achieved ? '✓ ' : ''}{label}</span>
 }
 
 function accountTypeLabel(type: Account['type']) {
@@ -268,10 +268,10 @@ function MoneyInput({ label, value, onChange, placeholder }: { label: string; va
   const id = `money-${label.replace(/[^가-힣a-zA-Z0-9]/g, '-')}`
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block text-xs text-[#65758a]">{label}</label>
+      <label htmlFor={id} className="mb-1 block text-xs text-[var(--color-muted)]">{label}</label>
       <div className="flex items-center gap-2">
         <input id={id} type="text" inputMode="numeric" value={formatInput(value)} onChange={event => onChange(parseNumber(event.target.value))} placeholder={placeholder} className="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2.5 text-right text-sm font-medium tabular-nums shadow-inner outline-none focus:border-[var(--color-primary)]" />
-        <span className="shrink-0 text-xs text-[#65758a]">원</span>
+        <span className="shrink-0 text-xs text-[var(--color-muted)]">원</span>
       </div>
     </div>
   )

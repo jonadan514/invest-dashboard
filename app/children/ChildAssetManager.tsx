@@ -95,7 +95,7 @@ export default function ChildAssetManager({
       <div className="border-b border-[var(--color-border)] bg-[var(--color-section)] px-5 py-4">
         <p className="page-eyebrow">Child asset management</p>
         <h2 id="child-assets-title" className="mt-1 text-lg font-extrabold text-[var(--color-ink)]">자녀 자금 운용</h2>
-        <p className="mt-1 text-[11px] text-[var(--color-muted)]">거래내역 대신 계좌별 평가금액을 월 1회 기록해 납입 원금과 현재 자산을 비교합니다.</p>
+        <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">거래내역 대신 계좌별 평가금액을 월 1회 기록해 납입 원금과 현재 자산을 비교합니다.</p>
       </div>
 
       <div className="p-5">
@@ -118,7 +118,7 @@ export default function ChildAssetManager({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-extrabold text-[var(--color-ink)]">{child.name}</h3>
-                    <p className="mt-1 text-[10px] text-[var(--color-muted)]">납입 {formatKrw(childDeposited)} · 평가 {formatKrw(childValue)}</p>
+                    <p className="mt-1 text-[11.5px] text-[var(--color-muted)]">납입 {formatKrw(childDeposited)} · 평가 {formatKrw(childValue)}</p>
                   </div>
                   <p className={`text-sm font-extrabold tabular-nums ${childValuationComplete && childValue - childDeposited > 0 ? 'text-[var(--color-positive-strong)]' : childValuationComplete && childValue - childDeposited < 0 ? 'text-[var(--color-negative-strong)]' : 'text-[var(--color-muted)]'}`}>
                     {childValuationComplete ? signedKrw(childValue - childDeposited) : childValuation.reason}
@@ -128,15 +128,15 @@ export default function ChildAssetManager({
                   {childAccounts.length > 0 ? childAccounts.map(account => {
                     const latest = latestByAccount.get(account.id)
                     return (
-                      <div key={account.id} className="flex items-center justify-between gap-3 text-[11px]">
+                      <div key={account.id} className="flex items-center justify-between gap-3 text-[12.5px]">
                         <div className="min-w-0">
                           <p className="truncate font-bold text-[var(--color-ink)]">{account.name}</p>
-                          <p className="text-[9px] text-[var(--color-subtle)]">{account.asset_type === 'cash' ? '현금성' : '투자'} · {latest ? formatMonth(latest.month) : '평가 기록 없음'}</p>
+                          <p className="text-[10.5px] text-[var(--color-subtle)]">{account.asset_type === 'cash' ? '현금성' : '투자'} · {latest ? formatMonth(latest.month) : '평가 기록 없음'}</p>
                         </div>
                         <p className="shrink-0 font-bold tabular-nums text-[var(--color-primary)]">{latest ? formatKrw(latest.evaluation_amount) : '-'}</p>
                       </div>
                     )
-                  }) : <p className="text-[10px] text-[var(--color-subtle)]">운용 계좌를 추가하면 월말 평가를 기록할 수 있습니다.</p>}
+                  }) : <p className="text-[11.5px] text-[var(--color-subtle)]">운용 계좌를 추가하면 월말 평가를 기록할 수 있습니다.</p>}
                 </div>
               </article>
             )
@@ -148,9 +148,9 @@ export default function ChildAssetManager({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h3 className="text-sm font-extrabold text-[var(--color-ink)]">월말 평가 기록</h3>
-                <p className="mt-1 text-[10px] text-[var(--color-muted)]">같은 계좌·같은 월을 다시 저장하면 금액이 수정됩니다.</p>
+                <p className="mt-1 text-[11.5px] text-[var(--color-muted)]">같은 계좌·같은 월을 다시 저장하면 금액이 수정됩니다.</p>
               </div>
-              {unrecordedCount > 0 ? <span className="rounded-full bg-red-50 px-2.5 py-1 text-[9px] font-bold text-[var(--color-negative-strong)]">최초 평가 필요 {unrecordedCount}개</span> : null}
+              {unrecordedCount > 0 ? <span className="rounded-full bg-red-50 px-2.5 py-1 text-[10.5px] font-bold text-[var(--color-negative-strong)]">최초 평가 필요 {unrecordedCount}개</span> : null}
             </div>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <Field label="평가월 *"><input name="month" type="month" required defaultValue={currentMonth} max={currentMonth} className={INPUT} /></Field>
@@ -169,7 +169,7 @@ export default function ChildAssetManager({
         ) : (
           <div className="mt-4 rounded-2xl border border-dashed border-[var(--color-border-strong)] bg-[var(--color-section)]/45 px-4 py-6 text-center">
             <p className="text-xs font-bold text-[var(--color-ink)]">먼저 자녀 운용 계좌를 등록해 주세요</p>
-            <p className="mt-1 text-[10px] text-[var(--color-muted)]">예금·CMA·MMF는 현금성, 주식·펀드는 투자로 구분하면 됩니다.</p>
+            <p className="mt-1 text-[11.5px] text-[var(--color-muted)]">예금·CMA·MMF는 현금성, 주식·펀드는 투자로 구분하면 됩니다.</p>
           </div>
         )}
 
@@ -177,9 +177,9 @@ export default function ChildAssetManager({
           <button type="button" onClick={() => setShowAccountForm(current => !current)} aria-expanded={showAccountForm} aria-controls="child-account-form" className="flex min-h-14 w-full items-center justify-between gap-4 bg-white px-4 py-3 text-left hover:bg-[var(--color-section)]">
             <span>
               <span className="block text-xs font-extrabold text-[var(--color-ink)]">자녀 운용 계좌 추가</span>
-              <span className="mt-0.5 block text-[9px] text-[var(--color-muted)]">새 계좌가 생겼을 때만 사용합니다.</span>
+              <span className="mt-0.5 block text-[10.5px] text-[var(--color-muted)]">새 계좌가 생겼을 때만 사용합니다.</span>
             </span>
-            <span className="rounded-full bg-[var(--color-primary-soft)] px-3 py-1 text-[9px] font-bold text-[var(--color-primary)]">{showAccountForm ? '접기 ↑' : '열기 ↓'}</span>
+            <span className="rounded-full bg-[var(--color-primary-soft)] px-3 py-1 text-[10.5px] font-bold text-[var(--color-primary)]">{showAccountForm ? '접기 ↑' : '열기 ↓'}</span>
           </button>
           {showAccountForm ? (
             <form id="child-account-form" ref={accountFormRef} action={submitAccount} className="border-t border-[var(--color-border)] bg-[var(--color-section)]/55 p-4">
@@ -198,11 +198,11 @@ export default function ChildAssetManager({
         {snapshots.length > 0 ? (
           <div className="mt-4 overflow-x-auto rounded-2xl border border-[var(--color-border)]">
             <table className="w-full min-w-[680px] text-left text-xs">
-              <thead className="border-b border-[var(--color-border)] bg-[var(--color-section)] text-[10px] text-[var(--color-muted)]"><tr><th className="px-4 py-3">평가월</th><th className="px-3 py-3">자녀</th><th className="px-3 py-3">계좌</th><th className="px-3 py-3 text-right">평가금액</th><th className="px-3 py-3">메모</th><th className="px-4 py-3" /></tr></thead>
+              <thead className="border-b border-[var(--color-border)] bg-[var(--color-section)] text-[11.5px] text-[var(--color-muted)]"><tr><th className="px-4 py-3">평가월</th><th className="px-3 py-3">자녀</th><th className="px-3 py-3">계좌</th><th className="px-3 py-3 text-right">평가금액</th><th className="px-3 py-3">메모</th><th className="px-4 py-3" /></tr></thead>
               <tbody className="divide-y divide-[var(--color-border)] bg-white">
                 {snapshots.map(snapshot => {
                   const account = accountById.get(snapshot.account_id)
-                  return <tr key={snapshot.id}><td className="whitespace-nowrap px-4 py-3 font-medium">{formatMonth(snapshot.month)}</td><td className="px-3 py-3 font-bold">{account ? childNameById.get(account.child_id) : '-'}</td><td className="px-3 py-3 text-[var(--color-muted)]">{account?.name ?? '삭제된 계좌'}</td><td className="whitespace-nowrap px-3 py-3 text-right font-bold tabular-nums text-[var(--color-primary)]">{formatKrw(snapshot.evaluation_amount)}</td><td className="max-w-[180px] truncate px-3 py-3 text-[var(--color-muted)]">{snapshot.memo || '-'}</td><td className="px-4 py-3 text-right"><button type="button" onClick={() => removeSnapshot(snapshot.id)} disabled={pending} className="text-[10px] text-[var(--color-subtle)] hover:text-[var(--color-negative)]">삭제</button></td></tr>
+                  return <tr key={snapshot.id}><td className="whitespace-nowrap px-4 py-3 font-medium">{formatMonth(snapshot.month)}</td><td className="px-3 py-3 font-bold">{account ? childNameById.get(account.child_id) : '-'}</td><td className="px-3 py-3 text-[var(--color-muted)]">{account?.name ?? '삭제된 계좌'}</td><td className="whitespace-nowrap px-3 py-3 text-right font-bold tabular-nums text-[var(--color-primary)]">{formatKrw(snapshot.evaluation_amount)}</td><td className="max-w-[180px] truncate px-3 py-3 text-[var(--color-muted)]">{snapshot.memo || '-'}</td><td className="px-4 py-3 text-right"><button type="button" onClick={() => removeSnapshot(snapshot.id)} disabled={pending} className="text-[11.5px] text-[var(--color-subtle)] hover:text-[var(--color-negative)]">삭제</button></td></tr>
                 })}
               </tbody>
             </table>
@@ -223,7 +223,7 @@ function latestSnapshots(snapshots: ChildAccountMonthlySnapshot[]) {
 
 function Metric({ label, value, detail, tone = 'default' }: { label: string; value: string; detail: string; tone?: 'default' | 'positive' | 'negative' }) {
   const color = tone === 'positive' ? 'text-[var(--color-positive-strong)]' : tone === 'negative' ? 'text-[var(--color-negative-strong)]' : 'text-[var(--color-primary)]'
-  return <article className="rounded-2xl border border-[var(--color-border)] bg-white p-4"><p className="text-xs font-extrabold text-[var(--color-ink)]">{label}</p><p className={`mt-2 text-xl font-bold tracking-[-0.03em] tabular-nums ${color}`}>{value}</p><p className="mt-1 text-[10px] text-[var(--color-muted)]">{detail}</p></article>
+  return <article className="rounded-2xl border border-[var(--color-border)] bg-white p-4"><p className="text-xs font-extrabold text-[var(--color-ink)]">{label}</p><p className={`mt-2 text-xl font-bold tracking-[-0.03em] tabular-nums ${color}`}>{value}</p><p className="mt-1 text-[11.5px] text-[var(--color-muted)]">{detail}</p></article>
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
