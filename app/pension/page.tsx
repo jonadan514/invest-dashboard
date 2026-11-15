@@ -3,7 +3,7 @@ import { isAccountActiveAtMonth, latestSnapshotsAtMonth, latestYearContributions
 import { getHouseholdContext } from '@/lib/supabase/server'
 import type { Account, AccountMonthlySnapshot } from '@/lib/types'
 
-import { calcDeductible, TOTAL_DEDUCT_LIMIT } from '@/lib/calc/pension'
+import { calcDeductible, PENSION_CREDIT_RATE, TOTAL_DEDUCT_LIMIT } from '@/lib/calc/pension'
 import { PensionYearEndPlan } from '@/components/PensionYearEnd'
 import { Stat, StatStrip } from '@/components/Stat'
 import { wonShort } from '@/lib/labels'
@@ -89,7 +89,7 @@ export default async function PensionPage() {
   const totalContribution = persons.reduce((sum, person) => sum + person.totalContribution, 0)
   const totalEvaluation = persons.reduce((sum, person) => sum + person.evaluationAmount, 0)
   const totalDeductible = persons.reduce((sum, person) => sum + calcDeductible(person.pensionContribution, person.irpContribution).total, 0)
-  const estimatedTaxCredit = Math.round(totalDeductible * 0.165)
+  const estimatedTaxCredit = Math.round(totalDeductible * PENSION_CREDIT_RATE)
   const yearlyData = buildYearlyData(accounts, snapshots, accountMap, currentMonth)
   const todayKst = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(now)
   const contributionRecordMonth = [...currentContributions.values()].reduce<string | null>(
@@ -112,7 +112,7 @@ export default async function PensionPage() {
         <StatStrip columns={3} label="연금 요약" className="mb-4">
           <Stat label="부부 누적 납입" value={wonShort(totalContribution)} exact={fmtKrw(totalContribution)} detail={`목표 ${wonShort(TOTAL_DEDUCT_LIMIT * 2)}`} tone="asset" />
           <Stat label="연금계좌 평가금액" value={wonShort(totalEvaluation)} exact={fmtKrw(totalEvaluation)} detail="최근 월말 기록 합계" tone="neutral" />
-          <Stat label="예상 세액공제" value={wonShort(estimatedTaxCredit)} exact={fmtKrw(estimatedTaxCredit)} detail="16.5% 단순 적용" tone="accent" wide />
+          <Stat label="예상 세액공제" value={wonShort(estimatedTaxCredit)} exact={fmtKrw(estimatedTaxCredit)} detail="세액공제율 13.2% 적용" tone="accent" wide />
         </StatStrip>
 
         <PensionYearEndPlan
@@ -195,7 +195,7 @@ function PersonCard({ person }: { person: PersonStats }) {
         <MiniStat label="IRP" value={person.irpContribution} />
         <MiniStat label="평가금액" value={person.evaluationAmount} />
       </div>
-      <p className="mt-4 text-[12.5px] text-[var(--color-muted)]">목표까지 {fmtKrw(Math.max(TOTAL_DEDUCT_LIMIT - deductible.total, 0))} · 예상 절세 {fmtKrw(Math.round(deductible.total * 0.165))}</p>
+      <p className="mt-4 text-[12.5px] text-[var(--color-muted)]">목표까지 {fmtKrw(Math.max(TOTAL_DEDUCT_LIMIT - deductible.total, 0))} · 예상 절세 {fmtKrw(Math.round(deductible.total * PENSION_CREDIT_RATE))}</p>
     </article>
   )
 }

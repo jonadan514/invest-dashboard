@@ -11,17 +11,16 @@ export function pensionProgress(pension: number, irp: number) {
   return calcDeductible(pension, irp).total / TOTAL_DEDUCT_LIMIT * 100
 }
 
-/** 총급여 5,500만 원 초과 기준 세액공제율(지방소득세 포함). 5,500만 원 이하는 16.5%. */
+/** 세액공제율(지방소득세 포함). 이 앱은 총급여 5,500만 원 초과 기준 13.2%로 계산한다. */
 export const PENSION_CREDIT_RATE = 0.132
-export const PENSION_CREDIT_RATE_LOW_INCOME = 0.165
 
 export interface PensionRoom {
   /** 올해 세액공제 한도까지 더 넣을 수 있는 금액(연금저축+IRP). */
   remaining: number
   /** remaining 가운데 연금저축으로 채워도 인정되는 최대 금액. 나머지는 IRP로 넣어야 한다. */
   pensionSavingsRoom: number
-  /** remaining을 모두 채웠을 때 추가로 받는 세액공제 예상액. 총급여에 따라 13.2%~16.5%. */
-  extraCredit: { low: number; high: number }
+  /** remaining을 모두 채웠을 때 추가로 받는 세액공제 예상액(13.2%). */
+  extraCredit: number
 }
 
 export function pensionRoom(pension: number, irp: number): PensionRoom {
@@ -31,7 +30,7 @@ export function pensionRoom(pension: number, irp: number): PensionRoom {
   return {
     remaining,
     pensionSavingsRoom,
-    extraCredit: { low: Math.round(remaining * PENSION_CREDIT_RATE), high: Math.round(remaining * PENSION_CREDIT_RATE_LOW_INCOME) },
+    extraCredit: Math.round(remaining * PENSION_CREDIT_RATE),
   }
 }
 
