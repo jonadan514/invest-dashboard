@@ -74,9 +74,9 @@ function LoanSimulator({ loan }: { loan: MortgageLoan }) {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
       <section className="app-card p-5" aria-label="대출 정보와 추가 상환 입력">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">{formatMonth(loan.balanceMonth)} 잔액</p>
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">{formatMonth(loan.balanceMonth)} 잔액</p>
         <h2 className="mt-1 text-xl font-bold tabular-nums text-[var(--color-ink)]">{krw(loan.balance)}</h2>
-        <p className="mt-1 text-[11px] text-[var(--color-muted)]">{loan.name}{loan.maturityDate ? ` · 약정 만기 ${loan.maturityDate}` : ''}</p>
+        <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{loan.name}{loan.maturityDate ? ` · 약정 만기 ${loan.maturityDate}` : ''}</p>
 
         <div className="mt-5 space-y-4">
           <Field label="연 금리" note={RATE_NOTE[loan.rateSource]} suffix="%">
@@ -92,11 +92,11 @@ function LoanSimulator({ loan }: { loan: MortgageLoan }) {
             </Field>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {LUMP_PRESETS.map(amount => (
-                <button key={amount} type="button" onClick={() => setLumpSum(amount)} className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${lumpSum === amount ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-[var(--color-border)] text-[var(--color-muted)]'}`}>
+                <button key={amount} type="button" onClick={() => setLumpSum(amount)} className={`rounded-full border px-2.5 py-1 text-[11.5px] font-semibold ${lumpSum === amount ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-[var(--color-border)] text-[var(--color-muted)]'}`}>
                   {compactKrw(amount)}
                 </button>
               ))}
-              {lumpSum > 0 ? <button type="button" onClick={() => setLumpSum(0)} className="px-2 text-[10px] text-[var(--color-subtle)]">지우기</button> : null}
+              {lumpSum > 0 ? <button type="button" onClick={() => setLumpSum(0)} className="px-2 text-[11.5px] text-[var(--color-subtle)]">지우기</button> : null}
             </div>
           </div>
           <Field label="매달 더 갚기" suffix="원">
@@ -110,11 +110,11 @@ function LoanSimulator({ loan }: { loan: MortgageLoan }) {
         {hasExtra ? (
           <ResultCard title="추가 상환하면" result={plan} startMonth={loan.balanceMonth} ready={ready} compare={base} highlight />
         ) : (
-          <div className="app-card border-dashed p-5 text-[11px] leading-5 text-[var(--color-muted)]">
+          <div className="app-card border-dashed p-5 text-[12.5px] leading-5 text-[var(--color-muted)]">
             ‘지금 한 번에 더 갚기’나 ‘매달 더 갚기’에 금액을 넣으면 완납 시점이 얼마나 당겨지고 이자를 얼마나 아끼는지 비교해 드려요.
           </div>
         )}
-        <p className="text-[10px] leading-4 text-[var(--color-subtle)]">
+        <p className="text-[11.5px] leading-4 text-[var(--color-subtle)]">
           원리금균등 상환을 가정한 참고용 계산입니다. 금리 변동, 중도상환수수료, 원금균등·거치 방식은 반영하지 않으니 실제 상환 전에는 은행 조회 결과를 확인하세요.
         </p>
       </section>
@@ -131,9 +131,9 @@ function ResultCard({ title, result, startMonth, ready, compare, highlight = fal
   highlight?: boolean
 }) {
   const body = !ready || !result
-    ? <p className="mt-3 text-[11px] text-[var(--color-muted)]">금리와 월 상환액을 입력하면 계산해요.</p>
+    ? <p className="mt-3 text-[12.5px] text-[var(--color-muted)]">금리와 월 상환액을 입력하면 계산해요.</p>
     : result.months === null
-      ? <p className="mt-3 text-[11px] leading-5 text-[var(--color-negative)]">월 상환액이 첫 달 이자({compactKrw(result.firstMonthInterest)})보다 작아 원금이 줄지 않아요. 월 상환액을 확인해 주세요.</p>
+      ? <p className="mt-3 text-[12.5px] leading-5 text-[var(--color-negative)]">월 상환액이 첫 달 이자({compactKrw(result.firstMonthInterest)})보다 작아 원금이 줄지 않아요. 월 상환액을 확인해 주세요.</p>
       : (
         <>
           <div className="mt-3 grid grid-cols-2 gap-3">
@@ -141,7 +141,7 @@ function ResultCard({ title, result, startMonth, ready, compare, highlight = fal
             <Stat label="앞으로 낼 이자" value={krw(result.totalInterest ?? 0)} />
           </div>
           {compare && compare.months !== null && compare.totalInterest !== null && result.totalInterest !== null ? (
-            <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg bg-[var(--color-positive-soft)] px-3 py-2.5 text-[11px]">
+            <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg bg-[var(--color-positive-soft)] px-3 py-2.5 text-[12.5px]">
               <p className="text-[var(--color-positive-strong)]">기간 <strong className="tabular-nums">{formatDuration(compare.months - result.months)}</strong> 단축</p>
               <p className="text-[var(--color-positive-strong)]">이자 <strong className="tabular-nums">{compactKrw(compare.totalInterest - result.totalInterest)}</strong> 절약</p>
             </div>
@@ -159,9 +159,9 @@ function ResultCard({ title, result, startMonth, ready, compare, highlight = fal
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="rounded-lg bg-[var(--color-canvas)]/75 px-3 py-2.5">
-      <p className="text-[10px] text-[var(--color-muted)]">{label}</p>
+      <p className="text-[11.5px] text-[var(--color-muted)]">{label}</p>
       <p className="mt-1 text-sm font-bold tabular-nums text-[var(--color-ink)]">{value}</p>
-      {sub ? <p className="mt-0.5 text-[10px] text-[var(--color-subtle)]">{sub}</p> : null}
+      {sub ? <p className="mt-0.5 text-[11.5px] text-[var(--color-subtle)]">{sub}</p> : null}
     </div>
   )
 }
@@ -174,7 +174,7 @@ function Field({ label, note, suffix, children }: { label: string; note?: string
         {children}
         <span className="text-xs text-[var(--color-muted)]">{suffix}</span>
       </div>
-      {note ? <p className="mt-1 text-[10px] text-[var(--color-subtle)]">{note}</p> : null}
+      {note ? <p className="mt-1 text-[11.5px] text-[var(--color-subtle)]">{note}</p> : null}
     </div>
   )
 }

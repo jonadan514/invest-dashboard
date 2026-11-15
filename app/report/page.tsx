@@ -5,7 +5,7 @@ import { DEFAULT_FINANCIAL_PLAN } from '@/lib/calc/budget'
 import { buildTrend, netWorthChangeDrivers, type ChangeDriver } from '@/lib/calc/home-insights'
 import { calcDeductible, PENSION_CREDIT_RATE, PENSION_CREDIT_RATE_LOW_INCOME, TOTAL_DEDUCT_LIMIT } from '@/lib/calc/pension'
 import { averageSavingsRate, buildSavingsSeries } from '@/lib/calc/savings'
-import { compactKrw, formatMonth, krw, signedCompactKrw } from '@/lib/labels'
+import { compactKrw, formatMonth, krw, signedCompactKrw, signedWonShort, wonShort } from '@/lib/labels'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import type {
   Account,
@@ -140,22 +140,22 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
       ) : (
         <div className="space-y-4">
           <StatStrip columns={4} label="순자산 요약">
-            <Stat label={startLabel(summary.start?.month ?? null, year)} value={krw(summary.start?.netWorth ?? 0)} tone="neutral" />
-            <Stat label={`${formatMonth(summary.end.month)} 순자산`} value={krw(summary.end.netWorth)} tone="net" />
-            <Stat label="한 해 변화" value={change === null ? '—' : `${change > 0 ? '+' : ''}${krw(change)}`} tone={toneOf(change)} />
+            <Stat label={startLabel(summary.start?.month ?? null, year)} value={wonShort(summary.start?.netWorth ?? 0)} exact={krw(summary.start?.netWorth ?? 0)} tone="neutral" />
+            <Stat label={`${formatMonth(summary.end.month)} 순자산`} value={wonShort(summary.end.netWorth)} exact={krw(summary.end.netWorth)} tone="net" />
+            <Stat label="한 해 변화" value={change === null ? '—' : signedWonShort(change)} exact={change === null ? undefined : krw(change)} tone={toneOf(change)} />
             <Stat label="증가율" value={changeRate === null ? '—' : `${changeRate > 0 ? '+' : ''}${changeRate.toFixed(1)}%`} tone={toneOf(changeRate)} />
           </StatStrip>
 
           <section className="app-card p-5 print:break-inside-avoid">
             <h2 className="text-base font-bold text-[var(--color-ink)]">월별 순자산 변화</h2>
-            <p className="mt-1 text-[11px] text-[var(--color-muted)]">직전 기록 달과 비교한 순자산 증감이에요.</p>
+            <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">직전 기록 달과 비교한 순자산 증감이에요.</p>
             <MonthlyChanges months={summary.months} />
           </section>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <section className="app-card p-5 print:break-inside-avoid">
               <h2 className="text-base font-bold text-[var(--color-ink)]">올해 순자산을 움직인 것</h2>
-              <p className="mt-1 text-[11px] text-[var(--color-muted)]">
+              <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">
                 {summary.start ? `${formatMonth(summary.start.month)} → ${formatMonth(summary.end.month)}` : ''} · 영향이 큰 순서
               </p>
               <DriverList drivers={drivers} />
@@ -163,7 +163,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
 
             <section className="app-card p-5 print:break-inside-avoid">
               <h2 className="text-base font-bold text-[var(--color-ink)]">저축과 상환</h2>
-              <p className="mt-1 text-[11px] text-[var(--color-muted)]">월간 기록 {yearBudgets.length}개월 기준</p>
+              <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">월간 기록 {yearBudgets.length}개월 기준</p>
               <dl className="mt-4 divide-y divide-[var(--color-border)] text-xs">
                 <Row label="배분한 저축액 합계" value={krw(totalSaving)} />
                 <Row label="평균 저축률" value={savingsAverage ? `${Math.round(savingsAverage.rate)}%` : monthlyIncome > 0 ? '—' : '설정에서 월 소득 입력 필요'} />
@@ -174,7 +174,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
 
             <section className="app-card p-5 print:break-inside-avoid">
               <h2 className="text-base font-bold text-[var(--color-ink)]">연금 납입과 세액공제</h2>
-              <p className="mt-1 text-[11px] text-[var(--color-muted)]">공제 한도 1인 {compactKrw(TOTAL_DEDUCT_LIMIT)} 기준</p>
+              <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">공제 한도 1인 {compactKrw(TOTAL_DEDUCT_LIMIT)} 기준</p>
               <dl className="mt-4 divide-y divide-[var(--color-border)] text-xs">
                 {pensionByOwner.map(person => (
                   <Row key={person.label} label={`${person.label} 납입`} value={`${krw(person.total)} (${Math.round(person.deductible / TOTAL_DEDUCT_LIMIT * 100)}%)`} />
@@ -208,7 +208,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
             </section>
           ) : null}
 
-          <p className="text-center text-[10px] text-[var(--color-subtle)]">월말에 직접 입력한 기록으로 만든 관리용 결산이에요. 세액공제·증여 금액은 참고치입니다.</p>
+          <p className="text-center text-[11.5px] text-[var(--color-subtle)]">월말에 직접 입력한 기록으로 만든 관리용 결산이에요. 세액공제·증여 금액은 참고치입니다.</p>
         </div>
       )}
     </div>
@@ -239,13 +239,13 @@ function MonthlyChanges({ months }: { months: { month: string; netWorth: number;
         const height = item.change === null ? 0 : Math.max(Math.abs(item.change) / max * 100, 3)
         return (
           <div key={item.month} className="flex flex-col items-center gap-1" title={`${formatMonth(item.month)} 순자산 ${krw(item.netWorth)}`}>
-            <span className={`text-[9px] font-semibold tabular-nums ${item.change === null ? 'text-[var(--color-subtle)]' : item.change >= 0 ? 'text-[var(--color-positive-strong)]' : 'text-[var(--color-negative)]'}`}>
+            <span className={`text-[10.5px] font-semibold tabular-nums ${item.change === null ? 'text-[var(--color-subtle)]' : item.change >= 0 ? 'text-[var(--color-positive-strong)]' : 'text-[var(--color-negative)]'}`}>
               {item.change === null ? '기준' : signedCompactKrw(item.change)}
             </span>
             <div className="flex h-20 w-full flex-col justify-end">
               <div className={`mx-auto w-full max-w-6 rounded-t-sm ${item.change !== null && item.change < 0 ? 'bg-[var(--color-negative)]' : 'bg-[var(--color-positive)]'}`} style={{ height: `${height}%` }} />
             </div>
-            <span className="text-[10px] text-[var(--color-muted)]">{Number(item.month.slice(5))}월</span>
+            <span className="text-[11.5px] text-[var(--color-muted)]">{Number(item.month.slice(5))}월</span>
           </div>
         )
       })}
@@ -264,7 +264,7 @@ function DriverList({ drivers }: { drivers: ChangeDriver[] }) {
       {visible.map(driver => (
         <li key={driver.key} className="flex items-center justify-between gap-3 py-2">
           <span className="flex min-w-0 items-center gap-1.5">
-            <span className="shrink-0 rounded-sm bg-[var(--color-section)] px-1.5 py-0.5 text-[9px] font-semibold text-[var(--color-muted)]">{SOURCE_LABEL[driver.source]}</span>
+            <span className="shrink-0 rounded-sm bg-[var(--color-section)] px-1.5 py-0.5 text-[10.5px] font-semibold text-[var(--color-muted)]">{SOURCE_LABEL[driver.source]}</span>
             <span className="truncate text-[var(--color-ink)]">{driver.label}</span>
           </span>
           <span className={`font-semibold tabular-nums ${driver.change >= 0 ? 'text-[var(--color-positive-strong)]' : 'text-[var(--color-negative)]'}`}>{signedCompactKrw(driver.change)}</span>

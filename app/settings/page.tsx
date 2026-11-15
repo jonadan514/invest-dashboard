@@ -51,17 +51,17 @@ function AutoBackupSection({ backups, error, cronConfigured }: { backups: Stored
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
         <div>
           <h2 className="text-sm font-semibold">자동 백업</h2>
-          <p className="mt-1 text-[10px] leading-5 text-[var(--color-muted)]">
+          <p className="mt-1 text-[11.5px] leading-5 text-[var(--color-muted)]">
             매주 월요일 새벽 3시경(한국 시간) 전체 데이터를 Supabase 비공개 저장공간에 보관하고, 최근 {BACKUP_KEEP_COUNT}개만 남깁니다.
             내려받은 파일은 위의 <strong>백업 복원</strong>으로 되돌릴 수 있습니다.
           </p>
         </div>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${cronConfigured ? 'bg-[var(--color-positive-soft)] text-[var(--color-positive-strong)]' : 'bg-[var(--color-negative-soft)] text-[var(--color-negative-strong)]'}`}>
+        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${cronConfigured ? 'bg-[var(--color-positive-soft)] text-[var(--color-positive-strong)]' : 'bg-[var(--color-negative-soft)] text-[var(--color-negative-strong)]'}`}>
           {cronConfigured ? '자동 실행 켜짐' : '자동 실행 설정 필요'}
         </span>
       </div>
       {!cronConfigured ? (
-        <p className="mt-3 rounded-lg bg-[var(--color-negative-soft)] px-3 py-2 text-[11px] leading-5 text-[var(--color-negative-strong)]">
+        <p className="mt-3 rounded-lg bg-[var(--color-negative-soft)] px-3 py-2 text-[12.5px] leading-5 text-[var(--color-negative-strong)]">
           Vercel 프로젝트 환경변수에 16자 이상의 <code>CRON_SECRET</code>을 추가하고 다시 배포해야 매주 자동으로 실행됩니다. 그 전에도 아래 버튼으로 직접 백업할 수 있습니다.
         </p>
       ) : null}
@@ -69,7 +69,7 @@ function AutoBackupSection({ backups, error, cronConfigured }: { backups: Stored
       <div className="mt-4"><BackupNowButton /></div>
 
       {error ? (
-        <p className="mt-4 text-[11px] text-[var(--color-negative)]">{error}</p>
+        <p className="mt-4 text-[12.5px] text-[var(--color-negative)]">{error}</p>
       ) : backups.length === 0 ? (
         <p className="mt-4 py-3 text-center text-xs text-[var(--color-muted)]">아직 저장된 백업이 없습니다.</p>
       ) : (
@@ -78,10 +78,10 @@ function AutoBackupSection({ backups, error, cronConfigured }: { backups: Stored
             <li key={backup.name} className="flex items-center justify-between gap-3 px-4 py-2.5 text-xs">
               <span className="tabular-nums">
                 {backupLabel(backup.name)}
-                {index === 0 ? <span className="ml-2 rounded-full bg-[var(--color-section)] px-2 py-0.5 text-[9px] font-semibold text-[var(--color-muted)]">최신</span> : null}
+                {index === 0 ? <span className="ml-2 rounded-full bg-[var(--color-section)] px-2 py-0.5 text-[10.5px] font-semibold text-[var(--color-muted)]">최신</span> : null}
               </span>
               <span className="flex items-center gap-3">
-                {backup.size !== null ? <span className="text-[10px] tabular-nums text-[var(--color-subtle)]">{Math.max(1, Math.round(backup.size / 1024))}KB</span> : null}
+                {backup.size !== null ? <span className="text-[11.5px] tabular-nums text-[var(--color-subtle)]">{Math.max(1, Math.round(backup.size / 1024))}KB</span> : null}
                 <a href={`/api/backups/${backup.name}`} className="font-semibold text-[var(--color-primary)] hover:underline">다운로드</a>
               </span>
             </li>

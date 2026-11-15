@@ -6,6 +6,7 @@ import type { Account, AccountMonthlySnapshot } from '@/lib/types'
 import { calcDeductible, TOTAL_DEDUCT_LIMIT } from '@/lib/calc/pension'
 import { PensionYearEndPlan } from '@/components/PensionYearEnd'
 import { Stat, StatStrip } from '@/components/Stat'
+import { wonShort } from '@/lib/labels'
 
 interface YearData {
   year: string
@@ -107,9 +108,9 @@ export default async function PensionPage() {
         </header>
 
         <StatStrip columns={3} label="연금 요약" className="mb-4">
-          <Stat label="부부 누적 납입" value={fmtKrw(totalContribution)} detail={`목표 ${fmtKrw(TOTAL_DEDUCT_LIMIT * 2)}`} tone="asset" />
-          <Stat label="연금계좌 평가금액" value={fmtKrw(totalEvaluation)} detail="최근 월말 기록 합계" tone="neutral" />
-          <Stat label="예상 세액공제" value={fmtKrw(estimatedTaxCredit)} detail="16.5% 단순 적용" tone="net" wide />
+          <Stat label="부부 누적 납입" value={wonShort(totalContribution)} exact={fmtKrw(totalContribution)} detail={`목표 ${wonShort(TOTAL_DEDUCT_LIMIT * 2)}`} tone="asset" />
+          <Stat label="연금계좌 평가금액" value={wonShort(totalEvaluation)} exact={fmtKrw(totalEvaluation)} detail="최근 월말 기록 합계" tone="neutral" />
+          <Stat label="예상 세액공제" value={wonShort(estimatedTaxCredit)} exact={fmtKrw(estimatedTaxCredit)} detail="16.5% 단순 적용" tone="accent" wide />
         </StatStrip>
 
         <PensionYearEndPlan
@@ -127,7 +128,7 @@ export default async function PensionPage() {
             <section className="app-card p-5">
               <div className="mb-5">
                 <h2 className="text-base font-bold text-[var(--color-ink)]">연도별 납입 기록</h2>
-                <p className="mt-1 text-[11px] text-[var(--color-muted)]">각 연도의 마지막 누적 납입액을 비교합니다.</p>
+                <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">각 연도의 마지막 누적 납입액을 비교합니다.</p>
               </div>
               <YearlyChart data={yearlyData} currentYear={currentYear} />
             </section>
@@ -145,12 +146,12 @@ export default async function PensionPage() {
                 <div key={account.id} className="grid grid-cols-1 gap-3 border-b border-[var(--color-border)] px-5 py-4 last:border-0 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-6">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${account.owner === 'spouse' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-semibold ${account.owner === 'spouse' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
                         {account.owner === 'spouse' ? '아내' : '나'}
                       </span>
                       <p className="truncate text-sm font-semibold text-[var(--color-ink)]">{account.name}</p>
                     </div>
-                    <p className="mt-1 text-[11px] text-[var(--color-muted)]">
+                    <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">
                       {account.type === 'irp' ? 'IRP' : '연금저축'}{active ? '' : ' · 비활성 계좌'}{latest ? ` · ${formatMonth(latest.month)} 평가` : ' · 평가 기록 없음'}
                     </p>
                   </div>
@@ -162,7 +163,7 @@ export default async function PensionPage() {
           </section>
         </div>
 
-        <p className="mt-3 text-center text-[11px] text-[var(--color-subtle)]">세액공제는 총급여와 개인 상황에 따라 달라질 수 있습니다. 화면의 금액은 관리용 참고치입니다.</p>
+        <p className="mt-3 text-center text-[12.5px] text-[var(--color-subtle)]">세액공제는 총급여와 개인 상황에 따라 달라질 수 있습니다. 화면의 금액은 관리용 참고치입니다.</p>
       </div>
     </>
   )
@@ -192,17 +193,17 @@ function PersonCard({ person }: { person: PersonStats }) {
         <MiniStat label="IRP" value={person.irpContribution} />
         <MiniStat label="평가금액" value={person.evaluationAmount} />
       </div>
-      <p className="mt-4 text-[11px] text-[var(--color-muted)]">목표까지 {fmtKrw(Math.max(TOTAL_DEDUCT_LIMIT - deductible.total, 0))} · 예상 절세 {fmtKrw(Math.round(deductible.total * 0.165))}</p>
+      <p className="mt-4 text-[12.5px] text-[var(--color-muted)]">목표까지 {fmtKrw(Math.max(TOTAL_DEDUCT_LIMIT - deductible.total, 0))} · 예상 절세 {fmtKrw(Math.round(deductible.total * 0.165))}</p>
     </article>
   )
 }
 
 function MiniStat({ label, value }: { label: string; value: number }) {
-  return <div className="rounded-lg bg-[var(--color-canvas)]/75 px-3 py-2.5"><p className="text-[10px] text-[var(--color-muted)]">{label}</p><p className="mt-1 truncate text-xs font-semibold tabular-nums text-[var(--color-ink)]">{compactKrw(value)}</p></div>
+  return <div className="rounded-lg bg-[var(--color-canvas)]/75 px-3 py-2.5"><p className="text-[11.5px] text-[var(--color-muted)]">{label}</p><p className="mt-1 truncate text-xs font-semibold tabular-nums text-[var(--color-ink)]">{compactKrw(value)}</p></div>
 }
 
 function ValueCell({ label, value }: { label: string; value: number }) {
-  return <div className="sm:text-right"><p className="text-[10px] text-[var(--color-muted)]">{label}</p><p className="mt-0.5 text-sm font-semibold tabular-nums text-[var(--color-ink)]">{value > 0 ? fmtKrw(value) : '-'}</p></div>
+  return <div className="sm:text-right"><p className="text-[11.5px] text-[var(--color-muted)]">{label}</p><p className="mt-0.5 text-sm font-semibold tabular-nums text-[var(--color-ink)]">{value > 0 ? fmtKrw(value) : '-'}</p></div>
 }
 
 function YearlyChart({ data, currentYear }: { data: YearData[]; currentYear: string }) {
@@ -215,16 +216,16 @@ function YearlyChart({ data, currentYear }: { data: YearData[]; currentYear: str
           const mePercent = point.total > 0 ? point.me / point.total * 100 : 0
           return (
             <div key={point.year} className="flex h-full flex-1 flex-col justify-end">
-              <div className="mb-1 text-center text-[10px] font-semibold tabular-nums text-[var(--color-muted)]">{compactKrw(point.total)}</div>
+              <div className="mb-1 text-center text-[11.5px] font-semibold tabular-nums text-[var(--color-muted)]">{compactKrw(point.total)}</div>
               <div className="mx-auto flex w-full max-w-20 flex-col justify-end overflow-hidden rounded-t-md" style={{ height: `${height}%` }}>
                 {point.spouse > 0 ? <div className="bg-[#6b3fa0]" style={{ height: `${100 - mePercent}%` }} /> : null}
-                {point.me > 0 ? <div className="bg-[#3f7fc3]" style={{ height: `${mePercent}%` }} /> : null}
+                {point.me > 0 ? <div className="bg-[var(--color-primary)]" style={{ height: `${mePercent}%` }} /> : null}
               </div>
             </div>
           )
         })}
       </div>
-      <div className="mt-2 flex gap-4 px-2">{data.map(point => <div key={point.year} className={`flex-1 text-center text-[10px] ${point.year === currentYear ? 'font-semibold text-[var(--color-ink)]' : 'text-[var(--color-subtle)]'}`}>{point.year}년</div>)}</div>
+      <div className="mt-2 flex gap-4 px-2">{data.map(point => <div key={point.year} className={`flex-1 text-center text-[11.5px] ${point.year === currentYear ? 'font-semibold text-[var(--color-ink)]' : 'text-[var(--color-subtle)]'}`}>{point.year}년</div>)}</div>
     </div>
   )
 }

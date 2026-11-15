@@ -3,23 +3,20 @@ import type { ReactNode } from 'react'
 export type StatTone = 'net' | 'asset' | 'liability' | 'positive' | 'negative' | 'neutral' | 'accent'
 
 const VALUE_COLOR: Record<StatTone, string> = {
-  net: 'text-[var(--color-positive-strong)]',
-  asset: 'text-[var(--color-primary)]',
-  liability: 'text-[var(--color-negative)]',
-  positive: 'text-[var(--color-positive-strong)]',
+  net: 'text-[var(--color-ink)]',
+  asset: 'text-[var(--color-ink)]',
+  liability: 'text-[var(--color-ink)]',
+  positive: 'text-[var(--color-positive)]',
   negative: 'text-[var(--color-negative)]',
   neutral: 'text-[var(--color-ink)]',
   accent: 'text-[var(--color-primary)]',
 }
 
-const ACCENT: Record<StatTone, string> = {
+const DOT: Partial<Record<StatTone, string>> = {
   net: 'var(--color-positive-bright)',
   asset: 'var(--color-primary)',
   liability: 'var(--color-negative)',
-  positive: 'var(--color-positive)',
-  negative: 'var(--color-negative)',
-  neutral: 'var(--color-border)',
-  accent: 'var(--color-primary)',
+  accent: 'var(--color-gold)',
 }
 
 /** 부호에 따라 증가는 positive, 감소는 negative, 0은 neutral. */
@@ -34,7 +31,7 @@ const COLUMNS = {
   4: 'grid-cols-2 lg:grid-cols-4',
 } as const
 
-/** 화면 상단 요약 숫자 띠. 모바일에서는 2열로 놓는다(3칸이면 마지막 칸에 wide를 준다). */
+/** 화면 상단 요약 숫자 카드 묶음. 모바일에서는 2열로 놓는다(3칸이면 마지막 칸에 wide를 준다). */
 export function StatStrip({ columns, label, className = '', children }: { columns: keyof typeof COLUMNS; label?: string; className?: string; children: ReactNode }) {
   return (
     <section aria-label={label} className={`metric-strip grid ${COLUMNS[columns]} ${className}`}>
@@ -43,25 +40,25 @@ export function StatStrip({ columns, label, className = '', children }: { column
   )
 }
 
-export function Stat({ label, value, detail, tone = 'neutral', wide = false }: {
+export function Stat({ label, value, detail, tone = 'neutral', wide = false, exact }: {
   label: string
   value: ReactNode
   detail?: ReactNode
   tone?: StatTone
   /** 모바일 2열에서 한 줄을 다 쓰게 한다. */
   wide?: boolean
+  /** 줄여 쓴 금액의 정확한 값. 마우스를 올리면 보인다. */
+  exact?: string
 }) {
+  const dot = DOT[tone]
   return (
-    <article
-      className={`metric-cell border-t-[3px] px-4 py-4 sm:px-5 lg:py-3.5 ${wide ? 'col-span-2 sm:col-span-1' : ''}`}
-      style={{ borderTopColor: ACCENT[tone] }}
-    >
+    <article className={`metric-cell px-4 py-4 sm:px-5 ${wide ? 'col-span-2 sm:col-span-1' : ''}`} title={exact}>
       <div className="flex items-center gap-2">
-        <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: ACCENT[tone] }} aria-hidden="true" />
-        <h2 className="truncate text-xs font-extrabold tracking-[-0.015em] text-[var(--color-ink)] sm:text-sm">{label}</h2>
+        {dot ? <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: dot }} aria-hidden="true" /> : null}
+        <h2 className="truncate text-[13px] font-semibold text-[var(--color-muted)]">{label}</h2>
       </div>
-      <p className={`stat-value mt-2 whitespace-nowrap text-lg font-bold tracking-[-0.035em] tabular-nums sm:text-2xl ${VALUE_COLOR[tone]}`}>{value}</p>
-      {detail ? <p className="mt-1 text-[11px] font-medium leading-4 text-[var(--color-muted)]">{detail}</p> : null}
+      <p className={`mt-2 whitespace-nowrap text-[21px] font-extrabold tracking-[-0.035em] tabular-nums sm:text-[26px] ${VALUE_COLOR[tone]}`}>{value}</p>
+      {detail ? <p className="mt-1.5 text-[12.5px] leading-5 text-[var(--color-muted)]">{detail}</p> : null}
     </article>
   )
 }

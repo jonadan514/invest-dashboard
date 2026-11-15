@@ -29,23 +29,23 @@ export default function NetWorthChart({ data }: { data: Point[] }) {
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap gap-4 text-[10px] text-[var(--color-muted)]">
-        <Legend color="#3f7fc3" label="자산" />
-        <Legend color="#dc3f4a" label="부채" />
-        <Legend color="#84cc16" label="순자산" />
+      <div className="mb-3 flex flex-wrap gap-4 text-[11.5px] text-[var(--color-muted)]">
+        <Legend color="#8fb3e3" label="자산" />
+        <Legend color="#e8a19c" label="부채" />
+        <Legend color="#284b7a" label="순자산" />
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="월별 자산, 부채, 순자산 추이">
         {ticks.map((tick, index) => (
           <g key={index}>
-            <line x1={LEFT} x2={W - RIGHT} y1={y(tick)} y2={y(tick)} stroke="#dfd5c2" strokeWidth="1" />
-            <text x={LEFT - 7} y={y(tick) + 3} textAnchor="end" fill="#8d8779" fontSize="9">{compactKrw(tick)}</text>
+            <line x1={LEFT} x2={W - RIGHT} y1={y(tick)} y2={y(tick)} stroke="#e9edf2" strokeWidth="1" />
+            <text x={LEFT - 7} y={y(tick) + 3} textAnchor="end" fill="#8b97a5" fontSize="11">{compactKrw(tick)}</text>
           </g>
         ))}
-        <polyline points={line('assets')} fill="none" stroke="#3f7fc3" strokeWidth="2.5" strokeLinejoin="round" />
-        <polyline points={line('liabilities')} fill="none" stroke="#dc3f4a" strokeWidth="2.5" strokeLinejoin="round" />
-        <polyline points={line('netWorth')} fill="none" stroke="#84cc16" strokeWidth="2.8" strokeLinejoin="round" />
+        <polyline points={line('assets')} fill="none" stroke="#8fb3e3" strokeWidth="2.5" strokeLinejoin="round" />
+        <polyline points={line('liabilities')} fill="none" stroke="#e8a19c" strokeWidth="2.5" strokeLinejoin="round" />
+        <polyline points={line('netWorth')} fill="none" stroke="#284b7a" strokeWidth="3.2" strokeLinejoin="round" />
         {data.map((point, index) => index % labelStep === 0 || index === data.length - 1 ? (
-          <text key={point.month} x={x(index)} y={H - 8} textAnchor={index === 0 ? 'start' : index === data.length - 1 ? 'end' : 'middle'} fill="#8d8779" fontSize="9">
+          <text key={point.month} x={x(index)} y={H - 8} textAnchor={index === 0 ? 'start' : index === data.length - 1 ? 'end' : 'middle'} fill="#8b97a5" fontSize="11">
             {point.month.slice(2).replace('-', '.')}
           </text>
         ) : null)}

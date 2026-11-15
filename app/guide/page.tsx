@@ -32,7 +32,7 @@ export default function GuidePage() {
       <section className="app-card overflow-hidden">
         <div className="border-b border-[var(--color-border)] bg-[var(--color-section)] px-5 py-4">
           <h2 className="text-base font-extrabold text-[var(--color-ink)]">월말 권장 순서</h2>
-          <p className="mt-1 text-[11px] text-[var(--color-muted)]">월말 또는 다음 달 초에 아래 네 단계만 진행하면 됩니다.</p>
+          <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">월말 또는 다음 달 초에 아래 네 단계만 진행하면 됩니다.</p>
         </div>
         <ol className="grid grid-cols-1 divide-y divide-[var(--color-border)] md:grid-cols-2 md:divide-y-0">
           {MONTHLY_STEPS.map(([number, title, description], index) => (
@@ -40,7 +40,7 @@ export default function GuidePage() {
               <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--color-primary-soft)] text-xs font-extrabold text-[var(--color-primary)]">{number}</span>
               <div>
                 <h3 className="text-sm font-extrabold text-[var(--color-ink)]">{title}</h3>
-                <p className="mt-1 text-[11px] leading-5 text-[var(--color-muted)]">{description}</p>
+                <p className="mt-1 text-[12.5px] leading-5 text-[var(--color-muted)]">{description}</p>
               </div>
             </li>
           ))}
@@ -126,8 +126,8 @@ export default function GuidePage() {
             '큰 변경 전에는 설정의 지금 백업하기를 누르거나 전체 백업을 내려받아 둡니다.',
           ]} />
           <div className="mt-3 flex flex-wrap gap-2">
-            <Link href="/settings" className="rounded-sm border border-[var(--color-border)] bg-white px-3 py-2 text-[11px] font-semibold text-[var(--color-primary)]">백업·설정 열기 →</Link>
-            <Link href="/" className="rounded-sm border border-[var(--color-border)] bg-white px-3 py-2 text-[11px] font-semibold text-[var(--color-ink)]">대시보드로 →</Link>
+            <Link href="/settings" className="rounded-sm border border-[var(--color-border)] bg-white px-3 py-2 text-[12.5px] font-semibold text-[var(--color-primary)]">백업·설정 열기 →</Link>
+            <Link href="/" className="rounded-sm border border-[var(--color-border)] bg-white px-3 py-2 text-[12.5px] font-semibold text-[var(--color-ink)]">대시보드로 →</Link>
           </div>
         </GuideCard>
       </div>
@@ -140,7 +140,7 @@ export default function GuidePage() {
           {TERMS.map(([term, description]) => (
             <div key={term} className="grid gap-1 px-5 py-4 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-4">
               <dt className="text-xs font-extrabold text-[var(--color-ink)]">{term}</dt>
-              <dd className="text-[11px] leading-5 text-[var(--color-muted)]">{description}</dd>
+              <dd className="text-[12.5px] leading-5 text-[var(--color-muted)]">{description}</dd>
             </div>
           ))}
         </dl>
@@ -164,9 +164,9 @@ function GuideCard({ title, tone, children }: { title: string; tone: 'blue' | 'g
 }
 
 function GuideList({ items }: { items: string[] }) {
-  return <ul className="space-y-2">{items.map(item => <li key={item} className="flex gap-2 text-[11px] leading-5 text-[var(--color-muted)]"><span aria-hidden="true" className="mt-[7px] size-1.5 shrink-0 rounded-full bg-[var(--color-primary)]" />{item}</li>)}</ul>
+  return <ul className="space-y-2">{items.map(item => <li key={item} className="flex gap-2 text-[12.5px] leading-5 text-[var(--color-muted)]"><span aria-hidden="true" className="mt-[7px] size-1.5 shrink-0 rounded-full bg-[var(--color-primary)]" />{item}</li>)}</ul>
 }
 
 function Notice({ children }: { children: React.ReactNode }) {
-  return <p className="mt-3 border-l-2 border-[var(--color-primary)] bg-[var(--color-section)] px-3 py-2 text-[10px] leading-5 text-[var(--color-muted)]">{children}</p>
+  return <p className="mt-3 border-l-2 border-[var(--color-primary)] bg-[var(--color-section)] px-3 py-2 text-[11.5px] leading-5 text-[var(--color-muted)]">{children}</p>
 }

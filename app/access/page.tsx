@@ -29,7 +29,7 @@ export default async function AccessPage({
           <div className="-mx-7 -mt-7 flex w-[calc(100%+3.5rem)] justify-center border-b border-white/15 bg-[var(--color-sidebar)] px-3 py-5 sm:-mx-8 sm:-mt-8 sm:w-[calc(100%+4rem)]">
             <BrandLockup size="large" priority />
           </div>
-          <p className="mt-5 text-[10px] font-bold tracking-[0.2em] text-[var(--color-accent)]">HOUSEHOLD FINANCE</p>
+          <p className="mt-5 text-[11.5px] font-bold tracking-[0.2em] text-[var(--color-accent)]">HOUSEHOLD FINANCE</p>
           <h1 className="mt-2 text-sm font-bold tracking-[-0.02em] text-[var(--color-ink)]">샘훈호 가족 자산관리</h1>
           <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">가족 자산을 안전하게 확인하려면<br />공용 비밀번호를 입력해 주세요.</p>
         </div>
@@ -64,7 +64,7 @@ export default async function AccessPage({
           </button>
         </form>
 
-        <p className="mt-5 text-center text-[11px] leading-5 text-[var(--color-subtle)]">인증은 이 기기에서 30일간 유지됩니다.</p>
+        <p className="mt-5 text-center text-[12.5px] leading-5 text-[var(--color-subtle)]">인증은 이 기기에서 30일간 유지됩니다.</p>
       </section>
     </main>
   )

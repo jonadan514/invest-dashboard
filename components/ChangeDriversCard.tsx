@@ -26,22 +26,20 @@ export default function ChangeDriversCard({ fromMonth, toMonth, totalChange, dri
     <article className="app-card flex flex-col p-5 lg:p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">
-            {fromMonth ? `${formatMonth(fromMonth)} → ${formatMonth(toMonth)}` : 'Monthly change'}
-          </p>
-          <h2 className="mt-1 text-sm font-bold text-[var(--color-ink)]">순자산 변화 요인</h2>
+          <h2 className="text-[15px] font-bold text-[var(--color-ink)]">순자산 변화 요인</h2>
+          <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{fromMonth ? `${formatMonth(fromMonth)} → ${formatMonth(toMonth)}` : '지난달과 비교'}</p>
         </div>
         {fromMonth ? (
-          <strong className={`shrink-0 text-lg tabular-nums ${toneClass(totalChange)}`}>{signedCompactKrw(totalChange)}</strong>
+          <strong className={`shrink-0 text-[22px] font-extrabold leading-none tracking-[-0.03em] tabular-nums ${toneClass(totalChange)}`}>{signedCompactKrw(totalChange)}</strong>
         ) : null}
       </div>
 
       {!fromMonth ? (
-        <p className="mt-4 rounded-lg bg-[var(--color-canvas)]/75 px-3 py-6 text-center text-[11px] leading-5 text-[var(--color-muted)]">
+        <p className="mt-4 rounded-lg bg-[var(--color-canvas)]/75 px-3 py-6 text-center text-[12.5px] leading-5 text-[var(--color-muted)]">
           두 달 이상 기록하면 어떤 계좌와 항목이<br />순자산을 움직였는지 보여 드려요.
         </p>
       ) : visible.length === 0 ? (
-        <p className="mt-4 rounded-lg bg-[var(--color-canvas)]/75 px-3 py-6 text-center text-[11px] text-[var(--color-muted)]">
+        <p className="mt-4 rounded-lg bg-[var(--color-canvas)]/75 px-3 py-6 text-center text-[12.5px] text-[var(--color-muted)]">
           지난달과 달라진 금액이 없어요.
         </p>
       ) : (
@@ -56,7 +54,7 @@ export default function ChangeDriversCard({ fromMonth, toMonth, totalChange, dri
       )}
 
       <div className="mt-auto pt-3 text-right">
-        <Link href="/net-worth" className="text-[10px] font-semibold text-[var(--color-primary)] hover:underline">밸런스 시트 보기 →</Link>
+        <Link href="/net-worth" className="text-[11.5px] font-semibold text-[var(--color-primary)] hover:underline">밸런스 시트 보기 →</Link>
       </div>
     </article>
   )
@@ -65,9 +63,9 @@ export default function ChangeDriversCard({ fromMonth, toMonth, totalChange, dri
 function DriverRow({ label, tag, change, max, muted = false }: { label: string; tag: string | null; change: number; max: number; muted?: boolean }) {
   const width = Math.max(Math.abs(change) / max * 100, change === 0 ? 0 : 2)
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 text-[11px]">
+    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 text-[12.5px]">
       <span className="flex min-w-0 items-center gap-1.5">
-        {tag ? <span className="shrink-0 rounded-sm bg-[var(--color-section)] px-1.5 py-0.5 text-[9px] font-semibold text-[var(--color-muted)]">{tag}</span> : null}
+        {tag ? <span className="shrink-0 rounded-sm bg-[var(--color-section)] px-1.5 py-0.5 text-[10.5px] font-semibold text-[var(--color-muted)]">{tag}</span> : null}
         <span className={`truncate ${muted ? 'text-[var(--color-muted)]' : 'font-semibold text-[var(--color-ink)]'}`}>{label}</span>
       </span>
       <span className={`text-right font-semibold tabular-nums ${toneClass(change)}`}>{signedCompactKrw(change)}</span>

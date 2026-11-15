@@ -35,17 +35,17 @@ export default function BalanceForm({ accountId, accountType, defaultDate }: Pro
   return (
     <form ref={formRef} action={handleSubmit} className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-3">
       <label>
-        <span className="block text-[10px] text-[#65758a] mb-1">기준일</span>
+        <span className="block text-[11.5px] text-[var(--color-muted)] mb-1">기준일</span>
         <input
           name="as_of"
           type="date"
           required
           defaultValue={defaultDate}
-          className="w-full text-xs bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
+          className="w-full text-xs bg-white border border-[var(--color-border)] rounded-lg px-3 py-2 focus:outline-none focus:border-[var(--color-primary)]"
         />
       </label>
       <label>
-        <span className="block text-[10px] text-[#65758a] mb-1">{valueLabel}</span>
+        <span className="block text-[11.5px] text-[var(--color-muted)] mb-1">{valueLabel}</span>
         <div className="flex items-center gap-2">
           <input
             name="value"
@@ -54,28 +54,28 @@ export default function BalanceForm({ accountId, accountType, defaultDate }: Pro
             step="1"
             required
             placeholder="0"
-            className="min-w-0 flex-1 text-xs bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 text-right focus:outline-none focus:border-[#3f7fc3]"
+            className="min-w-0 flex-1 text-xs bg-white border border-[var(--color-border)] rounded-lg px-3 py-2 text-right focus:outline-none focus:border-[var(--color-primary)]"
           />
-          <span className="text-xs text-[#65758a]">원</span>
+          <span className="text-xs text-[var(--color-muted)]">원</span>
         </div>
       </label>
       <label className="sm:col-span-2">
-        <span className="block text-[10px] text-[#65758a] mb-1">메모</span>
+        <span className="block text-[11.5px] text-[var(--color-muted)] mb-1">메모</span>
         <input
           name="memo"
           maxLength={500}
           placeholder={accountType === 'debt' ? '예: 8월 원리금 납부 후' : '예: 월말 잔액'}
-          className="w-full text-xs bg-white border border-[#d7e1eb] rounded-lg px-3 py-2 focus:outline-none focus:border-[#3f7fc3]"
+          className="w-full text-xs bg-white border border-[var(--color-border)] rounded-lg px-3 py-2 focus:outline-none focus:border-[var(--color-primary)]"
         />
       </label>
       <div className="sm:col-span-2 flex items-center justify-between gap-3">
-        <p aria-live="polite" className={`text-[10px] ${result?.kind === 'success' ? 'text-[#3f7fc3]' : 'text-red-600'}`}>
+        <p aria-live="polite" className={`text-[11.5px] ${result?.kind === 'success' ? 'text-[var(--color-primary)]' : 'text-red-600'}`}>
           {result?.message}
         </p>
         <button
           type="submit"
           disabled={pending}
-          className="text-xs bg-[#3f7fc3] hover:bg-[#326ba6] disabled:opacity-50 text-white rounded-lg px-4 py-2 font-semibold transition-colors"
+          className="text-xs bg-[var(--color-primary)] hover:bg-[var(--color-primary-strong)] disabled:opacity-50 text-white rounded-lg px-4 py-2 font-semibold transition-colors"
         >
           {pending ? '저장 중…' : '잔액 기록'}
         </button>

@@ -96,10 +96,10 @@ export default function Sidebar() {
       </div>
 
       <nav aria-label="주요 메뉴" className="sidebar-navigation flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3 pt-3">
-        <div className="space-y-3">
+        <div className="space-y-4">
           {NAV_GROUPS.map(group => (
             <div key={group.label ?? 'home'} role="group" aria-label={group.label ?? '대시보드'}>
-              {group.label ? <p className="mb-1 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-blue-100/35">{group.label}</p> : null}
+              {group.label ? <p className="mb-1.5 px-3 text-[11.5px] font-semibold tracking-[0.08em] text-white/38">{group.label}</p> : null}
               <div className="space-y-0.5">
                 {group.items.map(item => (
                   <NavItem key={item.href} item={item} pathname={pathname} onClose={() => setMobileOpen(false)} />
@@ -113,17 +113,17 @@ export default function Sidebar() {
           <summary className="cursor-pointer text-xs font-semibold text-blue-50/85">월말 기록 가이드</summary>
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-bold text-white">월말 기록 순서</p>
-            <span className="rounded-full bg-blue-300/15 px-2 py-0.5 text-[9px] font-semibold text-blue-100/75">월 1회</span>
+            <span className="rounded-full bg-blue-300/15 px-2 py-0.5 text-[10.5px] font-semibold text-blue-100/75">월 1회</span>
           </div>
-          <ol className="mt-3 space-y-2.5 text-[10px] text-blue-50/65">
+          <ol className="mt-3 space-y-2.5 text-[11.5px] text-blue-50/65">
             <li className="flex items-center gap-2"><span className="grid h-5 w-5 place-items-center rounded-full bg-white/10 font-bold text-blue-100">1</span>공금과 계좌 잔액 기록</li>
             <li className="flex items-center gap-2"><span className="grid h-5 w-5 place-items-center rounded-full bg-white/10 font-bold text-blue-100">2</span>자산·부채 변동 확인</li>
             <li className="flex items-center gap-2"><span className="grid h-5 w-5 place-items-center rounded-full bg-white/10 font-bold text-blue-100">3</span>연금 납입 현황 확인</li>
           </ol>
-          <Link href="/budget" onClick={() => setMobileOpen(false)} className="mt-3 flex min-h-9 items-center justify-center rounded-sm border border-blue-200/20 bg-blue-400/20 text-[11px] font-bold text-white transition-colors hover:bg-blue-400/30">
+          <Link href="/budget" onClick={() => setMobileOpen(false)} className="mt-3 flex min-h-9 items-center justify-center rounded-sm border border-blue-200/20 bg-blue-400/20 text-[12.5px] font-bold text-white transition-colors hover:bg-blue-400/30">
             이번 달 기록하기
           </Link>
-          <Link href="/guide" onClick={() => setMobileOpen(false)} className="mt-2 flex min-h-8 items-center justify-center text-[10px] font-semibold text-blue-100/70 hover:text-white">
+          <Link href="/guide" onClick={() => setMobileOpen(false)} className="mt-2 flex min-h-8 items-center justify-center text-[11.5px] font-semibold text-blue-100/70 hover:text-white">
             전체 사용법 보기 →
           </Link>
         </details>
@@ -137,7 +137,7 @@ export default function Sidebar() {
           >
             <ExternalLink className="w-5" size={15} aria-hidden="true" />
             AlphaDesk
-            <span className="ml-auto text-[10px] text-white/30">외부</span>
+            <span className="ml-auto text-[11.5px] text-white/30">외부</span>
           </a>
           <form action="/api/access/lock" method="post">
             <button
@@ -152,7 +152,7 @@ export default function Sidebar() {
       </nav>
 
       <div className="shrink-0 border-t border-white/10 px-3 py-3">
-        <p className="text-center text-[9px] text-white/30">월 1회 기록 · 가족 전용</p>
+        <p className="text-center text-[10.5px] text-white/30">월 1회 기록 · 가족 전용</p>
       </div>
     </aside>
   )
@@ -243,22 +243,17 @@ function NavItem({
       onFocus={() => setFullPrefetch(true)}
       onBlur={() => setFullPrefetch(false)}
       onClick={onClose}
-      className={`relative flex min-h-12 items-center gap-3 rounded-sm border-l-2 px-3 transition-colors ${
+      title={item.description}
+      className={`relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-[14px] transition-colors ${
         active
-          ? 'border-l-[#b99a62] bg-white/10 font-semibold text-white'
-          : 'border-l-transparent text-blue-50/65 hover:bg-white/[0.06] hover:text-white'
+          ? 'bg-white/[0.11] font-bold text-white shadow-[inset_3px_0_0_var(--color-gold)]'
+          : 'font-medium text-white/65 hover:bg-white/[0.06] hover:text-white'
       }`}
       aria-current={active ? 'page' : undefined}
     >
       <NavigationPending />
-      <span className={`grid h-8 w-8 shrink-0 place-items-center border text-blue-100 ${active ? 'border-[#b99a62]/60 bg-[#b99a62]/15 text-white' : 'border-white/10 bg-white/[0.035]'}`} aria-hidden="true">
-        <Icon size={16} strokeWidth={active ? 2.2 : 1.7} />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className={`block text-sm font-bold tracking-[-0.01em] ${active ? 'text-white' : 'text-blue-50/90'}`}>{item.label}</span>
-        <span className={`mt-0.5 block truncate text-[10px] font-normal ${active ? 'text-blue-100/70' : 'text-blue-100/40'}`}>{item.description}</span>
-      </span>
-      {active ? <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#c9ac73]" aria-hidden="true" /> : null}
+      <Icon size={18} strokeWidth={active ? 2.2 : 1.7} className={active ? 'text-[var(--color-gold)]' : 'text-white/55'} aria-hidden="true" />
+      <span className="min-w-0 flex-1 truncate tracking-[-0.01em]">{item.label}</span>
     </Link>
   )
 }

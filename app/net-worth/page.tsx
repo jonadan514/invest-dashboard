@@ -3,7 +3,7 @@ import { buildAccountTotalTrend, isAccountActiveAtMonth, latestSnapshotsAtMonth 
 import { DEFAULT_FINANCIAL_PLAN } from '@/lib/calc/budget'
 import type { Account, AccountMonthlySnapshot, FinancialPlanSettingsRow, MonthlyBudget, NetWorthItem, NetWorthSnapshot } from '@/lib/types'
 import { Stat, StatStrip } from '@/components/Stat'
-import { krw as formatWon } from '@/lib/labels'
+import { krw as formatWon, signedWonShort, wonShort } from '@/lib/labels'
 import NetWorthChart from './NetWorthChart'
 import NetWorthManager from './NetWorthManager'
 
@@ -136,7 +136,7 @@ export default async function NetWorthPage({
                 <SummaryCard label="순자산" value={current?.netWorth ?? 0} change={netWorthChange} tone="net" hasPrevious={Boolean(previous)} wide />
               </StatStrip>
               {current && current.month !== month ? (
-                <p className="text-right text-[11px] text-[var(--color-muted)]">상단 합계는 가장 최근 저장 기록인 {current.month.replace('-', '년 ')}월 기준입니다.</p>
+                <p className="text-right text-[12.5px] text-[var(--color-muted)]">상단 합계는 가장 최근 저장 기록인 {current.month.replace('-', '년 ')}월 기준입니다.</p>
               ) : null}
 
               {current && previous ? (
@@ -144,7 +144,7 @@ export default async function NetWorthPage({
                   <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h2 className="text-base font-bold text-[var(--color-ink)]">이번 달 순자산 변동</h2>
-                      <p className="mt-1 text-[11px] text-[var(--color-muted)]">{previous.month} 월말과 {current.month} 월말의 실제 잔액 비교</p>
+                      <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{previous.month} 월말과 {current.month} 월말의 실제 잔액 비교</p>
                     </div>
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${netWorthChange > 0 ? 'bg-[var(--color-positive-soft)] text-[var(--color-positive-strong)]' : netWorthChange < 0 ? 'bg-[var(--color-negative-soft)] text-[var(--color-negative-strong)]' : 'bg-[var(--color-section)] text-[var(--color-muted)]'}`}>
                       순자산 {signedKrw(netWorthChange)}
@@ -167,7 +167,7 @@ export default async function NetWorthPage({
                 <section className="app-card p-4 sm:p-5">
                   <div className="mb-4">
                     <h2 className="text-base font-bold text-[var(--color-ink)]">월별 순자산 추이</h2>
-                    <p className="mt-1 text-[11px] text-[var(--color-muted)]">항목별 월말 기록을 기준으로 계산합니다.</p>
+                    <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">항목별 월말 기록을 기준으로 계산합니다.</p>
                   </div>
                   <NetWorthChart data={trend} />
                 </section>
@@ -200,13 +200,14 @@ function SummaryCard({ label, value, change, tone, hasPrevious, wide = false }: 
   const percent = hasPrevious && Math.abs(previousValue) > 0 ? balanceChange / Math.abs(previousValue) * 100 : 0
   const percentText = `${percent > 0 ? '+' : ''}${percent.toFixed(1)}%`
   const changeText = tone === 'liability'
-    ? `전월 대비 ${change > 0 ? `${krw(change)} 감소` : change < 0 ? `${krw(-change)} 증가` : '변동 없음'} (${percentText})`
-    : `전월 대비 ${signedKrw(change)} (${percentText})`
+    ? `전월 대비 ${change > 0 ? `${wonShort(change)} 감소` : change < 0 ? `${wonShort(-change)} 증가` : '변동 없음'} (${percentText})`
+    : `전월 대비 ${signedWonShort(change)} (${percentText})`
   const favorable = change > 0
   return (
     <Stat
       label={label}
-      value={krw(value)}
+      value={wonShort(value)}
+      exact={krw(value)}
       tone={tone}
       wide={wide}
       detail={(
@@ -221,9 +222,9 @@ function SummaryCard({ label, value, change, tone, hasPrevious, wide = false }: 
 function FlowItem({ label, value, description }: { label: string; value: number; description: string }) {
   return (
     <div className="rounded-xl bg-white/60 px-3 py-3 sm:px-4">
-      <p className="text-[11px] text-[var(--color-muted)]">{label}</p>
+      <p className="text-[12.5px] text-[var(--color-muted)]">{label}</p>
       <p className={`mt-1 whitespace-nowrap text-sm font-bold tabular-nums sm:text-base ${value > 0 ? 'text-[var(--color-positive-strong)]' : value < 0 ? 'text-[var(--color-negative)]' : ''}`}>{signedKrw(value)}</p>
-      <p className="mt-1 text-[10px] text-[var(--color-subtle)]">{description}</p>
+      <p className="mt-1 text-[11.5px] text-[var(--color-subtle)]">{description}</p>
     </div>
   )
 }

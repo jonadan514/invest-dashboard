@@ -68,7 +68,7 @@ export default function AccountForm({ compact = false }: { compact?: boolean }) 
       </div>
 
       {!compact ? (
-        <p className="rounded-lg bg-[var(--color-canvas)] px-3 py-2 text-[10px] leading-5 text-[var(--color-muted)]">
+        <p className="rounded-lg bg-[var(--color-canvas)] px-3 py-2 text-[11.5px] leading-5 text-[var(--color-muted)]">
           현금·투자·연금 계좌는 금융계좌로, 부동산·보증금·대출은 별도 자산·부채 항목으로 관리합니다.
         </p>
       ) : null}

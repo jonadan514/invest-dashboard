@@ -14,14 +14,13 @@ export default function SavingsCard({ points, average, hasIncome }: Props) {
   if (!hasIncome || !latest) {
     return (
       <article className="app-card flex flex-col border-dashed p-5 lg:p-4">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">Savings rate</p>
-        <h2 className="mt-1 text-sm font-bold text-[var(--color-ink)]">저축률</h2>
-        <p className="mt-3 text-[11px] leading-5 text-[var(--color-muted)]">
+        <h2 className="text-[15px] font-bold text-[var(--color-ink)]">저축률</h2>
+        <p className="mt-3 text-[12.5px] leading-5 text-[var(--color-muted)]">
           {!hasIncome
             ? '설정에 월 소득을 입력하면 월간 기록으로 저축률과 추이를 계산해 드려요.'
             : '월간 기록을 저장하면 저축률이 표시돼요.'}
         </p>
-        <Link href={!hasIncome ? '/settings' : '/budget'} className="mt-auto w-fit pt-4 text-[11px] font-semibold text-[var(--color-primary)] hover:underline">
+        <Link href={!hasIncome ? '/settings' : '/budget'} className="mt-auto w-fit pt-4 text-[12.5px] font-semibold text-[var(--color-primary)] hover:underline">
           {!hasIncome ? '월 소득 입력하기' : '월간 기록하기'} →
         </Link>
       </article>
@@ -35,16 +34,16 @@ export default function SavingsCard({ points, average, hasIncome }: Props) {
     <article className="app-card flex flex-col p-5 lg:p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">{formatMonth(latest.month)} 기록</p>
-          <h2 className="mt-1 text-sm font-bold text-[var(--color-ink)]">저축률</h2>
+          <h2 className="text-[15px] font-bold text-[var(--color-ink)]">저축률</h2>
+          <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{formatMonth(latest.month)} 기록</p>
         </div>
-        <strong className="text-lg tabular-nums text-[var(--color-ink)]">{latest.rate === null ? '—' : `${Math.round(latest.rate)}%`}</strong>
+        <strong className="text-[28px] font-extrabold leading-none tracking-[-0.03em] tabular-nums text-[var(--color-ink)]">{latest.rate === null ? '—' : `${Math.round(latest.rate)}%`}</strong>
       </div>
-      <p className="mt-3 text-[11px] text-[var(--color-muted)]">
+      <p className="mt-3 text-[12.5px] text-[var(--color-muted)]">
         소득 {compactKrw(latest.income)} 중 <strong className="tabular-nums text-[var(--color-ink)]">{compactKrw(latest.saving)}</strong> 배분
       </p>
       {latest.principal > 0 && latest.rateWithPrincipal !== null ? (
-        <p className="mt-0.5 text-[10px] text-[var(--color-subtle)]">주담대 정기 원금 포함 시 {Math.round(latest.rateWithPrincipal)}%</p>
+        <p className="mt-0.5 text-[11.5px] text-[var(--color-subtle)]">주담대 정기 원금 포함 시 {Math.round(latest.rateWithPrincipal)}%</p>
       ) : null}
 
       <div className="mt-4 flex h-16 items-end gap-1.5 lg:mt-3" role="img" aria-label={`최근 ${recent.length}개월 저축률`}>
@@ -57,12 +56,12 @@ export default function SavingsCard({ points, average, hasIncome }: Props) {
                 title={`${formatMonth(point.month)} ${point.rate === null ? '-' : `${Math.round(point.rate)}%`}`}
               />
             </div>
-            <span className="text-[9px] tabular-nums text-[var(--color-subtle)]">{Number(point.month.slice(5))}월</span>
+            <span className="text-[10.5px] tabular-nums text-[var(--color-subtle)]">{Number(point.month.slice(5))}월</span>
           </div>
         ))}
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-3 text-[11px]">
+      <div className="mt-3 flex items-center justify-between gap-3 text-[12.5px]">
         <span className="text-[var(--color-muted)]">{average ? `최근 ${average.months}개월 평균 ${Math.round(average.rate)}%` : ''}</span>
         <Link href="/budget" className="shrink-0 font-semibold text-[var(--color-primary)] hover:underline">기록 →</Link>
       </div>

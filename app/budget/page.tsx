@@ -121,7 +121,7 @@ export default async function BudgetPage({
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-[#edf3f8] text-[#65758a]">
+                  <tr className="border-b border-[var(--color-section)] text-[var(--color-muted)]">
                     <th className="whitespace-nowrap px-4 py-2.5 text-left font-medium">월</th>
                     <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">비상금</th>
                     <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">공금</th>
@@ -136,23 +136,23 @@ export default async function BudgetPage({
                     const [year, monthNumber] = record.month.split('-')
                     const emergencyFund = Number(record.cash_balance)
                     return (
-                      <tr key={record.id} className={`border-b border-[#f3f7fb] last:border-0 ${record.month === month ? 'bg-blue-50' : ''}`}>
-                        <td className="whitespace-nowrap px-4 py-3 font-medium text-[#172233]">
+                      <tr key={record.id} className={`border-b border-[var(--color-section)] last:border-0 ${record.month === month ? 'bg-blue-50' : ''}`}>
+                        <td className="whitespace-nowrap px-4 py-3 font-medium text-[var(--color-ink)]">
                           {year}년 {Number(monthNumber)}월
-                          {record.month === month ? <span className="ml-1 text-[10px] text-[#3f7fc3]">●</span> : null}
+                          {record.month === month ? <span className="ml-1 text-[11.5px] text-[var(--color-primary)]">●</span> : null}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-3 text-right text-[#172233]">{formatKrw(record.cash_balance)}</td>
-                        <td className="whitespace-nowrap px-3 py-3 text-right text-[#172233]">{formatKrw(record.joint_savings)}</td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-ink)]">{formatKrw(record.cash_balance)}</td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-ink)]">{formatKrw(record.joint_savings)}</td>
                         <td className="whitespace-nowrap px-3 py-3 text-right text-[#6b3fa0]">
                           {record.bonus_to_plan > 0 ? formatKrw(record.bonus_to_plan) : '-'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-3 text-right text-[#172233]">{Number(record.mortgage_principal) + Number(record.mortgage_extra_principal) > 0 ? formatKrw(Number(record.mortgage_principal) + Number(record.mortgage_extra_principal)) : '-'}</td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-ink)]">{Number(record.mortgage_principal) + Number(record.mortgage_extra_principal) > 0 ? formatKrw(Number(record.mortgage_principal) + Number(record.mortgage_extra_principal)) : '-'}</td>
                         <td className="px-3 py-3 text-center">
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${emergencyFund >= settings.stage2Target ? 'bg-blue-100 text-blue-700' : emergencyFund >= settings.stage1Target ? 'bg-amber-100 text-amber-700' : 'bg-[#edf3f8] text-[#65758a]'}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-medium ${emergencyFund >= settings.stage2Target ? 'bg-blue-100 text-blue-700' : emergencyFund >= settings.stage1Target ? 'bg-amber-100 text-amber-700' : 'bg-[var(--color-section)] text-[var(--color-muted)]'}`}>
                             {emergencyFund >= settings.stage2Target ? '5천만 달성' : emergencyFund >= settings.stage1Target ? '3천만 달성' : '달성 전'}
                           </span>
                         </td>
-                        <td className="max-w-[160px] truncate px-3 py-3 text-[#65758a]">{record.memo || '-'}</td>
+                        <td className="max-w-[160px] truncate px-3 py-3 text-[var(--color-muted)]">{record.memo || '-'}</td>
                       </tr>
                     )
                   })}

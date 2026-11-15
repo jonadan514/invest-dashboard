@@ -148,7 +148,7 @@ export default function NetWorthManager({
               <span aria-hidden="true" className={`grid size-7 shrink-0 place-items-center ${active ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]'}`}><Icon size={17} strokeWidth={active ? 2.2 : 1.7} /></span>
               <span className="min-w-0">
                 <span className={`block text-xs font-extrabold ${active ? 'text-[var(--color-primary)]' : 'text-[var(--color-ink)]'}`}>{item.label}</span>
-                <span className="mt-0.5 hidden truncate text-[9px] text-[var(--color-muted)] sm:block">{item.description}</span>
+                <span className="mt-0.5 hidden truncate text-[10.5px] text-[var(--color-muted)] sm:block">{item.description}</span>
               </span>
             </button>
           )
@@ -157,7 +157,7 @@ export default function NetWorthManager({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <label htmlFor="net-worth-month" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
+          <label htmlFor="net-worth-month" className="mb-1 block text-[12.5px] font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
             기준 월
           </label>
           <select
@@ -184,7 +184,7 @@ export default function NetWorthManager({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-bold text-[var(--color-ink)]">금융계좌</h2>
-              <p className="mt-1 text-[11px] text-[var(--color-muted)]">현금·MMF·주식·연금 계좌는 여기서 한 번 등록하고, 월말 금액은 월간 기록에서 갱신합니다.</p>
+              <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">현금·MMF·주식·연금 계좌는 여기서 한 번 등록하고, 월말 금액은 월간 기록에서 갱신합니다.</p>
             </div>
             <p className="text-sm font-bold tabular-nums text-[var(--color-primary)]">{formatKrw(investmentValue)}</p>
           </div>
@@ -200,14 +200,14 @@ export default function NetWorthManager({
                     <div className="flex flex-wrap items-center gap-2">
                       <OwnerBadge owner={account.owner} />
                       <Link href={`/accounts/${account.id}`} className="truncate text-xs font-semibold text-[var(--color-ink)] hover:text-[var(--color-primary)]">{account.name}</Link>
-                      {account.is_emergency_fund ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">비상금</span> : null}
+                      {account.is_emergency_fund ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11.5px] font-semibold text-amber-700">비상금</span> : null}
                     </div>
-                    <p className="mt-1 text-[11px] text-[var(--color-muted)]">{accountTypeLabel(account.type)}{account.broker ? ` · ${account.broker}` : ''}</p>
+                    <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{accountTypeLabel(account.type)}{account.broker ? ` · ${account.broker}` : ''}</p>
                   </div>
                   <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
                     <div className="text-right">
                       <p className="text-xs font-semibold tabular-nums text-[var(--color-ink)]">{formatKrw(latest?.amount ?? 0)}</p>
-                      <p className="mt-0.5 text-[10px] text-[var(--color-subtle)]">{latest ? `${latest.month.replace('-', '년 ')}월 기록` : '월말 기록 없음'}</p>
+                      <p className="mt-0.5 text-[11.5px] text-[var(--color-subtle)]">{latest ? `${latest.month.replace('-', '년 ')}월 기록` : '월말 기록 없음'}</p>
                     </div>
                     <DeleteButton id={account.id} name={account.name} />
                   </div>
@@ -233,11 +233,11 @@ export default function NetWorthManager({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-base font-bold text-[var(--color-ink)]">금융계좌 월말 현황</h2>
-                <p className="mt-1 text-[11px] text-[var(--color-muted)]">이 금액은 월간 기록에서 입력하며, 밸런스 시트에 자동으로 반영됩니다.</p>
+                <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">이 금액은 월간 기록에서 입력하며, 밸런스 시트에 자동으로 반영됩니다.</p>
               </div>
               <div className="text-right">
                 <p className="text-sm font-bold tabular-nums text-[var(--color-primary)]">{formatKrw(investmentValue)}</p>
-                <Link href={`/budget?month=${month}`} className="mt-1 inline-block text-[11px] font-semibold text-[var(--color-primary)] hover:underline">월간 기록에서 수정 →</Link>
+                <Link href={`/budget?month=${month}`} className="mt-1 inline-block text-[12.5px] font-semibold text-[var(--color-primary)] hover:underline">월간 기록에서 수정 →</Link>
               </div>
             </div>
           </div>
@@ -251,13 +251,13 @@ export default function NetWorthManager({
                       <div className="flex min-w-0 items-center gap-2">
                         <OwnerBadge owner={account.owner} />
                         <p className="truncate text-xs font-semibold text-[var(--color-ink)]">{account.name}</p>
-                        {account.is_emergency_fund ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">비상금</span> : null}
+                        {account.is_emergency_fund ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11.5px] font-semibold text-amber-700">비상금</span> : null}
                       </div>
-                      <p className="mt-1 text-[11px] text-[var(--color-muted)]">{accountTypeLabel(account.type)}{account.broker ? ` · ${account.broker}` : ''}</p>
+                      <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{accountTypeLabel(account.type)}{account.broker ? ` · ${account.broker}` : ''}</p>
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="text-xs font-semibold tabular-nums text-[var(--color-ink)]">{formatKrw(latest?.amount ?? 0)}</p>
-                      <p className="mt-0.5 text-[10px] text-[var(--color-subtle)]">{latest ? `${latest.month.replace('-', '년 ')}월 기록` : '월말 기록 없음'}</p>
+                      <p className="mt-0.5 text-[11.5px] text-[var(--color-subtle)]">{latest ? `${latest.month.replace('-', '년 ')}월 기록` : '월말 기록 없음'}</p>
                     </div>
                   </div>
                 )
@@ -276,12 +276,12 @@ export default function NetWorthManager({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-bold text-[var(--color-ink)]">계좌 외 자산·부채 월말 기록</p>
-                <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">
+                <p className="mt-0.5 text-[12.5px] text-[var(--color-muted)]">
                   부동산·보증금·차량·대출 잔액을 입력합니다.
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] text-[var(--color-muted)]">자동 반영 금융계좌{investmentRecordedMonth ? ` · ${investmentRecordedMonth.replace('-', '년 ')}월` : ''}</p>
+                <p className="text-[11.5px] text-[var(--color-muted)]">자동 반영 금융계좌{investmentRecordedMonth ? ` · ${investmentRecordedMonth.replace('-', '년 ')}월` : ''}</p>
                 <p className="mt-0.5 text-sm font-bold tabular-nums text-[var(--color-primary)]">{formatKrw(investmentValue)}</p>
               </div>
             </div>
@@ -291,7 +291,7 @@ export default function NetWorthManager({
             <SnapshotGroup title="부채" description="현재 남아 있는 원금 잔액" items={liabilities} amounts={amounts} setAmounts={setAmounts} onToggle={toggleItem} liability />
           </div>
           <div className="flex flex-col gap-3 border-t border-[var(--color-border)] bg-white/45 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <p className="text-[11px] leading-5 text-[var(--color-muted)]">금융계좌는 월간 기록에서, 부동산·보증금·대출 등은 이 화면에서 월말 잔액을 관리합니다.</p>
+            <p className="text-[12.5px] leading-5 text-[var(--color-muted)]">금융계좌는 월간 기록에서, 부동산·보증금·대출 등은 이 화면에서 월말 잔액을 관리합니다.</p>
             <button type="submit" disabled={pending} className="min-h-10 shrink-0 rounded-xl bg-[var(--color-primary)] px-5 text-xs font-semibold text-white disabled:opacity-50">
               {pending ? '저장 중…' : '이달 월말 기록 저장'}
             </button>
@@ -309,7 +309,7 @@ export default function NetWorthManager({
 
       {view === 'settings' ? <section className="app-card p-4 sm:p-5">
         <h2 className="text-base font-bold text-[var(--color-ink)]">계좌 외 자산·부채</h2>
-        <p className="mt-1 text-[11px] text-[var(--color-muted)]">부동산·보증금·차량·대출만 등록합니다. 금융계좌를 이곳에 다시 만들면 중복 계산됩니다.</p>
+        <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">부동산·보증금·차량·대출만 등록합니다. 금융계좌를 이곳에 다시 만들면 중복 계산됩니다.</p>
         <form ref={addFormRef} action={addItem} className="mt-4 space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
@@ -350,7 +350,7 @@ export default function NetWorthManager({
 
           <div className="rounded-xl border border-[var(--color-border)] bg-white/55 p-4">
             <h3 className="text-xs font-semibold">최초 기록</h3>
-            <p className="mt-1 text-[11px] text-[var(--color-muted)]">항목을 만들면서 선택한 월의 잔액도 함께 저장합니다.</p>
+            <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">항목을 만들면서 선택한 월의 잔액도 함께 저장합니다.</p>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs text-[var(--color-muted)]">기준 월</label>
@@ -453,7 +453,7 @@ function SnapshotGroup({
     <div className="border-[var(--color-border)] p-4 lg:border-r lg:last:border-r-0 sm:p-5">
       <div className="mb-4">
         <h2 className="text-base font-bold text-[var(--color-ink)]">{title}</h2>
-        <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">{description}</p>
+        <p className="mt-0.5 text-[12.5px] text-[var(--color-muted)]">{description}</p>
       </div>
       {items.length === 0 ? <p className="py-6 text-center text-xs text-[var(--color-subtle)]">등록된 {title} 항목이 없습니다.</p> : null}
       <div className="space-y-3">
@@ -465,16 +465,16 @@ function SnapshotGroup({
                   <OwnerBadge owner={item.owner} />
                   <p className="truncate text-xs font-semibold">{item.name}</p>
                 </div>
-                <p className="mt-1 text-[11px] text-[var(--color-muted)]">{CATEGORY_LABEL[item.category] ?? item.category}</p>
+                <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{CATEGORY_LABEL[item.category] ?? item.category}</p>
                 {item.interest_rate != null || item.monthly_payment != null || item.maturity_date ? (
-                  <p className="mt-1 text-[10px] text-amber-700">
+                  <p className="mt-1 text-[11.5px] text-amber-700">
                     {item.interest_rate != null ? `연 ${Number(item.interest_rate).toFixed(2)}%` : null}
                     {item.monthly_payment != null ? `${item.interest_rate != null ? ' · ' : ''}월 ${formatKrw(Number(item.monthly_payment))}` : null}
                     {item.maturity_date ? `${item.interest_rate != null || item.monthly_payment != null ? ' · ' : ''}${item.maturity_date} 만기` : null}
                   </p>
                 ) : null}
               </div>
-              <button type="button" onClick={() => onToggle(item.id, false)} className="shrink-0 text-[10px] text-[var(--color-subtle)] hover:text-red-600">비활성화</button>
+              <button type="button" onClick={() => onToggle(item.id, false)} className="shrink-0 text-[11.5px] text-[var(--color-subtle)] hover:text-red-600">비활성화</button>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -502,7 +502,7 @@ function OwnerBadge({ owner }: { owner: string }) {
       : 'bg-blue-100 text-blue-700'
 
   return (
-    <span className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${tone}`}>
+    <span className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[11.5px] font-semibold ${tone}`}>
       {OWNER_LABEL[owner] ?? owner}
     </span>
   )
