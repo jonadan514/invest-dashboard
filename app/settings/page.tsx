@@ -25,9 +25,12 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <div className="page-container max-w-3xl">
-        <h1 className="page-title">설정</h1>
-        <p className="page-subtitle mb-6">가계 목표, 월 소득과 전체 데이터 백업을 관리합니다.</p>
+      <div className="page-container max-w-[1240px]">
+        <header className="mb-5">
+          <p className="page-eyebrow">Household settings</p>
+          <h1 className="page-title">설정</h1>
+          <p className="page-subtitle">가계 목표, 월 소득과 전체 데이터 백업을 관리합니다.</p>
+        </header>
         <SettingsClient
           key={renderKey}
           initialSettings={{
@@ -35,8 +38,8 @@ export default async function SettingsPage() {
           }}
           initialGoals={goals}
           canImportLegacy={!settings && goals.length === 0}
+          backupPanel={<AutoBackupSection backups={backups} error={backupError} cronConfigured={cronConfigured} />}
         />
-        <AutoBackupSection backups={backups} error={backupError} cronConfigured={cronConfigured} />
       </div>
     </>
   )
@@ -44,7 +47,7 @@ export default async function SettingsPage() {
 
 function AutoBackupSection({ backups, error, cronConfigured }: { backups: StoredBackup[]; error: string | null; cronConfigured: boolean }) {
   return (
-    <section className="app-card mt-5 p-5" id="auto-backup">
+    <section className="app-card p-5" id="auto-backup">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
         <div>
           <h2 className="text-sm font-semibold">자동 백업</h2>

@@ -19,6 +19,7 @@ import type {
   NetWorthItem,
   NetWorthSnapshot,
 } from '@/lib/types'
+import { Stat, StatStrip, toneOf } from '@/components/Stat'
 import PrintButton from './PrintButton'
 
 export default async function ReportPage({ searchParams }: { searchParams: Promise<{ year?: string }> }) {
@@ -110,7 +111,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
   const changeRate = change !== null && summary.start && summary.start.netWorth > 0 ? change / summary.start.netWorth * 100 : null
 
   return (
-    <div className="page-container max-w-[1040px] print:max-w-none print:p-0">
+    <div className="page-container max-w-[1240px] print:max-w-none print:p-0">
       <header className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
           <p className="page-eyebrow">Annual report</p>
@@ -138,12 +139,12 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
         <div className="app-card p-10 text-center text-sm text-[var(--color-muted)]">밸런스 시트나 월간 기록을 저장하면 결산이 만들어져요.</div>
       ) : (
         <div className="space-y-4">
-          <section aria-label="순자산 요약" className="metric-strip grid grid-cols-2 lg:grid-cols-4">
-            <Metric label={startLabel(summary.start?.month ?? null, year)} value={krw(summary.start?.netWorth ?? 0)} />
-            <Metric label={`${formatMonth(summary.end.month)} 순자산`} value={krw(summary.end.netWorth)} />
-            <Metric label="한 해 변화" value={change === null ? '—' : `${change > 0 ? '+' : ''}${krw(change)}`} tone={change ?? 0} />
-            <Metric label="증가율" value={changeRate === null ? '—' : `${changeRate > 0 ? '+' : ''}${changeRate.toFixed(1)}%`} tone={changeRate ?? 0} />
-          </section>
+          <StatStrip columns={4} label="순자산 요약">
+            <Stat label={startLabel(summary.start?.month ?? null, year)} value={krw(summary.start?.netWorth ?? 0)} tone="neutral" />
+            <Stat label={`${formatMonth(summary.end.month)} 순자산`} value={krw(summary.end.netWorth)} tone="net" />
+            <Stat label="한 해 변화" value={change === null ? '—' : `${change > 0 ? '+' : ''}${krw(change)}`} tone={toneOf(change)} />
+            <Stat label="증가율" value={changeRate === null ? '—' : `${changeRate > 0 ? '+' : ''}${changeRate.toFixed(1)}%`} tone={toneOf(changeRate)} />
+          </StatStrip>
 
           <section className="app-card p-5 print:break-inside-avoid">
             <h2 className="text-base font-bold text-[var(--color-ink)]">월별 순자산 변화</h2>
@@ -219,16 +220,6 @@ function startLabel(month: string | null, year: string) {
   if (month < `${year}-01`) return `${formatMonth(month)} 순자산`
   if (month === `${year}-01`) return '연초 순자산'
   return `${formatMonth(month)} 순자산 (첫 기록)`
-}
-
-function Metric({ label, value, tone }: { label: string; value: string; tone?: number }) {
-  const color = tone === undefined ? 'text-[var(--color-ink)]' : tone > 0 ? 'text-[var(--color-positive-strong)]' : tone < 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-ink)]'
-  return (
-    <article className="metric-cell px-4 py-4">
-      <p className="text-xs font-semibold text-[var(--color-muted)]">{label}</p>
-      <p className={`mt-1.5 text-lg font-bold tracking-[-0.03em] tabular-nums sm:text-xl ${color}`}>{value}</p>
-    </article>
-  )
 }
 
 function Row({ label, value }: { label: string; value: string }) {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
+import { krw } from '@/lib/labels'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { CircleGauge, ClipboardCheck, ListTree, type LucideIcon } from 'lucide-react'
@@ -517,7 +518,7 @@ function formatInput(value: number) {
 }
 
 function formatKrw(value: number) {
-  return `${new Intl.NumberFormat('ko-KR').format(Math.round(value))}원`
+  return krw(value)
 }
 
 function accountTypeLabel(type: Account['type']) {

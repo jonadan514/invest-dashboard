@@ -28,19 +28,30 @@ interface NavItemData {
   icon: LucideIcon
 }
 
-const NAV_ITEMS: NavItemData[] = [
-  { href: '/', label: '대시보드', description: '가족 자산 한눈에', icon: LayoutDashboard },
-  { href: '/budget', label: '월간 기록', description: '자금·계좌 월말 입력', icon: CalendarRange },
-  { href: '/net-worth', label: '밸런스 시트', description: '자산·부채와 순자산', icon: Scale },
-  { href: '/pension', label: '연금 현황', description: '부부 납입 달성률', icon: Sprout },
-  { href: '/mortgage', label: '대출 상환', description: '완납 시점·추가 상환 효과', icon: Landmark },
-  { href: '/children', label: '자녀 증여', description: '자녀 계좌·증여 한도', icon: Gift },
-  { href: '/report', label: '연간 리포트', description: '한 해 결산·인쇄', icon: FileText },
-  { href: '/settings', label: '설정', description: '목표·백업 관리', icon: Settings },
+const NAV_GROUPS: { label: string | null; items: NavItemData[] }[] = [
+  { label: null, items: [
+    { href: '/', label: '대시보드', description: '가족 자산 한눈에', icon: LayoutDashboard },
+  ] },
+  { label: '월말 기록', items: [
+    { href: '/budget', label: '월간 기록', description: '자금·계좌 월말 입력', icon: CalendarRange },
+    { href: '/net-worth', label: '밸런스 시트', description: '자산·부채와 순자산', icon: Scale },
+  ] },
+  { label: '현황', items: [
+    { href: '/pension', label: '연금 현황', description: '부부 납입 달성률', icon: Sprout },
+    { href: '/mortgage', label: '대출 상환', description: '완납 시점·추가 상환 효과', icon: Landmark },
+    { href: '/children', label: '자녀 증여', description: '자녀 계좌·증여 한도', icon: Gift },
+  ] },
+  { label: '정리', items: [
+    { href: '/report', label: '연간 리포트', description: '한 해 결산·인쇄', icon: FileText },
+    { href: '/settings', label: '설정', description: '목표·백업 관리', icon: Settings },
+  ] },
 ]
+
+const NAV_ITEMS: NavItemData[] = NAV_GROUPS.flatMap(group => group.items)
 
 function getCurrentLabel(pathname: string) {
   if (pathname === '/guide') return '사용 가이드'
+  if (pathname.startsWith('/accounts/')) return '계좌 기록'
 
   return [...NAV_ITEMS]
     .sort((a, b) => b.href.length - a.href.length)
@@ -85,9 +96,16 @@ export default function Sidebar() {
       </div>
 
       <nav aria-label="주요 메뉴" className="sidebar-navigation flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3 pt-3">
-        <div className="space-y-0.5">
-          {NAV_ITEMS.map(item => (
-            <NavItem key={item.href} item={item} pathname={pathname} onClose={() => setMobileOpen(false)} />
+        <div className="space-y-3">
+          {NAV_GROUPS.map(group => (
+            <div key={group.label ?? 'home'} role="group" aria-label={group.label ?? '대시보드'}>
+              {group.label ? <p className="mb-1 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-blue-100/35">{group.label}</p> : null}
+              <div className="space-y-0.5">
+                {group.items.map(item => (
+                  <NavItem key={item.href} item={item} pathname={pathname} onClose={() => setMobileOpen(false)} />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
 
@@ -225,7 +243,7 @@ function NavItem({
       onFocus={() => setFullPrefetch(true)}
       onBlur={() => setFullPrefetch(false)}
       onClick={onClose}
-      className={`relative flex min-h-14 items-center gap-3 rounded-sm border-l-2 px-3 transition-colors ${
+      className={`relative flex min-h-12 items-center gap-3 rounded-sm border-l-2 px-3 transition-colors ${
         active
           ? 'border-l-[#b99a62] bg-white/10 font-semibold text-white'
           : 'border-l-transparent text-blue-50/65 hover:bg-white/[0.06] hover:text-white'

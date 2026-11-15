@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import type { Account, AccountMonthlySnapshot } from '@/lib/types'
+import { Stat, StatStrip, toneOf } from '@/components/Stat'
 
 const TYPE_LABEL: Partial<Record<Account['type'], string>> = {
   cash: '입출금·공동계좌', mmf: 'CMA·MMF', general: '주식·증권계좌', pension: '연금저축', irp: 'IRP', isa: 'ISA', crypto: '코인',
@@ -29,7 +30,7 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
 
   return (
     <>
-      <div className="page-container max-w-[1100px]">
+      <div className="page-container max-w-[1240px]">
         <Link href="/net-worth" className="mb-4 inline-block text-xs text-[var(--color-muted)] hover:text-[var(--color-primary)]">← 밸런스 시트</Link>
 
         <header className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
@@ -48,11 +49,11 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
           </Link>
         </header>
 
-        <section className={`mb-5 grid grid-cols-1 gap-3 ${isPension ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+        <StatStrip columns={isPension ? 3 : 2} label="계좌 요약" className="mb-5">
           <MetricCard label="최근 평가금액" value={latest ? Number(latest.evaluation_amount) : null} detail={latest ? formatMonth(latest.month) : '기록 없음'} />
           <MetricCard label="전월 기록 대비" value={evaluationChange} signed detail={previous ? `${formatMonth(previous.month)} 대비` : '비교 기록 필요'} />
-          {isPension ? <MetricCard label={`${currentMonth.slice(0, 4)}년 누적 납입`} value={latest?.month.startsWith(currentMonth.slice(0, 4)) ? Number(latest.ytd_contribution) : null} detail="세액공제 달성률에 반영" /> : null}
-        </section>
+          {isPension ? <MetricCard label={`${currentMonth.slice(0, 4)}년 누적 납입`} value={latest?.month.startsWith(currentMonth.slice(0, 4)) ? Number(latest.ytd_contribution) : null} detail="세액공제 달성률에 반영" wide /> : null}
+        </StatStrip>
 
         <section className="app-card overflow-hidden">
           <div className="border-b border-[var(--color-border)] bg-[var(--color-section)] px-5 py-3.5">
@@ -93,14 +94,15 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
   )
 }
 
-function MetricCard({ label, value, detail, signed = false }: { label: string; value: number | null; detail: string; signed?: boolean }) {
-  const tone = value == null ? 'text-[var(--color-subtle)]' : signed && value < 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-ink)]'
+function MetricCard({ label, value, detail, signed = false, wide = false }: { label: string; value: number | null; detail: string; signed?: boolean; wide?: boolean }) {
   return (
-    <article className="app-card p-4">
-      <p className="text-xs text-[var(--color-muted)]">{label}</p>
-      <p className={`mt-1 text-lg font-bold tabular-nums ${tone}`}>{value == null ? '-' : `${signed && value > 0 ? '+' : ''}${fmtKrw(value)}`}</p>
-      <p className="mt-1 text-[10px] text-[var(--color-subtle)]">{detail}</p>
-    </article>
+    <Stat
+      label={label}
+      value={value == null ? '—' : `${signed && value > 0 ? '+' : ''}${fmtKrw(value)}`}
+      detail={detail}
+      tone={value == null ? 'neutral' : signed ? toneOf(value) : 'asset'}
+      wide={wide}
+    />
   )
 }
 

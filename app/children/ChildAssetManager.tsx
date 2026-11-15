@@ -4,6 +4,7 @@ import { valuationStatus } from '@/lib/calc/child-valuation'
 import { useRef, useState, useTransition } from 'react'
 import type { ChildAccount, ChildAccountMonthlySnapshot, ChildProfile, ChildGiftDeposit } from '@/lib/types'
 import { createChildAccount, deleteChildAccountSnapshot, saveChildAccountSnapshot } from './actions'
+import { krw } from '@/lib/labels'
 
 const INPUT = 'w-full min-w-0 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]'
 
@@ -234,7 +235,7 @@ function ratio(value: number, total: number) {
 }
 
 function formatKrw(value: number) {
-  return `${new Intl.NumberFormat('ko-KR').format(Math.round(value))}원`
+  return krw(value)
 }
 
 function signedKrw(value: number) {

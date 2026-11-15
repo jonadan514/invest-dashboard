@@ -135,10 +135,10 @@ export default function MonthlyForm({
         {entry || hasAccountSnapshot ? <span className="text-xs text-[#3f7fc3]">● 저장된 기록</span> : null}
       </div>
 
-      <div className="metric-strip mb-4 grid grid-cols-1 sm:grid-cols-3">
-        <div className="metric-cell p-4">
+      <div className="metric-strip mb-4 grid grid-cols-2 sm:grid-cols-3">
+        <div className="metric-cell col-span-2 p-4 sm:col-span-1">
           <p className="text-xs text-[#65758a]">현재 비상금</p>
-          <p className="mt-1 text-2xl font-bold tracking-[-0.03em] text-[#172233]">{formatKrw(emergencyFund)}</p>
+          <p className="mt-1 whitespace-nowrap text-lg font-bold tracking-[-0.03em] text-[#172233] sm:text-2xl">{formatKrw(emergencyFund)}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             <GoalBadge label="3천만 달성" achieved={emergencyFund >= settings.stage1Target} />
             <GoalBadge label="5천만 달성" achieved={emergencyFund >= settings.stage2Target} />
@@ -146,12 +146,12 @@ export default function MonthlyForm({
         </div>
         <div className="metric-cell p-4">
           <p className="text-xs text-[#65758a]">고정비 방어력</p>
-          <p className="mt-1 text-2xl font-bold tracking-[-0.03em] text-[#172233]">{coverage.toFixed(1)}개월</p>
+          <p className="mt-1 whitespace-nowrap text-lg font-bold tracking-[-0.03em] text-[#172233] sm:text-2xl">{coverage.toFixed(1)}개월</p>
           <p className="mt-1 text-[11px] text-[#65758a]">월 고정비 {formatKrw(settings.monthlyFixedCost)}</p>
         </div>
         <div className="metric-cell p-4">
           <p className="text-xs text-[#65758a]">이달 배분 가능액</p>
-          <p className="mt-1 text-2xl font-bold tracking-[-0.03em] text-[#172233]">{formatKrw(totalAllocatable)}</p>
+          <p className="mt-1 whitespace-nowrap text-lg font-bold tracking-[-0.03em] text-[#172233] sm:text-2xl">{formatKrw(totalAllocatable)}</p>
           <p className="mt-1 text-[11px] text-[#65758a]">공금 − 고정비 + 포함 성과급</p>
         </div>
       </div>

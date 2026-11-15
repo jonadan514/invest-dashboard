@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
+import { krw } from '@/lib/labels'
 import type { HouseholdGoal } from '@/lib/types'
 import {
   deleteHouseholdGoal,
@@ -15,9 +16,11 @@ interface Props {
   initialSettings: { monthlyIncome: number }
   initialGoals: HouseholdGoal[]
   canImportLegacy: boolean
+  /** 서버에서 그린 자동 백업 영역. 데이터 관리 열의 아래에 놓인다. */
+  backupPanel?: ReactNode
 }
 
-export default function SettingsClient({ initialSettings, initialGoals, canImportLegacy }: Props) {
+export default function SettingsClient({ initialSettings, initialGoals, canImportLegacy, backupPanel }: Props) {
   const router = useRouter()
   const importRef = useRef<HTMLInputElement>(null)
   const [monthlyIncome, setMonthlyIncome] = useState(initialSettings.monthlyIncome)
@@ -91,7 +94,11 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
+      {message ? <p className="rounded-xl bg-blue-50 px-4 py-3 text-xs text-[var(--color-primary)]" role="status">{message}</p> : null}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+      <div className="space-y-4">
+      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted)]">가계 설정</p>
       <section className="app-card p-5">
         <h2 className="text-sm font-semibold">월 소득</h2>
         <p className="mt-1 text-[10px] text-[var(--color-muted)]">대시보드 저축률 계산에 사용합니다. 실제로 들어오는 부부 합산 세후 월급을 입력하세요. 성과급은 월간 기록에 따로 입력합니다.</p>
@@ -114,12 +121,12 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
           {initialGoals.length === 0 ? <p className="py-4 text-center text-xs text-[var(--color-muted)]">등록된 목표가 없습니다.</p> : null}
           {initialGoals.map(goal => (
             <div key={goal.id} className={`rounded-xl border border-[var(--color-border)] px-4 py-3 ${goal.achieved_at ? 'opacity-55' : 'bg-white/55'}`}>
-              <div className="flex items-start justify-between gap-3">
-                <div><p className="text-xs font-semibold">{goal.name} {goal.achieved_at ? '✓' : ''}</p><p className="mt-1 text-[10px] text-[var(--color-muted)]">{goal.statement} · 목표 {formatNumber(Number(goal.target))}원</p></div>
-                <div className="flex shrink-0 gap-2 text-[10px]">
-                  <button type="button" onClick={() => { setEditingGoal(goal); setShowGoalForm(true) }}>수정</button>
-                  <button type="button" className="text-[var(--color-primary)]" onClick={() => goalAction(() => setGoalAchieved(goal.id, !goal.achieved_at), goal.achieved_at ? '달성을 취소했습니다.' : '목표를 달성 처리했습니다.')}>{goal.achieved_at ? '되돌리기' : '달성'}</button>
-                  <button type="button" className="text-red-600" onClick={() => { if (confirm('이 목표를 삭제할까요?')) goalAction(() => deleteHouseholdGoal(goal.id), '목표를 삭제했습니다.') }}>삭제</button>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                <div><p className="text-xs font-semibold">{goal.name} {goal.achieved_at ? '✓' : ''}</p><p className="mt-1 text-[10px] text-[var(--color-muted)]">{goal.statement} · 목표 {krw(Number(goal.target))}</p></div>
+                <div className="flex shrink-0 gap-1.5 text-[11px] font-semibold">
+                  <button type="button" className="min-h-8 rounded-md border border-[var(--color-border)] bg-white px-2.5" onClick={() => { setEditingGoal(goal); setShowGoalForm(true) }}>수정</button>
+                  <button type="button" className="min-h-8 rounded-md border border-[var(--color-border)] bg-white px-2.5 text-[var(--color-primary)]" onClick={() => goalAction(() => setGoalAchieved(goal.id, !goal.achieved_at), goal.achieved_at ? '달성을 취소했습니다.' : '목표를 달성 처리했습니다.')}>{goal.achieved_at ? '되돌리기' : '달성'}</button>
+                  <button type="button" className="min-h-8 rounded-md border border-[var(--color-border)] bg-white px-2.5 text-[var(--color-negative)]" onClick={() => { if (confirm('이 목표를 삭제할까요?')) goalAction(() => deleteHouseholdGoal(goal.id), '목표를 삭제했습니다.') }}>삭제</button>
                 </div>
               </div>
             </div>
@@ -127,6 +134,10 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
         </div>
       </section>
 
+      </div>
+
+      <div className="space-y-4">
+      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-muted)]">데이터 관리</p>
       <section className="app-card p-5">
         <h2 className="text-sm font-semibold">전체 데이터 백업·복원</h2>
         <p className="mt-1 text-[10px] leading-5 text-[var(--color-muted)]">금융계좌, 거래, 월간 기록, 밸런스 시트, 목표와 설정을 하나의 JSON 파일로 보관합니다.</p>
@@ -137,8 +148,9 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
           <a href="/api/export/transactions" className="rounded-lg border border-[var(--color-border)] bg-white px-4 py-2 text-xs">거래 CSV</a>
         </div>
       </section>
-
-      {message ? <p className="rounded-xl bg-blue-50 px-4 py-3 text-xs text-[var(--color-primary)]" role="status">{message}</p> : null}
+      {backupPanel}
+      </div>
+      </div>
     </div>
   )
 }

@@ -4,7 +4,7 @@ const MONTHLY_STEPS = [
   ['1', '월간 기록', '공금·성과급·주담대와 모든 금융계좌의 월말 평가금액을 입력합니다.'],
   ['2', '밸런스 시트', '부동산·보증금·차량·대출처럼 계좌 밖 항목의 월말 잔액을 확인합니다.'],
   ['3', '연금 현황', '부부별 올해 누적 납입액과 세액공제 목표 달성률을 확인합니다.'],
-  ['4', '대시보드', '총자산·총부채·순자산과 이번 달 기록 완료 여부를 최종 확인합니다.'],
+  ['4', '대시보드', '순자산 변화 요인, 목표 진행률, 저축률과 이번 달 기록 완료 여부를 확인합니다.'],
 ] as const
 
 const TERMS = [
@@ -12,11 +12,12 @@ const TERMS = [
   ['월말 평가금액', '월말 금융기관 앱에서 확인한 현재 잔액입니다. 이 금액이 총자산에 반영됩니다.'],
   ['올해 누적 납입액', '연금저축·IRP에 올해 1월부터 현재까지 납입한 원금의 합계입니다. 월 납입액이 아닙니다.'],
   ['순자산', '총자산에서 총부채를 뺀 금액입니다. 대출 원금을 갚으면 부채가 줄어 순자산에 긍정적으로 반영됩니다.'],
+  ['저축률', '월 소득(+그달 성과급) 가운데 공금에서 고정비를 빼고 남겨 배분한 금액의 비율입니다. 주담대 정기 원금 포함 비율도 함께 보여 줍니다.'],
 ] as const
 
 export default function GuidePage() {
   return (
-    <div className="page-container max-w-[1100px]">
+    <div className="page-container max-w-[1240px]">
       <header className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="page-eyebrow">Household finance guide</p>
@@ -86,6 +87,26 @@ export default function GuidePage() {
           ]} />
         </GuideCard>
 
+        <GuideCard title="대시보드 읽는 법" tone="blue">
+          <GuideList items={[
+            '가족 목표: 설정의 첫 번째 미달성 목표 진행률과 최근 평균 속도로 본 달성 예상 시점입니다.',
+            '순자산 변화 요인: 지난달 대비 어떤 계좌·항목이 순자산을 움직였는지 큰 순서로 보여 줍니다.',
+            '저축률: 설정의 월 소득 대비 (공금 − 고정비 + 배분한 성과급) 비율입니다.',
+            '10~12월에는 연금 세액공제 남은 한도와 주당 필요 납입액이 상단에 표시됩니다.',
+          ]} />
+          <Notice>25일부터 말일까지 이번 달 기록이 끝나지 않았으면 상단에 기록 알림이 나타납니다.</Notice>
+        </GuideCard>
+
+        <GuideCard title="대출 상환·연간 리포트" tone="green">
+          <GuideList items={[
+            '대출 상환에서 주담대 완납 예상 시점과 앞으로 낼 이자를 확인합니다.',
+            '한 번에 더 갚기·매달 더 갚기 금액을 넣어 줄어드는 기간과 이자를 비교합니다.',
+            '연간 리포트는 한 해 순자산 변화, 변화 요인, 저축·상환, 연금, 증여를 한 페이지로 정리합니다.',
+            '연간 리포트의 인쇄 · PDF로 저장으로 메뉴 없이 보관용 문서를 만들 수 있습니다.',
+          ]} />
+          <Notice>대출 계산은 원리금균등 상환을 가정한 참고치이며 중도상환수수료는 반영하지 않습니다.</Notice>
+        </GuideCard>
+
         <GuideCard title="자녀 증여" tone="amber">
           <GuideList items={[
             '자녀 관리에서 이름·별칭과 생년월일을 처음 한 번 등록합니다.',
@@ -101,7 +122,8 @@ export default function GuidePage() {
             '잘못 입력한 월은 같은 월을 다시 선택하고 저장해 수정합니다.',
             '금융계좌 삭제 시 월별 평가 기록도 함께 삭제될 수 있습니다.',
             '자녀 증여·평가 기록은 삭제 전에 날짜와 금액을 다시 확인합니다.',
-            '큰 변경 전에는 설정 화면에서 전체 JSON 백업을 내려받아 보관합니다.',
+            '매주 월요일 새벽 자동 백업이 저장되며 설정 → 자동 백업에서 내려받을 수 있습니다.',
+            '큰 변경 전에는 설정의 지금 백업하기를 누르거나 전체 백업을 내려받아 둡니다.',
           ]} />
           <div className="mt-3 flex flex-wrap gap-2">
             <Link href="/settings" className="rounded-sm border border-[var(--color-border)] bg-white px-3 py-2 text-[11px] font-semibold text-[var(--color-primary)]">백업·설정 열기 →</Link>
