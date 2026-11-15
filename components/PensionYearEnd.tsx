@@ -44,7 +44,7 @@ export function PensionYearEndBanner({ persons, today, recordMonth }: Props) {
     <section aria-label="연금 세액공제 연말 알림" className="app-card relative flex flex-col gap-3 overflow-hidden px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:py-3">
       <span className="absolute inset-y-0 left-0 w-1 bg-[var(--color-primary)]" aria-hidden="true" />
       <div className="min-w-0">
-        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">
+        <p className="text-[11.5px] font-bold text-[var(--color-primary)]">
           연금 세액공제 마감 {dDay(schedule.daysLeft)}
         </p>
         <p className="mt-1 text-sm font-bold leading-snug text-[var(--color-ink)]">
@@ -69,7 +69,7 @@ export function PensionYearEndPlan({ persons, today, recordMonth }: Props) {
     <section className="app-card mb-4 p-5" aria-label="올해 남은 공제 한도">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
         <div>
-          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">
+          <p className="text-[11.5px] font-bold text-[var(--color-primary)]">
             {schedule.isYearEndSeason ? `${year}년 세액공제 마감 ${dDay(schedule.daysLeft)}` : `${year}년 남은 공제 한도`}
           </p>
           <h2 className="mt-1 text-base font-bold text-[var(--color-ink)]">

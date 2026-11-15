@@ -218,7 +218,7 @@ export default function MonthlyForm({
                       </div>
                       <div className="flex shrink-0 gap-1">
                         {account.is_emergency_fund ? <span className="rounded-full bg-amber-100 px-2 py-1 text-[11.5px] font-semibold text-amber-700">비상금</span> : null}
-                        {isPension ? <span className="rounded-full bg-purple-50 px-2 py-1 text-[11.5px] font-semibold text-purple-700">연금</span> : null}
+                        {isPension ? <span className="rounded-full bg-[var(--color-spouse-soft)] px-2 py-1 text-[11.5px] font-semibold text-[var(--color-spouse)]">연금</span> : null}
                       </div>
                     </div>
                     <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
@@ -254,7 +254,7 @@ export default function MonthlyForm({
 }
 
 function GoalBadge({ label, achieved }: { label: string; achieved: boolean }) {
-  return <span className={`rounded-full px-2 py-1 text-[11.5px] font-semibold ${achieved ? 'bg-blue-100 text-blue-700' : 'bg-[var(--color-section)] text-[var(--color-subtle)]'}`}>{achieved ? '✓ ' : ''}{label}</span>
+  return <span className={`rounded-full px-2 py-1 text-[11.5px] font-semibold ${achieved ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'bg-[var(--color-section)] text-[var(--color-subtle)]'}`}>{achieved ? '✓ ' : ''}{label}</span>
 }
 
 function accountTypeLabel(type: Account['type']) {

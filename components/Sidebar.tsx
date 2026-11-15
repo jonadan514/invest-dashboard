@@ -113,7 +113,7 @@ export default function Sidebar() {
           <summary className="cursor-pointer text-xs font-semibold text-blue-50/85">월말 기록 가이드</summary>
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-bold text-white">월말 기록 순서</p>
-            <span className="rounded-full bg-blue-300/15 px-2 py-0.5 text-[10.5px] font-semibold text-blue-100/75">월 1회</span>
+            <span className="rounded-full bg-blue-300/15 px-2 py-0.5 text-[11.5px] font-semibold text-blue-100/75">월 1회</span>
           </div>
           <ol className="mt-3 space-y-2.5 text-[11.5px] text-blue-50/65">
             <li className="flex items-center gap-2"><span className="grid h-5 w-5 place-items-center rounded-full bg-white/10 font-bold text-blue-100">1</span>공금과 계좌 잔액 기록</li>
@@ -152,7 +152,7 @@ export default function Sidebar() {
       </nav>
 
       <div className="shrink-0 border-t border-white/10 px-3 py-3">
-        <p className="text-center text-[10.5px] text-white/30">월 1회 기록 · 가족 전용</p>
+        <p className="text-center text-[11.5px] text-white/30">월 1회 기록 · 가족 전용</p>
       </div>
     </aside>
   )

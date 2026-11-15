@@ -53,7 +53,7 @@ export default function GoalCard({ goal, progress, basis }: Props) {
       )}
 
       <div className="mt-auto pt-3 text-right">
-        <Link href="/settings#goals" className="text-[12.5px] font-semibold text-[var(--color-primary)] hover:underline">
+        <Link href="/settings#goals" className="inline-flex min-h-8 items-center text-[12.5px] font-semibold text-[var(--color-primary)] hover:underline">
           {progress?.achieved ? '설정에서 달성 처리하기' : '목표 관리'} →
         </Link>
       </div>

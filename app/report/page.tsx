@@ -22,6 +22,8 @@ import type {
 import { Stat, StatStrip, toneOf } from '@/components/Stat'
 import PrintButton from './PrintButton'
 
+export const metadata = { title: '연간 리포트' }
+
 export default async function ReportPage({ searchParams }: { searchParams: Promise<{ year?: string }> }) {
   const { year: requestedYear } = await searchParams
   const { supabase, userId } = await getHouseholdContext()
@@ -141,7 +143,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
         <div className="space-y-4">
           <StatStrip columns={4} label="순자산 요약">
             <Stat label={startLabel(summary.start?.month ?? null, year)} value={wonShort(summary.start?.netWorth ?? 0)} exact={krw(summary.start?.netWorth ?? 0)} tone="neutral" />
-            <Stat label={`${formatMonth(summary.end.month)} 순자산`} value={wonShort(summary.end.netWorth)} exact={krw(summary.end.netWorth)} tone="net" />
+            <Stat label={`${Number(summary.end.month.slice(5))}월 순자산`} value={wonShort(summary.end.netWorth)} exact={krw(summary.end.netWorth)} tone="net" />
             <Stat label="한 해 변화" value={change === null ? '—' : signedWonShort(change)} exact={change === null ? undefined : krw(change)} tone={toneOf(change)} />
             <Stat label="증가율" value={changeRate === null ? '—' : `${changeRate > 0 ? '+' : ''}${changeRate.toFixed(1)}%`} tone={toneOf(changeRate)} />
           </StatStrip>
@@ -217,9 +219,9 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
 
 function startLabel(month: string | null, year: string) {
   if (!month) return '기준 순자산'
-  if (month < `${year}-01`) return `${formatMonth(month)} 순자산`
+  if (month < `${year}-01`) return `${Number(month.slice(5))}월 순자산(전년)`
   if (month === `${year}-01`) return '연초 순자산'
-  return `${formatMonth(month)} 순자산 (첫 기록)`
+  return `${Number(month.slice(5))}월 순자산(첫 기록)`
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -239,7 +241,7 @@ function MonthlyChanges({ months }: { months: { month: string; netWorth: number;
         const height = item.change === null ? 0 : Math.max(Math.abs(item.change) / max * 100, 3)
         return (
           <div key={item.month} className="flex flex-col items-center gap-1" title={`${formatMonth(item.month)} 순자산 ${krw(item.netWorth)}`}>
-            <span className={`text-[10.5px] font-semibold tabular-nums ${item.change === null ? 'text-[var(--color-subtle)]' : item.change >= 0 ? 'text-[var(--color-positive-strong)]' : 'text-[var(--color-negative)]'}`}>
+            <span className={`text-[11.5px] font-semibold tabular-nums ${item.change === null ? 'text-[var(--color-subtle)]' : item.change >= 0 ? 'text-[var(--color-positive-strong)]' : 'text-[var(--color-negative)]'}`}>
               {item.change === null ? '기준' : signedCompactKrw(item.change)}
             </span>
             <div className="flex h-20 w-full flex-col justify-end">
@@ -264,7 +266,7 @@ function DriverList({ drivers }: { drivers: ChangeDriver[] }) {
       {visible.map(driver => (
         <li key={driver.key} className="flex items-center justify-between gap-3 py-2">
           <span className="flex min-w-0 items-center gap-1.5">
-            <span className="shrink-0 rounded-sm bg-[var(--color-section)] px-1.5 py-0.5 text-[10.5px] font-semibold text-[var(--color-muted)]">{SOURCE_LABEL[driver.source]}</span>
+            <span className="shrink-0 rounded-sm bg-[var(--color-section)] px-1.5 py-0.5 text-[11.5px] font-semibold text-[var(--color-muted)]">{SOURCE_LABEL[driver.source]}</span>
             <span className="truncate text-[var(--color-ink)]">{driver.label}</span>
           </span>
           <span className={`font-semibold tabular-nums ${driver.change >= 0 ? 'text-[var(--color-positive-strong)]' : 'text-[var(--color-negative)]'}`}>{signedCompactKrw(driver.change)}</span>

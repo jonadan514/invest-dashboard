@@ -20,7 +20,10 @@ const korean = Noto_Sans_KR({
 });
 
 export const metadata: Metadata = {
-  title: "샘훈호 FAMILY OFFICE 자산 대시보드",
+  title: {
+    default: "자산현황 · 샘훈호 FAMILY OFFICE",
+    template: "%s · 샘훈호",
+  },
   description: "부부 자산·수익률·연금 통합 관리",
 };
 

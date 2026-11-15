@@ -56,14 +56,14 @@ export default function SavingsCard({ points, average, hasIncome }: Props) {
                 title={`${formatMonth(point.month)} ${point.rate === null ? '-' : `${Math.round(point.rate)}%`}`}
               />
             </div>
-            <span className="text-[10.5px] tabular-nums text-[var(--color-subtle)]">{Number(point.month.slice(5))}월</span>
+            <span className="text-[11.5px] tabular-nums text-[var(--color-subtle)]">{Number(point.month.slice(5))}월</span>
           </div>
         ))}
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3 text-[12.5px]">
         <span className="text-[var(--color-muted)]">{average ? `최근 ${average.months}개월 평균 ${Math.round(average.rate)}%` : ''}</span>
-        <Link href="/budget" className="shrink-0 font-semibold text-[var(--color-primary)] hover:underline">기록 →</Link>
+        <Link href="/budget" className="inline-flex min-h-8 shrink-0 items-center font-semibold text-[var(--color-primary)] hover:underline">기록 →</Link>
       </div>
     </article>
   )

@@ -12,7 +12,7 @@ export default function MonthEndBanner({ reminder }: { reminder: MonthEndReminde
     >
       <span className={`absolute inset-y-0 left-0 w-1 ${overdue ? 'bg-[var(--color-negative)]' : 'bg-[var(--color-positive-bright)]'}`} aria-hidden="true" />
       <div>
-        <p className={`text-[11.5px] font-semibold uppercase tracking-[0.14em] ${overdue ? 'text-[var(--color-negative)]' : 'text-[var(--color-positive-strong)]'}`}>
+        <p className={`text-[11.5px] font-bold ${overdue ? 'text-[var(--color-negative)]' : 'text-[var(--color-positive-strong)]'}`}>
           {overdue ? '지난달 기록 필요' : reminder.daysLeft === 0 ? '오늘이 말일' : `말일까지 ${reminder.daysLeft}일`}
         </p>
         <p className="mt-1 text-sm font-bold text-[var(--color-ink)]">

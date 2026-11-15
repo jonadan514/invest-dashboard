@@ -74,13 +74,13 @@ function LoanSimulator({ loan }: { loan: MortgageLoan }) {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
       <section className="app-card p-5" aria-label="대출 정보와 추가 상환 입력">
-        <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">{formatMonth(loan.balanceMonth)} 잔액</p>
+        <p className="text-[11.5px] font-bold text-[var(--color-primary)]">{formatMonth(loan.balanceMonth)} 잔액</p>
         <h2 className="mt-1 text-xl font-bold tabular-nums text-[var(--color-ink)]">{krw(loan.balance)}</h2>
         <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{loan.name}{loan.maturityDate ? ` · 약정 만기 ${loan.maturityDate}` : ''}</p>
 
         <div className="mt-5 space-y-4">
           <Field label="연 금리" note={RATE_NOTE[loan.rateSource]} suffix="%">
-            <input inputMode="decimal" value={rate} onChange={event => setRate(event.target.value.replace(/[^0-9.]/g, ''))} aria-label="연 금리" className="w-full bg-transparent text-right text-sm outline-none" />
+            <input inputMode="decimal" value={rate} onChange={event => setRate(event.target.value.replace(/[^0-9.]/g, ''))} aria-label="연 금리" className="w-full bg-transparent py-2 text-right text-sm outline-none" />
           </Field>
           <Field label="월 상환액(원리금)" note={PAYMENT_NOTE[loan.paymentSource]} suffix="원">
             <MoneyInput value={payment} onChange={setPayment} label="월 상환액" />
@@ -92,11 +92,11 @@ function LoanSimulator({ loan }: { loan: MortgageLoan }) {
             </Field>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {LUMP_PRESETS.map(amount => (
-                <button key={amount} type="button" onClick={() => setLumpSum(amount)} className={`rounded-full border px-2.5 py-1 text-[11.5px] font-semibold ${lumpSum === amount ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-[var(--color-border)] text-[var(--color-muted)]'}`}>
+                <button key={amount} type="button" onClick={() => setLumpSum(amount)} className={`min-h-8 rounded-full border px-3 py-1 text-[12.5px] font-semibold ${lumpSum === amount ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-[var(--color-border)] text-[var(--color-muted)]'}`}>
                   {compactKrw(amount)}
                 </button>
               ))}
-              {lumpSum > 0 ? <button type="button" onClick={() => setLumpSum(0)} className="px-2 text-[11.5px] text-[var(--color-subtle)]">지우기</button> : null}
+              {lumpSum > 0 ? <button type="button" onClick={() => setLumpSum(0)} className="min-h-8 px-2 text-[12.5px] text-[var(--color-subtle)]">지우기</button> : null}
             </div>
           </div>
           <Field label="매달 더 갚기" suffix="원">
@@ -169,11 +169,11 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 function Field({ label, note, suffix, children }: { label: string; note?: string; suffix: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-1 text-xs font-semibold text-[var(--color-ink)]">{label}</p>
-      <div className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 focus-within:border-[var(--color-primary)]">
+      <p className="mb-1 text-[13px] font-semibold text-[var(--color-ink)]">{label}</p>
+      <label className="flex min-h-11 cursor-text items-center gap-2 rounded-lg border border-[var(--color-border)] bg-white px-3 focus-within:border-[var(--color-primary)]">
         {children}
-        <span className="text-xs text-[var(--color-muted)]">{suffix}</span>
-      </div>
+        <span className="text-[13px] text-[var(--color-muted)]">{suffix}</span>
+      </label>
       {note ? <p className="mt-1 text-[11.5px] text-[var(--color-subtle)]">{note}</p> : null}
     </div>
   )
@@ -187,7 +187,7 @@ function MoneyInput({ value, onChange, label }: { value: number; onChange: (valu
       value={value > 0 ? new Intl.NumberFormat('ko-KR').format(value) : ''}
       placeholder="0"
       onChange={event => onChange(Number(event.target.value.replace(/[^0-9]/g, '')) || 0)}
-      className="w-full bg-transparent text-right text-sm tabular-nums outline-none"
+      className="w-full bg-transparent py-2 text-right text-sm tabular-nums outline-none"
     />
   )
 }

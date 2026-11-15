@@ -5,6 +5,8 @@ import { BACKUP_KEEP_COUNT, backupLabel } from '@/lib/backup-schedule'
 import BackupNowButton from './BackupNowButton'
 import SettingsClient from './SettingsClient'
 
+export const metadata = { title: '설정' }
+
 export default async function SettingsPage() {
   const { supabase, userId } = await getHouseholdContext()
   const [{ data: settingsRow }, { data: goalRows }] = await Promise.all([
@@ -78,11 +80,11 @@ function AutoBackupSection({ backups, error, cronConfigured }: { backups: Stored
             <li key={backup.name} className="flex items-center justify-between gap-3 px-4 py-2.5 text-xs">
               <span className="tabular-nums">
                 {backupLabel(backup.name)}
-                {index === 0 ? <span className="ml-2 rounded-full bg-[var(--color-section)] px-2 py-0.5 text-[10.5px] font-semibold text-[var(--color-muted)]">최신</span> : null}
+                {index === 0 ? <span className="ml-2 rounded-full bg-[var(--color-section)] px-2 py-0.5 text-[11.5px] font-semibold text-[var(--color-muted)]">최신</span> : null}
               </span>
               <span className="flex items-center gap-3">
                 {backup.size !== null ? <span className="text-[11.5px] tabular-nums text-[var(--color-subtle)]">{Math.max(1, Math.round(backup.size / 1024))}KB</span> : null}
-                <a href={`/api/backups/${backup.name}`} className="font-semibold text-[var(--color-primary)] hover:underline">다운로드</a>
+                <a href={`/api/backups/${backup.name}`} className="inline-flex min-h-8 items-center font-semibold text-[var(--color-primary)] hover:underline">다운로드</a>
               </span>
             </li>
           ))}

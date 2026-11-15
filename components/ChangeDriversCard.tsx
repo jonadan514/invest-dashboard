@@ -54,7 +54,7 @@ export default function ChangeDriversCard({ fromMonth, toMonth, totalChange, dri
       )}
 
       <div className="mt-auto pt-3 text-right">
-        <Link href="/net-worth" className="text-[11.5px] font-semibold text-[var(--color-primary)] hover:underline">밸런스 시트 보기 →</Link>
+        <Link href="/net-worth" className="inline-flex min-h-8 items-center text-[12.5px] font-semibold text-[var(--color-primary)] hover:underline">밸런스 시트 보기 →</Link>
       </div>
     </article>
   )
@@ -65,7 +65,7 @@ function DriverRow({ label, tag, change, max, muted = false }: { label: string; 
   return (
     <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 text-[12.5px]">
       <span className="flex min-w-0 items-center gap-1.5">
-        {tag ? <span className="shrink-0 rounded-sm bg-[var(--color-section)] px-1.5 py-0.5 text-[10.5px] font-semibold text-[var(--color-muted)]">{tag}</span> : null}
+        {tag ? <span className="shrink-0 rounded-sm bg-[var(--color-section)] px-1.5 py-0.5 text-[11.5px] font-semibold text-[var(--color-muted)]">{tag}</span> : null}
         <span className={`truncate ${muted ? 'text-[var(--color-muted)]' : 'font-semibold text-[var(--color-ink)]'}`}>{label}</span>
       </span>
       <span className={`text-right font-semibold tabular-nums ${toneClass(change)}`}>{signedCompactKrw(change)}</span>
