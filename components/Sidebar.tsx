@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import BrandLockup from './BrandLockup'
 import {
   CalendarRange,
+  CandlestickChart,
   ExternalLink,
   FileText,
   Gift,
@@ -37,6 +38,7 @@ const NAV_GROUPS: { label: string | null; items: NavItemData[] }[] = [
     { href: '/net-worth', label: '밸런스 시트', description: '자산·부채와 순자산', icon: Scale },
   ] },
   { label: '현황', items: [
+    { href: '/stocks', label: '주식 계좌', description: '거래 기록·종목별 보유', icon: CandlestickChart },
     { href: '/pension', label: '연금 현황', description: '부부 납입 달성률', icon: Sprout },
     { href: '/mortgage', label: '대출 상환', description: '완납 시점·추가 상환 효과', icon: Landmark },
     { href: '/children', label: '자녀 증여', description: '자녀 계좌·증여 한도', icon: Gift },
