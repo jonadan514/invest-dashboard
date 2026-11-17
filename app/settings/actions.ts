@@ -1,5 +1,6 @@
 'use server'
 
+import { runAction, type ActionResult } from '@/lib/action-result'
 import { revalidatePath } from 'next/cache'
 import { storeBackup } from '@/lib/backup'
 import { getHouseholdContext } from '@/lib/supabase/server'
@@ -11,16 +12,18 @@ function nonNegative(value: unknown, label: string) {
   return number
 }
 
-export async function saveHouseholdSettings(input: { monthlyIncome: number }) {
-  const { supabase, userId } = await getHouseholdContext()
-  const { error } = await supabase.from('household_settings').upsert({
-    user_id: userId,
-    monthly_income: nonNegative(input.monthlyIncome, '월 소득'),
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'user_id' })
-  if (error) throw new Error(error.message)
-  revalidatePath('/settings')
-  revalidatePath('/')
+export async function saveHouseholdSettings(input: { monthlyIncome: number }): Promise<ActionResult> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    const { error } = await supabase.from('household_settings').upsert({
+      user_id: userId,
+      monthly_income: nonNegative(input.monthlyIncome, '월 소득'),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' })
+    if (error) throw new Error(error.message)
+    revalidatePath('/settings')
+    revalidatePath('/')
+  })
 }
 
 export async function saveHouseholdGoal(input: {
@@ -32,92 +35,102 @@ export async function saveHouseholdGoal(input: {
   target: number
   nextHint: string
   sortOrder: number
-}) {
-  const { supabase, userId } = await getHouseholdContext()
-  if (!input.name.trim() || !input.statement.trim()) throw new Error('목표 이름과 문장을 입력해 주세요.')
-  if (!['cash', 'investment', 'net_worth', 'other'].includes(input.type)) throw new Error('목표 유형이 올바르지 않습니다.')
+}): Promise<ActionResult> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    if (!input.name.trim() || !input.statement.trim()) throw new Error('목표 이름과 문장을 입력해 주세요.')
+    if (!['cash', 'investment', 'net_worth', 'other'].includes(input.type)) throw new Error('목표 유형이 올바르지 않습니다.')
 
-  const row = {
-    user_id: userId,
-    name: input.name.trim(),
-    statement: input.statement.trim(),
-    sub: input.sub.trim(),
-    type: input.type,
-    target: nonNegative(input.target, '목표 금액'),
-    next_hint: input.nextHint.trim(),
-    sort_order: Math.max(0, Math.round(input.sortOrder)),
-    updated_at: new Date().toISOString(),
-  }
-  if (row.target <= 0) throw new Error('목표 금액은 0보다 커야 합니다.')
+    const row = {
+      user_id: userId,
+      name: input.name.trim(),
+      statement: input.statement.trim(),
+      sub: input.sub.trim(),
+      type: input.type,
+      target: nonNegative(input.target, '목표 금액'),
+      next_hint: input.nextHint.trim(),
+      sort_order: Math.max(0, Math.round(input.sortOrder)),
+      updated_at: new Date().toISOString(),
+    }
+    if (row.target <= 0) throw new Error('목표 금액은 0보다 커야 합니다.')
 
-  const query = input.id
-    ? supabase.from('household_goals').update(row).eq('id', input.id).eq('user_id', userId)
-    : supabase.from('household_goals').insert(row)
-  const { error } = await query
-  if (error) throw new Error(error.message)
-  revalidatePath('/settings')
-  revalidatePath('/')
+    const query = input.id
+      ? supabase.from('household_goals').update(row).eq('id', input.id).eq('user_id', userId)
+      : supabase.from('household_goals').insert(row)
+    const { error } = await query
+    if (error) throw new Error(error.message)
+    revalidatePath('/settings')
+    revalidatePath('/')
+  })
 }
 
-export async function setGoalAchieved(id: string, achieved: boolean) {
-  const { supabase, userId } = await getHouseholdContext()
-  const { error } = await supabase.from('household_goals')
-    .update({ achieved_at: achieved ? new Date().toISOString() : null, updated_at: new Date().toISOString() })
-    .eq('id', id).eq('user_id', userId)
-  if (error) throw new Error(error.message)
-  revalidatePath('/settings')
-  revalidatePath('/')
+export async function setGoalAchieved(id: string, achieved: boolean): Promise<ActionResult> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    const { error } = await supabase.from('household_goals')
+      .update({ achieved_at: achieved ? new Date().toISOString() : null, updated_at: new Date().toISOString() })
+      .eq('id', id).eq('user_id', userId)
+    if (error) throw new Error(error.message)
+    revalidatePath('/settings')
+    revalidatePath('/')
+  })
 }
 
-export async function deleteHouseholdGoal(id: string) {
-  const { supabase, userId } = await getHouseholdContext()
-  const { error } = await supabase.from('household_goals').delete().eq('id', id).eq('user_id', userId)
-  if (error) throw new Error(error.message)
-  revalidatePath('/settings')
-  revalidatePath('/')
+export async function deleteHouseholdGoal(id: string): Promise<ActionResult> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    const { error } = await supabase.from('household_goals').delete().eq('id', id).eq('user_id', userId)
+    if (error) throw new Error(error.message)
+    revalidatePath('/settings')
+    revalidatePath('/')
+  })
 }
 
 export async function migrateLegacySettings(input: {
   monthlyIncome: number
   goals: Array<Record<string, unknown>>
-}) {
-  const { supabase, userId } = await getHouseholdContext()
-  const settingsResult = await supabase.from('household_settings').upsert({
-    user_id: userId,
-    monthly_income: nonNegative(input.monthlyIncome, '월 소득'),
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'user_id' })
-  if (settingsResult.error) throw new Error(settingsResult.error.message)
-
-  const goals = input.goals.slice(0, 50).flatMap((goal, index) => {
-    const type = String(goal.type ?? 'other')
-    const target = Number(goal.target ?? 0)
-    if (!String(goal.name ?? '').trim() || !String(goal.statement ?? '').trim() || target <= 0) return []
-    return [{
-      id: typeof goal.id === 'string' ? goal.id : crypto.randomUUID(),
+}): Promise<ActionResult> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    const settingsResult = await supabase.from('household_settings').upsert({
       user_id: userId,
-      name: String(goal.name).trim(),
-      statement: String(goal.statement).trim(),
-      sub: String(goal.sub ?? '').trim(),
-      type: ['cash', 'investment', 'net_worth', 'other'].includes(type) ? type : 'other',
-      target,
-      next_hint: String(goal.next_hint ?? '').trim(),
-      sort_order: Number(goal.order ?? index),
-      achieved_at: typeof goal.achieved_at === 'string' ? goal.achieved_at : null,
+      monthly_income: nonNegative(input.monthlyIncome, '월 소득'),
       updated_at: new Date().toISOString(),
-    }]
+    }, { onConflict: 'user_id' })
+    if (settingsResult.error) throw new Error(settingsResult.error.message)
+
+    const goals = input.goals.slice(0, 50).flatMap((goal, index) => {
+      const type = String(goal.type ?? 'other')
+      const target = Number(goal.target ?? 0)
+      if (!String(goal.name ?? '').trim() || !String(goal.statement ?? '').trim() || target <= 0) return []
+      return [{
+        id: typeof goal.id === 'string' ? goal.id : crypto.randomUUID(),
+        user_id: userId,
+        name: String(goal.name).trim(),
+        statement: String(goal.statement).trim(),
+        sub: String(goal.sub ?? '').trim(),
+        type: ['cash', 'investment', 'net_worth', 'other'].includes(type) ? type : 'other',
+        target,
+        next_hint: String(goal.next_hint ?? '').trim(),
+        sort_order: Number(goal.order ?? index),
+        achieved_at: typeof goal.achieved_at === 'string' ? goal.achieved_at : null,
+        updated_at: new Date().toISOString(),
+      }]
+    })
+    if (goals.length > 0) {
+      const { error } = await supabase.from('household_goals').upsert(goals, { onConflict: 'id' })
+      if (error) throw new Error(error.message)
+    }
+    revalidatePath('/settings')
+    revalidatePath('/')
   })
-  if (goals.length > 0) {
-    const { error } = await supabase.from('household_goals').upsert(goals, { onConflict: 'id' })
-    if (error) throw new Error(error.message)
-  }
-  revalidatePath('/settings')
-  revalidatePath('/')
 }
 
-export async function createBackupNow() {
-  const { supabase, userId } = await getHouseholdContext()
-  const result = await storeBackup(supabase, userId)
-  revalidatePath('/settings')
-  return { name: result.name, deleted: result.deleted.length }
+export async function createBackupNow(): Promise<ActionResult<{ name: string; deleted: number }>> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    const result = await storeBackup(supabase, userId)
+    revalidatePath('/settings')
+    return { name: result.name, deleted: result.deleted.length }
+  })
 }

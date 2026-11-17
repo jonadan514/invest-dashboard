@@ -114,7 +114,11 @@ export default function MonthlyForm({
 
     startTransition(async () => {
       try {
-        await saveBudgetEntry(formData)
+        const result = await saveBudgetEntry(formData)
+        if (!result.ok) {
+          setError(result.error)
+          return
+        }
         setSaved(true)
         setTimeout(() => setSaved(false), 2500)
       } catch (saveError) {

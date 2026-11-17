@@ -59,7 +59,11 @@ export default function ChildGiftManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        await createChild(formData)
+        const result = await createChild(formData)
+        if (!result.ok) {
+          setMessage(result.error)
+          return
+        }
         childFormRef.current?.reset()
         setShowChildForm(false)
         setMessage('자녀를 등록했습니다.')
@@ -73,7 +77,11 @@ export default function ChildGiftManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        await createChildGift(formData)
+        const result = await createChildGift(formData)
+        if (!result.ok) {
+          setMessage(result.error)
+          return
+        }
         giftFormRef.current?.reset()
         setSelectedDonor('me')
         setSelectedTransferType('gift')
@@ -89,7 +97,11 @@ export default function ChildGiftManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        await deleteChildGift(id)
+        const result = await deleteChildGift(id)
+        if (!result.ok) {
+          setMessage(result.error)
+          return
+        }
         setMessage('납입 기록을 삭제했습니다.')
       } catch (error) {
         setMessage(error instanceof Error ? error.message : '납입 기록을 삭제하지 못했습니다.')

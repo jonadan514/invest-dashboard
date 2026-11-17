@@ -92,7 +92,11 @@ export default function NetWorthManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        await createNetWorthItem(formData)
+        const result = await createNetWorthItem(formData)
+        if (!result.ok) {
+          setMessage(result.error)
+          return
+        }
         addFormRef.current?.reset()
         setKind('asset')
         setCategory('real_estate')
@@ -107,7 +111,11 @@ export default function NetWorthManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        await saveNetWorthSnapshot(formData)
+        const result = await saveNetWorthSnapshot(formData)
+        if (!result.ok) {
+          setMessage(result.error)
+          return
+        }
         setMessage(`${month.replace('-', '년 ')}월 기록을 저장했습니다.`)
       } catch (error) {
         setMessage(error instanceof Error ? error.message : '월별 기록을 저장하지 못했습니다.')
@@ -119,7 +127,11 @@ export default function NetWorthManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        await setNetWorthItemActive(id, active, month)
+        const result = await setNetWorthItemActive(id, active, month)
+        if (!result.ok) {
+          setMessage(result.error)
+          return
+        }
         setMessage(active ? '항목을 다시 사용합니다.' : '항목을 비활성화했습니다. 과거 기록은 유지됩니다.')
       } catch (error) {
         setMessage(error instanceof Error ? error.message : '항목을 변경하지 못했습니다.')

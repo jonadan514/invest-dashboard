@@ -1,5 +1,6 @@
 'use server'
 
+import { runAction, type ActionResult } from '@/lib/action-result'
 import { revalidatePath } from 'next/cache'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import type { ChildAccountAssetType, ChildGiftDonor, ChildGiftRelationship, ChildGiftTransferType } from '@/lib/types'
@@ -55,172 +56,184 @@ function todayInKorea() {
   }).format(new Date())
 }
 
-export async function createChild(formData: FormData) {
-  const { supabase, userId } = await getHouseholdContext()
-  const birthDate = validDate(formData, 'birth_date')
-  const today = todayInKorea()
-  if (birthDate > today) throw new Error('생년월일은 오늘 이후일 수 없습니다.')
+export async function createChild(formData: FormData): Promise<ActionResult> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    const birthDate = validDate(formData, 'birth_date')
+    const today = todayInKorea()
+    if (birthDate > today) throw new Error('생년월일은 오늘 이후일 수 없습니다.')
 
-  const { error } = await supabase.from('children').insert({
-    user_id: userId,
-    name: requiredText(formData, 'name', '자녀 이름이나 별칭을 입력해 주세요.'),
-    birth_date: birthDate,
-    account_name: optionalText(formData, 'account_name'),
-    memo: optionalText(formData, 'memo'),
+    const { error } = await supabase.from('children').insert({
+      user_id: userId,
+      name: requiredText(formData, 'name', '자녀 이름이나 별칭을 입력해 주세요.'),
+      birth_date: birthDate,
+      account_name: optionalText(formData, 'account_name'),
+      memo: optionalText(formData, 'memo'),
+    })
+    if (error) throw new Error(error.message)
+
+    revalidatePath('/children')
   })
-  if (error) throw new Error(error.message)
-
-  revalidatePath('/children')
 }
 
-export async function createChildGift(formData: FormData) {
-  const { supabase, userId } = await getHouseholdContext()
-  const childId = String(formData.get('child_id') ?? '')
-  const donor = String(formData.get('donor') ?? '') as ChildGiftDonor
-  const transferType = String(formData.get('transfer_type') ?? '') as ChildGiftTransferType
-  const giftDate = validDate(formData, 'gift_date')
-  const today = todayInKorea()
-  const amount = Number(String(formData.get('amount') ?? '').replace(/,/g, ''))
-  const childAccountId = String(formData.get('child_account_id') ?? '')
+export async function createChildGift(formData: FormData): Promise<ActionResult> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    const childId = String(formData.get('child_id') ?? '')
+    const donor = String(formData.get('donor') ?? '') as ChildGiftDonor
+    const transferType = String(formData.get('transfer_type') ?? '') as ChildGiftTransferType
+    const giftDate = validDate(formData, 'gift_date')
+    const today = todayInKorea()
+    const amount = Number(String(formData.get('amount') ?? '').replace(/,/g, ''))
+    const childAccountId = String(formData.get('child_account_id') ?? '')
 
-  if (!UUID_PATTERN.test(childId)) throw new Error('자녀를 선택해 주세요.')
-  if (!DONORS.has(donor)) throw new Error('입금자를 선택해 주세요.')
-  if (!TRANSFER_TYPES.has(transferType)) throw new Error('입금 성격을 선택해 주세요.')
-  if (!Number.isFinite(amount) || amount <= 0) throw new Error('납입액은 0보다 큰 숫자로 입력해 주세요.')
-  if (giftDate > today) throw new Error('아직 납입하지 않은 미래 날짜는 기록할 수 없습니다.')
-  if (childAccountId && !UUID_PATTERN.test(childAccountId)) throw new Error('올바른 자녀 계좌를 선택해 주세요.')
+    if (!UUID_PATTERN.test(childId)) throw new Error('자녀를 선택해 주세요.')
+    if (!DONORS.has(donor)) throw new Error('입금자를 선택해 주세요.')
+    if (!TRANSFER_TYPES.has(transferType)) throw new Error('입금 성격을 선택해 주세요.')
+    if (!Number.isFinite(amount) || amount <= 0) throw new Error('납입액은 0보다 큰 숫자로 입력해 주세요.')
+    if (giftDate > today) throw new Error('아직 납입하지 않은 미래 날짜는 기록할 수 없습니다.')
+    if (childAccountId && !UUID_PATTERN.test(childAccountId)) throw new Error('올바른 자녀 계좌를 선택해 주세요.')
 
-  const { data: child, error: childError } = await supabase
-    .from('children')
-    .select('id, account_name')
-    .eq('id', childId)
-    .eq('user_id', userId)
-    .eq('is_active', true)
-    .maybeSingle()
-  if (childError) throw new Error(childError.message)
-  if (!child) throw new Error('등록된 자녀를 찾을 수 없습니다.')
-
-  let childAccount: { id: string; name: string } | null = null
-  if (childAccountId) {
-    const { data, error } = await supabase
-      .from('child_accounts')
-      .select('id, name')
-      .eq('id', childAccountId)
-      .eq('child_id', childId)
+    const { data: child, error: childError } = await supabase
+      .from('children')
+      .select('id, account_name')
+      .eq('id', childId)
       .eq('user_id', userId)
       .eq('is_active', true)
       .maybeSingle()
+    if (childError) throw new Error(childError.message)
+    if (!child) throw new Error('등록된 자녀를 찾을 수 없습니다.')
+
+    let childAccount: { id: string; name: string } | null = null
+    if (childAccountId) {
+      const { data, error } = await supabase
+        .from('child_accounts')
+        .select('id, name')
+        .eq('id', childAccountId)
+        .eq('child_id', childId)
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .maybeSingle()
+      if (error) throw new Error(error.message)
+      if (!data) throw new Error('선택한 자녀 계좌를 찾을 수 없습니다.')
+      childAccount = data
+    }
+
+    const { error } = await supabase.from('child_gift_deposits').insert({
+      user_id: userId,
+      child_id: childId,
+      gift_date: giftDate,
+      amount,
+      donor,
+      donor_name: optionalText(formData, 'donor_name'),
+      relationship_category: DONOR_RELATIONSHIP[donor],
+      transfer_type: transferType,
+      child_account_id: childAccount?.id ?? null,
+      account_name: childAccount?.name ?? child.account_name,
+      memo: optionalText(formData, 'memo'),
+    })
     if (error) throw new Error(error.message)
-    if (!data) throw new Error('선택한 자녀 계좌를 찾을 수 없습니다.')
-    childAccount = data
-  }
 
-  const { error } = await supabase.from('child_gift_deposits').insert({
-    user_id: userId,
-    child_id: childId,
-    gift_date: giftDate,
-    amount,
-    donor,
-    donor_name: optionalText(formData, 'donor_name'),
-    relationship_category: DONOR_RELATIONSHIP[donor],
-    transfer_type: transferType,
-    child_account_id: childAccount?.id ?? null,
-    account_name: childAccount?.name ?? child.account_name,
-    memo: optionalText(formData, 'memo'),
+    revalidatePath('/children')
   })
-  if (error) throw new Error(error.message)
-
-  revalidatePath('/children')
 }
 
-export async function createChildAccount(formData: FormData) {
-  const { supabase, userId } = await getHouseholdContext()
-  const childId = String(formData.get('child_id') ?? '')
-  const assetType = String(formData.get('asset_type') ?? '') as ChildAccountAssetType
-  const name = requiredText(formData, 'name', '계좌명을 입력해 주세요.')
+export async function createChildAccount(formData: FormData): Promise<ActionResult> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    const childId = String(formData.get('child_id') ?? '')
+    const assetType = String(formData.get('asset_type') ?? '') as ChildAccountAssetType
+    const name = requiredText(formData, 'name', '계좌명을 입력해 주세요.')
 
-  if (!UUID_PATTERN.test(childId)) throw new Error('자녀를 선택해 주세요.')
-  if (!CHILD_ACCOUNT_ASSET_TYPES.has(assetType)) throw new Error('계좌 유형을 선택해 주세요.')
-  if (name.length > 100) throw new Error('계좌명은 100자 이하로 입력해 주세요.')
+    if (!UUID_PATTERN.test(childId)) throw new Error('자녀를 선택해 주세요.')
+    if (!CHILD_ACCOUNT_ASSET_TYPES.has(assetType)) throw new Error('계좌 유형을 선택해 주세요.')
+    if (name.length > 100) throw new Error('계좌명은 100자 이하로 입력해 주세요.')
 
-  const { data: child, error: childError } = await supabase
-    .from('children')
-    .select('id')
-    .eq('id', childId)
-    .eq('user_id', userId)
-    .eq('is_active', true)
-    .maybeSingle()
-  if (childError) throw new Error(childError.message)
-  if (!child) throw new Error('등록된 자녀를 찾을 수 없습니다.')
+    const { data: child, error: childError } = await supabase
+      .from('children')
+      .select('id')
+      .eq('id', childId)
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .maybeSingle()
+    if (childError) throw new Error(childError.message)
+    if (!child) throw new Error('등록된 자녀를 찾을 수 없습니다.')
 
-  const { error } = await supabase.from('child_accounts').insert({
-    user_id: userId,
-    child_id: childId,
-    name,
-    asset_type: assetType,
+    const { error } = await supabase.from('child_accounts').insert({
+      user_id: userId,
+      child_id: childId,
+      name,
+      asset_type: assetType,
+    })
+    if (error?.code === '23505') throw new Error('같은 이름의 자녀 계좌가 이미 있습니다.')
+    if (error) throw new Error(error.message)
+
+    revalidatePath('/children')
   })
-  if (error?.code === '23505') throw new Error('같은 이름의 자녀 계좌가 이미 있습니다.')
-  if (error) throw new Error(error.message)
-
-  revalidatePath('/children')
 }
 
-export async function saveChildAccountSnapshot(formData: FormData) {
-  const { supabase, userId } = await getHouseholdContext()
-  const accountId = String(formData.get('account_id') ?? '')
-  const monthInput = String(formData.get('month') ?? '')
-  const evaluationAmount = Number(String(formData.get('evaluation_amount') ?? '').replace(/,/g, ''))
+export async function saveChildAccountSnapshot(formData: FormData): Promise<ActionResult> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    const accountId = String(formData.get('account_id') ?? '')
+    const monthInput = String(formData.get('month') ?? '')
+    const evaluationAmount = Number(String(formData.get('evaluation_amount') ?? '').replace(/,/g, ''))
 
-  if (!UUID_PATTERN.test(accountId)) throw new Error('자녀 계좌를 선택해 주세요.')
-  if (!MONTH_PATTERN.test(monthInput)) throw new Error('올바른 평가월을 입력해 주세요.')
-  if (`${monthInput}-01` > todayInKorea().slice(0, 7) + '-01') throw new Error('미래 평가월은 기록할 수 없습니다.')
-  if (!Number.isSafeInteger(evaluationAmount) || evaluationAmount < 0) throw new Error('평가금액은 0 이상의 원 단위 숫자로 입력해 주세요.')
+    if (!UUID_PATTERN.test(accountId)) throw new Error('자녀 계좌를 선택해 주세요.')
+    if (!MONTH_PATTERN.test(monthInput)) throw new Error('올바른 평가월을 입력해 주세요.')
+    if (`${monthInput}-01` > todayInKorea().slice(0, 7) + '-01') throw new Error('미래 평가월은 기록할 수 없습니다.')
+    if (!Number.isSafeInteger(evaluationAmount) || evaluationAmount < 0) throw new Error('평가금액은 0 이상의 원 단위 숫자로 입력해 주세요.')
 
-  const { data: account, error: accountError } = await supabase
-    .from('child_accounts')
-    .select('id')
-    .eq('id', accountId)
-    .eq('user_id', userId)
-    .eq('is_active', true)
-    .maybeSingle()
-  if (accountError) throw new Error(accountError.message)
-  if (!account) throw new Error('등록된 자녀 계좌를 찾을 수 없습니다.')
+    const { data: account, error: accountError } = await supabase
+      .from('child_accounts')
+      .select('id')
+      .eq('id', accountId)
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .maybeSingle()
+    if (accountError) throw new Error(accountError.message)
+    if (!account) throw new Error('등록된 자녀 계좌를 찾을 수 없습니다.')
 
-  const { error } = await supabase.from('child_account_monthly_snapshots').upsert({
-    user_id: userId,
-    account_id: accountId,
-    month: `${monthInput}-01`,
-    evaluation_amount: evaluationAmount,
-    memo: optionalText(formData, 'memo'),
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'user_id,account_id,month' })
-  if (error) throw new Error(error.message)
+    const { error } = await supabase.from('child_account_monthly_snapshots').upsert({
+      user_id: userId,
+      account_id: accountId,
+      month: `${monthInput}-01`,
+      evaluation_amount: evaluationAmount,
+      memo: optionalText(formData, 'memo'),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,account_id,month' })
+    if (error) throw new Error(error.message)
 
-  revalidatePath('/children')
+    revalidatePath('/children')
+  })
 }
 
-export async function deleteChildAccountSnapshot(id: string) {
-  if (!UUID_PATTERN.test(id)) throw new Error('올바른 평가 기록이 아닙니다.')
-  const { supabase, userId } = await getHouseholdContext()
-  const { error } = await supabase
-    .from('child_account_monthly_snapshots')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', userId)
-  if (error) throw new Error(error.message)
+export async function deleteChildAccountSnapshot(id: string): Promise<ActionResult> {
+  return runAction(async () => {
+    if (!UUID_PATTERN.test(id)) throw new Error('올바른 평가 기록이 아닙니다.')
+    const { supabase, userId } = await getHouseholdContext()
+    const { error } = await supabase
+      .from('child_account_monthly_snapshots')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId)
+    if (error) throw new Error(error.message)
 
-  revalidatePath('/children')
+    revalidatePath('/children')
+  })
 }
 
-export async function deleteChildGift(id: string) {
-  if (!UUID_PATTERN.test(id)) throw new Error('올바른 납입 기록이 아닙니다.')
-  const { supabase, userId } = await getHouseholdContext()
-  const { error } = await supabase
-    .from('child_gift_deposits')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', userId)
-  if (error) throw new Error(error.message)
+export async function deleteChildGift(id: string): Promise<ActionResult> {
+  return runAction(async () => {
+    if (!UUID_PATTERN.test(id)) throw new Error('올바른 납입 기록이 아닙니다.')
+    const { supabase, userId } = await getHouseholdContext()
+    const { error } = await supabase
+      .from('child_gift_deposits')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId)
+    if (error) throw new Error(error.message)
 
-  revalidatePath('/children')
+    revalidatePath('/children')
+  })
 }

@@ -45,7 +45,11 @@ export default function ChildAssetManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        await createChildAccount(formData)
+        const result = await createChildAccount(formData)
+        if (!result.ok) {
+          setMessage(result.error)
+          return
+        }
         accountFormRef.current?.reset()
         setShowAccountForm(false)
         setMessage('자녀 계좌를 추가했습니다.')
@@ -59,7 +63,11 @@ export default function ChildAssetManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        await saveChildAccountSnapshot(formData)
+        const result = await saveChildAccountSnapshot(formData)
+        if (!result.ok) {
+          setMessage(result.error)
+          return
+        }
         const month = String(formData.get('month') ?? currentMonth)
         const accountId = String(formData.get('account_id') ?? '')
         snapshotFormRef.current?.reset()
@@ -82,7 +90,11 @@ export default function ChildAssetManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        await deleteChildAccountSnapshot(id)
+        const result = await deleteChildAccountSnapshot(id)
+        if (!result.ok) {
+          setMessage(result.error)
+          return
+        }
         setMessage('평가 기록을 삭제했습니다.')
       } catch (error) {
         setMessage(error instanceof Error ? error.message : '평가 기록을 삭제하지 못했습니다.')

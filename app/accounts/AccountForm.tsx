@@ -11,7 +11,11 @@ export default function AccountForm({ compact = false }: { compact?: boolean }) 
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
       try {
-        await createAccount(formData)
+        const result = await createAccount(formData)
+        if (!result.ok) {
+          alert('오류: ' + result.error)
+          return
+        }
         formRef.current?.reset()
       } catch (e) {
         alert('오류: ' + (e as Error).message)

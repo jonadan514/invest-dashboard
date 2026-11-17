@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
+import type { ActionResult } from '@/lib/action-result'
 import { krw } from '@/lib/labels'
 import type { HouseholdGoal } from '@/lib/types'
 import {
@@ -38,7 +39,11 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
 
     startTransition(async () => {
       try {
-        await migrateLegacySettings({ monthlyIncome, goals })
+        const result = await migrateLegacySettings({ monthlyIncome, goals })
+        if (!result.ok) {
+          setMessage('이 기기의 기존 설정을 자동 이전하지 못했습니다.')
+          return
+        }
         localStorage.setItem('supabase_settings_migrated', '1')
         router.refresh()
       } catch {
@@ -51,7 +56,11 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
     setMessage(null)
     startTransition(async () => {
       try {
-        await saveHouseholdSettings({ monthlyIncome })
+        const result = await saveHouseholdSettings({ monthlyIncome })
+        if (!result.ok) {
+          setMessage(result.error)
+          return
+        }
         setMessage('가계 설정을 Supabase에 저장했습니다.')
         router.refresh()
       } catch (error) {
@@ -60,11 +69,15 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
     })
   }
 
-  function goalAction(action: () => Promise<void>, success: string) {
+  function goalAction(action: () => Promise<ActionResult>, success: string) {
     setMessage(null)
     startTransition(async () => {
       try {
-        await action()
+        const result = await action()
+        if (!result.ok) {
+          setMessage(result.error)
+          return
+        }
         setEditingGoal(null)
         setShowGoalForm(false)
         setMessage(success)

@@ -13,7 +13,11 @@ export default function BackupNowButton() {
     setMessage(null)
     startTransition(async () => {
       try {
-        await createBackupNow()
+        const result = await createBackupNow()
+        if (!result.ok) {
+          setMessage(result.error)
+          return
+        }
         setMessage('백업을 저장했습니다.')
         router.refresh()
       } catch (error) {
