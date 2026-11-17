@@ -6,6 +6,7 @@ import { Stat, StatStrip } from '@/components/Stat'
 import { krw as formatWon, signedWonShort, wonShort } from '@/lib/labels'
 import NetWorthChart from './NetWorthChart'
 import NetWorthManager from './NetWorthManager'
+import { trySyncMortgageSchedule } from '@/lib/mortgage-sync'
 
 export const metadata = { title: '밸런스 시트' }
 
@@ -72,6 +73,7 @@ export default async function NetWorthPage({
   const requested = (await searchParams).month
   const month = requested && /^\d{4}-(0[1-9]|1[0-2])$/.test(requested) ? requested : currentMonth()
   const { supabase, userId } = await getHouseholdContext()
+  await trySyncMortgageSchedule(supabase, userId)
 
   const [
     { data: itemRows },

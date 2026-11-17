@@ -4,11 +4,13 @@ import { estimateAnnualRate } from '@/lib/calc/mortgage'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import type { FinancialPlanSettingsRow, MonthlyBudget, NetWorthItem, NetWorthSnapshot } from '@/lib/types'
 import MortgageSimulator, { type MortgageLoan } from './MortgageSimulator'
+import { trySyncMortgageSchedule } from '@/lib/mortgage-sync'
 
 export const metadata = { title: '대출 상환' }
 
 export default async function MortgagePage() {
   const { supabase, userId } = await getHouseholdContext()
+  await trySyncMortgageSchedule(supabase, userId)
   const currentMonth = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date())
 
   const [{ data: itemRows }, { data: budgetRows }, { data: planRow }] = await Promise.all([
@@ -69,7 +71,19 @@ export default async function MortgagePage() {
           <Link href="/net-worth" className="mt-3 inline-block text-xs font-semibold text-[var(--color-primary)] hover:underline">밸런스 시트로 →</Link>
         </div>
       ) : (
-        <MortgageSimulator loans={loans} />
+        <>
+          {(() => {
+            const autoReady = items.length > 0 && items.every(item => item.interest_rate != null && item.monthly_payment != null)
+            return (
+              <p className={`mb-4 rounded-xl px-4 py-3 text-[13px] leading-6 ${autoReady ? 'bg-[var(--color-positive-soft)] text-[var(--color-positive-strong)]' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'}`}>
+                {autoReady
+                  ? '자동 상환 켜짐 · 월간 기록이 없는 달도 원리금균등으로 잔액이 매달 줄어요. 직접 입력한 잔액이 있으면 그 값을 기준으로 다시 계산해요.'
+                  : '밸런스 시트의 주택담보대출 항목에 금리와 월 상환액(원리금)을 입력하면, 월간 기록이 없는 달도 잔액이 자동으로 줄어요.'}
+              </p>
+            )
+          })()}
+          <MortgageSimulator loans={loans} />
+        </>
       )}
     </div>
   )
