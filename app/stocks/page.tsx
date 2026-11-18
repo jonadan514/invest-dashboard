@@ -14,11 +14,16 @@ import RefreshPricesButton from './RefreshPricesButton'
 import AssetManager, { type ManagedAsset } from './AssetManager'
 import TradeForm, { type TradeCostContext, type TradeInitial } from './TradeForm'
 import { inferFeeRates } from '@/lib/calc/trade-costs'
-import { parseFilter, parseSort, summarizeReturns, viewHoldings, type HoldingFilter, type HoldingSort } from '@/lib/calc/holdings-view'
+import { allocate, parseFilter, parseSort, summarizeReturns, viewHoldings, type HoldingFilter, type HoldingSort } from '@/lib/calc/holdings-view'
 import { summarizeDividends } from '@/lib/calc/dividends'
 import { stockTrend } from '@/lib/calc/stock-trend'
 import { STOCK_CLASSES, classLabel } from './asset-classes'
 import TrendChart from './TrendChart'
+import Donut from './Donut'
+import ReturnBars from './ReturnBars'
+import StockAlerts from '@/components/StockAlerts'
+import { buildStockAlerts } from '@/lib/calc/stock-alerts'
+import { colorAt } from './palette'
 
 export const metadata = { title: '주식 계좌' }
 
@@ -126,6 +131,16 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
   }))
   const tradeCosts: TradeCostContext = { feeRates: inferFeeRates(trades), usdKrw }
   const tradeAssets = assets.map(asset => ({ id: asset.id, name: asset.name, symbol: asset.symbol, currency: asset.currency, asset_class: asset.asset_class }))
+  const accountSlices = allocate(holdings, holding => holding.account_id, holding => holding.account_name)
+  const classSlices = allocate(holdings, holding => holding.asset_class, holding => classLabel(holding.asset_class))
+  const priceAsOf = new Map<string, string>()
+  for (const [assetId, row] of priceMap) if (row.as_of) priceAsOf.set(assetId, row.as_of)
+  const recordedByAccount = new Map<string, { name: string; amount: number }>()
+  for (const account of accounts) {
+    const record = latestEvaluations.get(account.id)
+    if (record && record.month === currentMonth) recordedByAccount.set(account.id, { name: account.name, amount: Number(record.evaluation_amount) })
+  }
+  const alerts = buildStockAlerts({ holdings, priceAsOf, usdKrw, now, recorded: recordedByAccount })
   const href = (next: Partial<{ tab: Tab; account: string | null; sort: HoldingSort; filter: HoldingFilter; class: string | null; year: string }>) => {
     const query = new URLSearchParams()
     const nextTab = next.tab ?? tab
@@ -192,6 +207,8 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
 
               <RefreshPricesButton lastUpdated={lastPriceUpdate} />
 
+              <StockAlerts alerts={alerts} limit={8} />
+
               {missingPrices > 0 || (usdKrw === null && holdings.some(holding => holding.currency === 'USD')) ? (
                 <p className="rounded-xl bg-[var(--color-accent-soft)] px-4 py-3 text-[13px] text-[var(--color-accent)]">
                   현재가{usdKrw === null && holdings.some(holding => holding.currency === 'USD') ? '나 원/달러 환율' : ''}이 입력되지 않은 종목이 있어요. <Link href={href({ tab: 'prices' })} className="font-semibold underline">현재가 입력</Link>에서 채우면 평가금액에 들어가요.
@@ -235,26 +252,35 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
                 )}
               </section>
 
+              {accountSlices.length > 0 ? (
+                <section className="app-card p-5" aria-label="비중">
+                  <h2 className="text-[15px] font-bold">비중</h2>
+                  <p className="mb-4 mt-1 text-[12.5px] text-[var(--color-muted)]">현재가가 있는 종목의 평가금액 기준이에요. 오른쪽 숫자는 투자원금 대비 수익률이에요.</p>
+                  <div className={`grid gap-6 ${!selectedAccount && accountSlices.length > 1 ? 'lg:grid-cols-2' : ''}`}>
+                    {!selectedAccount && accountSlices.length > 1 ? (
+                      <Donut title="계좌별" slices={accountSlices} center={`${accountSlices.length}개 계좌`} format={wonShort} href={slice => href({ account: slice.key })} />
+                    ) : null}
+                    <Donut title="종목 구분별" slices={classSlices} center={wonShort(classSlices.reduce((sum, slice) => sum + slice.value, 0))} format={wonShort} />
+                  </div>
+                </section>
+              ) : null}
+
               {returns.byGroup.length > 0 ? (
                 <section className="app-card p-5" aria-label="수익률 요약">
                   <h2 className="text-[15px] font-bold">수익률 요약</h2>
-                  <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">현재가가 있는 종목 기준이에요. 수익률은 투자원금 대비 평가손익이에요.</p>
-                  <ul className="mt-3 divide-y divide-[var(--color-border)]">
-                    {returns.byGroup.map(group => (
-                      <li key={group.key} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-[13px]">
-                        <span className="font-semibold">{group.key} <span className="font-normal text-[var(--color-muted)]">{group.count}종목 · {wonShort(group.value)}</span></span>
-                        <span className={`font-semibold tabular-nums ${group.pnl > 0 ? 'text-[var(--color-positive)]' : group.pnl < 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-muted)]'}`}>
-                          {signedWonShort(group.pnl)}{group.rate !== null ? ` (${group.rate > 0 ? '+' : ''}${group.rate.toFixed(1)}%)` : ''}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  {returns.best ? (
-                    <p className="mt-3 text-[12.5px] text-[var(--color-muted)]">
-                      최고 <strong className="text-[var(--color-positive)]">{returns.best.name} {returns.best.unrealized_pnl_pct! > 0 ? '+' : ''}{returns.best.unrealized_pnl_pct!.toFixed(1)}%</strong>
-                      {returns.worst ? <> · 최저 <strong className="text-[var(--color-negative)]">{returns.worst.name} {returns.worst.unrealized_pnl_pct! > 0 ? '+' : ''}{returns.worst.unrealized_pnl_pct!.toFixed(1)}%</strong></> : null}
-                    </p>
-                  ) : null}
+                  <p className="mb-4 mt-1 text-[12.5px] text-[var(--color-muted)]">투자원금 대비 평가손익이에요. 가운데 선이 0%이고 오른쪽 초록은 이익, 왼쪽 빨강은 손실이에요.</p>
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <div>
+                      <h3 className="mb-3 text-[13px] font-bold">종목 구분별</h3>
+                      <ReturnBars rows={returns.byGroup.map(group => ({ key: group.key, label: group.key, rate: group.rate, pnl: group.pnl, detail: `${group.count}종목` }))} />
+                    </div>
+                    <div>
+                      <h3 className="mb-3 text-[13px] font-bold">종목별 (상위·하위)</h3>
+                      <ReturnBars rows={[...holdings].filter(holding => holding.unrealized_pnl_pct !== null).sort((a, b) => b.unrealized_pnl_pct! - a.unrealized_pnl_pct!)
+                        .filter((_, index, list) => index < 3 || index >= list.length - 3)
+                        .map(holding => ({ key: `${holding.account_id}-${holding.asset_id}`, label: holding.name, rate: holding.unrealized_pnl_pct, pnl: holding.unrealized_pnl_krw ?? 0, detail: holding.account_name }))} />
+                    </div>
+                  </div>
                 </section>
               ) : null}
 
@@ -265,28 +291,39 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
               </section>
 
               {!selectedAccount ? (
-                <section className="app-card p-5" aria-label="계좌별 합계">
-                  <h2 className="text-[15px] font-bold">계좌별 합계</h2>
-                  <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">보유 종목 평가금액과 월간 기록에 적은 계좌 평가금액을 비교해요. 차이는 예수금(현금)이나 현재가 차이일 수 있어요.</p>
-                  <ul className="mt-3 divide-y divide-[var(--color-border)]">
-                    {accounts.map(account => {
+                <section aria-label="계좌별 합계">
+                  <h2 className="mb-1 text-[15px] font-bold">계좌별 합계</h2>
+                  <p className="mb-3 text-[12.5px] text-[var(--color-muted)]">보유 종목 평가금액과 월간 기록에 적은 계좌 평가금액을 비교해요. 차이는 예수금(현금)이나 현재가 차이일 수 있어요.</p>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {accounts.map((account, index) => {
                       const rows = holdings.filter(holding => holding.account_id === account.id)
                       if (rows.length === 0) return null
                       const value = rows.reduce((sum, holding) => sum + (holding.market_value_krw ?? 0), 0)
+                      const cost = rows.filter(holding => holding.market_value_krw !== null).reduce((sum, holding) => sum + holding.total_cost_krw, 0)
                       const missing = rows.filter(holding => holding.market_value_krw === null).length
+                      const pnl = value - cost
+                      const rate = cost > 0 ? pnl / cost * 100 : null
                       const recorded = latestEvaluations.get(account.id)
+                      const share = marketValue > 0 ? value / marketValue * 100 : 0
                       return (
-                        <li key={account.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-[13px]">
-                          <Link href={href({ account: account.id })} className="inline-flex min-h-8 items-center font-semibold hover:text-[var(--color-primary)]">{account.name} · {rows.length}종목</Link>
-                          <span className="tabular-nums">
-                            <strong>{missing === rows.length ? '현재가 필요' : wonShort(value)}</strong>
-                            {missing > 0 && missing < rows.length ? <span className="ml-1 text-[12px] text-[var(--color-accent)]">(미입력 {missing})</span> : null}
-                            {recorded ? <span className="ml-2 text-[var(--color-muted)]">{formatMonth(recorded.month)} 기록 {wonShort(Number(recorded.evaluation_amount))}</span> : null}
-                          </span>
-                        </li>
+                        <Link key={account.id} href={href({ account: account.id })} className="app-card block p-4 hover:border-[var(--color-primary)]">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="min-w-0 truncate text-[14px] font-bold">{account.name}</p>
+                            <span className="shrink-0 text-[12px] text-[var(--color-muted)]">{rows.length}종목</span>
+                          </div>
+                          <p className="mt-2 text-[22px] font-bold tabular-nums leading-none">{missing === rows.length ? '현재가 필요' : wonShort(value)}</p>
+                          <p className={`mt-1.5 text-[13px] font-semibold tabular-nums ${pnl > 0 ? 'text-[var(--color-positive)]' : pnl < 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-muted)]'}`}>
+                            {rate === null ? '—' : `${rate > 0 ? '+' : ''}${rate.toFixed(1)}%`} <span className="text-[12px] font-medium">{rate === null ? '' : signedWonShort(pnl)}</span>
+                          </p>
+                          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--color-section)]"><span className="block h-full rounded-full" style={{ width: `${share}%`, background: colorAt(index) }} /></div>
+                          <p className="mt-1.5 flex flex-wrap justify-between gap-x-2 text-[12px] tabular-nums text-[var(--color-muted)]">
+                            <span>전체의 {share.toFixed(0)}%{missing > 0 && missing < rows.length ? ` · 미입력 ${missing}` : ''}</span>
+                            {recorded ? <span>{formatMonth(recorded.month)} 기록 {wonShort(Number(recorded.evaluation_amount))}</span> : null}
+                          </p>
+                        </Link>
                       )
                     })}
-                  </ul>
+                  </div>
                 </section>
               ) : null}
             </div>
@@ -428,7 +465,7 @@ function HoldingsTable({ holdings, total }: { holdings: Holding[]; total: number
         {holdings.map(holding => (
           <li key={`${holding.account_id}-${holding.asset_id}`} className="px-5 py-3.5">
             <div className="flex items-baseline justify-between gap-3">
-              <p className="min-w-0 truncate text-[14px] font-bold">{holding.name}</p>
+              <Link href={`/stocks/${holding.asset_id}`} className="min-w-0 truncate text-[14px] font-bold hover:text-[var(--color-primary)]">{holding.name}</Link>
               <p className="shrink-0 text-[14px] font-bold tabular-nums">{holding.market_value_krw === null ? '현재가 필요' : wonShort(holding.market_value_krw)}</p>
             </div>
             <div className="mt-1 flex items-baseline justify-between gap-3 text-[12.5px] tabular-nums text-[var(--color-muted)]">
@@ -457,7 +494,7 @@ function HoldingsTable({ holdings, total }: { holdings: Holding[]; total: number
               return (
                 <tr key={`${holding.account_id}-${holding.asset_id}`} className="border-b border-[var(--color-section)] last:border-0">
                   <td className="px-5 py-3">
-                    <p className="font-semibold">{holding.name}{holding.symbol ? <span className="ml-1.5 text-[12px] font-normal text-[var(--color-subtle)]">{holding.symbol}</span> : null}</p>
+                    <p className="font-semibold"><Link href={`/stocks/${holding.asset_id}`} className="hover:text-[var(--color-primary)] hover:underline">{holding.name}</Link>{holding.symbol ? <span className="ml-1.5 text-[12px] font-normal text-[var(--color-subtle)]">{holding.symbol}</span> : null}</p>
                     <p className="text-[12px] text-[var(--color-muted)]">{holding.account_name}</p>
                   </td>
                   <td className="px-3 py-3 text-right tabular-nums">{holding.quantity.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}</td>
