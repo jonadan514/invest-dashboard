@@ -53,6 +53,7 @@ export default async function MortgagePage() {
       monthlyPayment: payment,
       paymentSource: item.monthly_payment != null ? 'item' : payment != null ? (latestBudget ? 'budget' : 'plan') : 'none',
       maturityDate: item.maturity_date,
+      history: snapshots.filter(snapshot => snapshot.item_id === item.id).slice(-5).map(snapshot => ({ month: snapshot.month, amount: Number(snapshot.amount) })),
     }]
   })
 

@@ -80,3 +80,30 @@ test('시뮬레이터는 startMonth이 있으면 일수 이자로 총이자를 �
   assert.equal(plain.months, daily.months)
   assert.ok(Math.abs(plain.totalInterest! - daily.totalInterest!) < plain.totalInterest! * 0.01)
 })
+
+import { buildRepaymentTable } from '../lib/calc/repayment-table.ts'
+
+test('월별 상환 내역: 지난 달은 잔액 변화, 앞으로는 월 상환액으로 계산', () => {
+  const rows = buildRepaymentTable({
+    balance: 319_390_000, balanceMonth: '2026-09', annualRate: 3.9, monthlyPayment: 1_650_000,
+    history: [{ month: '2026-08', amount: 320_000_000 }, { month: '2026-09', amount: 319_390_000 }],
+    futureMonths: 3,
+  })
+  assert.deepEqual(rows.map(row => [row.month, row.kind, row.days]), [['2026-09', 'past', 30], ['2026-10', 'future', 31], ['2026-11', 'future', 30], ['2026-12', 'future', 31]])
+  assert.equal(rows[0].principal, 610_000)
+  assert.equal(rows[0].interest, Math.round(320_000_000 * 0.039 * 30 / 365))
+  assert.ok(rows[2].principal >= rows[1].principal, '정기 원금은 잔액이 줄수록 조금 늘어난다')
+  assert.ok(rows[1].interest > rows[2].interest, '31일 달이 30일 달보다 이자가 많다')
+  assert.equal(rows[1].total, rows[1].interest + rows[1].principal)
+  assert.equal(rows[1].balanceAfter, 319_390_000 - rows[1].principal)
+})
+
+test('월별 상환 내역: 금리가 없으면 비고, 월 상환액이 없으면 지난 달만, 기록이 끊기면 건너뜀', () => {
+  const history = [{ month: '2026-06', amount: 330_000_000 }, { month: '2026-09', amount: 320_000_000 }]
+  assert.deepEqual(buildRepaymentTable({ balance: 320_000_000, balanceMonth: '2026-09', annualRate: null, monthlyPayment: 1, history }), [])
+  assert.deepEqual(buildRepaymentTable({ balance: 320_000_000, balanceMonth: '2026-09', annualRate: 3.9, monthlyPayment: null, history }), [])
+  const onlyPast = buildRepaymentTable({ balance: 320_000_000, balanceMonth: '2026-09', annualRate: 3.9, monthlyPayment: null, history: [{ month: '2026-08', amount: 321_000_000 }, { month: '2026-09', amount: 320_000_000 }] })
+  assert.deepEqual(onlyPast.map(row => row.kind), ['past'])
+  const paid = buildRepaymentTable({ balance: 1_000_000, balanceMonth: '2026-09', annualRate: 3.9, monthlyPayment: 1_650_000, history: [] })
+  assert.deepEqual(paid.map(row => row.balanceAfter), [0], '완납하면 거기서 끝')
+})
