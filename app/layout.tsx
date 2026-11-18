@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Manrope, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
@@ -25,6 +25,20 @@ export const metadata: Metadata = {
     template: "%s · 샘훈호",
   },
   description: "부부 자산·수익률·연금 통합 관리",
+  applicationName: "샘훈호",
+  appleWebApp: {
+    capable: true,
+    title: "샘훈호",
+    statusBarStyle: "default",
+  },
+  formatDetection: { telephone: false },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#172b46",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
