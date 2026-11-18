@@ -10,30 +10,12 @@ import AccountForm from '@/app/accounts/AccountForm'
 import DeleteButton from '@/app/accounts/DeleteButton'
 import { createNetWorthItem, saveNetWorthSnapshot, setNetWorthItemActive } from './actions'
 import NetWorthItemEditor from './NetWorthItemEditor'
+import BalanceHistory, { type BalanceRow } from './BalanceHistory'
+import { ASSET_CATEGORIES, CATEGORY_LABEL, LIABILITY_CATEGORIES, OWNER_LABEL } from './categories'
+import { isAutoMortgage } from '@/lib/calc/net-worth-items'
+import { formatMonth } from '@/lib/labels'
 
-const ASSET_CATEGORIES = [
-  ['real_estate', '부동산'],
-  ['deposit', '전월세 보증금'],
-  ['vehicle', '차량'],
-  ['other_asset', '기타 자산'],
-] as const
-
-const LIABILITY_CATEGORIES = [
-  ['mortgage', '주택담보대출'],
-  ['credit_loan', '신용대출'],
-  ['lease', '임대보증금·리스'],
-  ['card', '카드 미결제금'],
-  ['other_liability', '기타 부채'],
-] as const
-
-export const CATEGORY_LABEL = Object.fromEntries([
-  ['cash', '현금·비상금'],
-  ['savings', '예·적금'],
-  ...ASSET_CATEGORIES,
-  ...LIABILITY_CATEGORIES,
-]) as Record<string, string>
-
-const OWNER_LABEL: Record<string, string> = { household: '공동', me: '나', spouse: '아내' }
+export { CATEGORY_LABEL }
 const INPUT = 'w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]'
 
 type WorkspaceView = 'overview' | 'record' | 'settings'
@@ -53,6 +35,11 @@ interface Props {
   accounts: Account[]
   latestAccountSnapshots: Record<string, { amount: number; month: string }>
   initialAmounts: Record<string, number>
+  /** 항목별로 initialAmounts 값이 기록된 달. */
+  latestMonths: Record<string, string>
+  history: Record<string, BalanceRow[]>
+  currentMonth: string
+  initialView?: WorkspaceView
   hasExactSnapshot: boolean
   investmentValue: number
   investmentRecordedMonth: string | null
@@ -67,6 +54,10 @@ export default function NetWorthManager({
   accounts,
   latestAccountSnapshots,
   initialAmounts,
+  latestMonths,
+  history,
+  currentMonth,
+  initialView = 'overview',
   hasExactSnapshot,
   investmentValue,
   investmentRecordedMonth,
@@ -75,11 +66,13 @@ export default function NetWorthManager({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const addFormRef = useRef<HTMLFormElement>(null)
-  const [view, setView] = useState<WorkspaceView>('overview')
+  const [view, setView] = useState<WorkspaceView>(initialView)
   const [kind, setKind] = useState<'asset' | 'liability'>('asset')
   const [category, setCategory] = useState<string>('real_estate')
   const [amounts, setAmounts] = useState(initialAmounts)
   const [message, setMessage] = useState<string | null>(null)
+  const [showAdd, setShowAdd] = useState(false)
+  const [correcting, setCorrecting] = useState<Set<string>>(new Set())
   const [pending, startTransition] = useTransition()
 
   function changeMonth(nextMonth: string) {
@@ -98,6 +91,7 @@ export default function NetWorthManager({
           return
         }
         addFormRef.current?.reset()
+        setShowAdd(false)
         setKind('asset')
         setCategory('real_estate')
         setMessage('새 항목을 추가했습니다.')
@@ -116,6 +110,7 @@ export default function NetWorthManager({
           setMessage(result.error)
           return
         }
+        setCorrecting(new Set())
         setMessage(`${month.replace('-', '년 ')}월 기록을 저장했습니다.`)
       } catch (error) {
         setMessage(error instanceof Error ? error.message : '월별 기록을 저장하지 못했습니다.')
@@ -127,7 +122,7 @@ export default function NetWorthManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        const result = await setNetWorthItemActive(id, active, month)
+        const result = await setNetWorthItemActive(id, active, active ? month : currentMonth)
         if (!result.ok) {
           setMessage(result.error)
           return
@@ -167,7 +162,7 @@ export default function NetWorthManager({
         })}
       </nav>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {view !== 'settings' ? <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <label htmlFor="net-worth-month" className="mb-1 block text-[12.5px] font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
             기준 월
@@ -187,7 +182,7 @@ export default function NetWorthManager({
         <p className="text-xs text-[var(--color-muted)]">
           {hasExactSnapshot ? '● 저장된 월말 기록' : '직전 기록을 불러왔습니다. 금액을 확인하고 저장하세요.'}
         </p>
-      </div>
+      </div> : null}
 
       {view === 'overview' ? overview : null}
 
@@ -299,13 +294,13 @@ export default function NetWorthManager({
             </div>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2">
-            <SnapshotGroup title="자산" description="현재 보유한 금액이나 평가액" items={assets} amounts={amounts} setAmounts={setAmounts} onToggle={toggleItem} />
-            <SnapshotGroup title="부채" description="현재 남아 있는 원금 잔액" items={liabilities} amounts={amounts} setAmounts={setAmounts} onToggle={toggleItem} liability />
+            <SnapshotGroup title="자산" description="현재 보유한 금액이나 평가액" items={assets} amounts={amounts} setAmounts={setAmounts} month={month} latestMonths={latestMonths} correcting={correcting} setCorrecting={setCorrecting} />
+            <SnapshotGroup title="부채" description="현재 남아 있는 원금 잔액" items={liabilities} amounts={amounts} setAmounts={setAmounts} month={month} latestMonths={latestMonths} correcting={correcting} setCorrecting={setCorrecting} liability />
           </div>
           <div className="flex flex-col gap-3 border-t border-[var(--color-border)] bg-white/45 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <p className="text-[12.5px] leading-5 text-[var(--color-muted)]">금융계좌는 월간 기록에서, 부동산·보증금·대출 등은 이 화면에서 월말 잔액을 관리합니다.</p>
+            <p className="text-[12.5px] leading-5 text-[var(--color-muted)]">입력칸이 있는 항목만 이 달 잔액으로 저장해요. 자동 상환 대출은 건드리지 않아요. 항목 이름·조건·지난 잔액은 항목 관리에서 고쳐요.</p>
             <button type="submit" disabled={pending} className="min-h-10 shrink-0 rounded-xl bg-[var(--color-primary)] px-5 text-xs font-semibold text-white disabled:opacity-50">
-              {pending ? '저장 중…' : '이달 월말 기록 저장'}
+              {pending ? '저장 중…' : `${formatMonth(month)} 기록 저장`}
             </button>
           </div>
         </form>
@@ -319,9 +314,17 @@ export default function NetWorthManager({
 
       {message ? <p role="status" className="rounded-xl bg-blue-50 px-4 py-3 text-xs text-[var(--color-primary)]">{message}</p> : null}
 
-      {view === 'settings' ? <section className="app-card p-4 sm:p-5">
-        <h2 className="text-base font-bold text-[var(--color-ink)]">계좌 외 자산·부채</h2>
-        <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">부동산·보증금·차량·대출만 등록합니다. 금융계좌를 이곳에 다시 만들면 중복 계산됩니다.</p>
+      {view === 'settings' ? <section className="app-card overflow-hidden">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--color-border)] px-4 py-4 sm:px-5">
+          <div>
+            <h2 className="text-base font-bold text-[var(--color-ink)]">계좌 외 자산·부채</h2>
+            <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">부동산·보증금·차량·대출을 한 번 등록해 두고, 항목을 눌러 정보와 잔액 이력을 고쳐요. 금융계좌를 여기 다시 만들면 중복 계산돼요.</p>
+          </div>
+          <button type="button" onClick={() => setShowAdd(value => !value)} aria-expanded={showAdd} className="min-h-9 shrink-0 rounded-lg bg-[var(--color-primary)] px-4 text-[12.5px] font-semibold text-white">{showAdd ? '추가 닫기' : '＋ 새 항목 추가'}</button>
+        </div>
+
+        {showAdd ? (
+          <div className="border-b border-[var(--color-border)] bg-[var(--color-section)] p-4 sm:p-5">
         <form ref={addFormRef} action={addItem} className="mt-4 space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
@@ -366,7 +369,7 @@ export default function NetWorthManager({
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs text-[var(--color-muted)]">기준 월</label>
-                <input name="initial_month" type="month" required defaultValue={month} className={INPUT} />
+                <input name="initial_month" type="month" required defaultValue={currentMonth} max={currentMonth} className={INPUT} />
               </div>
               <div>
                 <label className="mb-1 block text-xs text-[var(--color-muted)]">현재 금액</label>
@@ -408,27 +411,50 @@ export default function NetWorthManager({
             </button>
           </div>
         </form>
-
-        {activeItems.length > 0 ? (
-          <div className="mt-5 border-t border-[var(--color-border)] pt-4">
-            <p className="mb-2 text-xs font-semibold text-[var(--color-muted)]">등록 항목 정보 수정</p>
-            <div className="space-y-2">
-              {activeItems.map(item => (
-                <details key={item.id} className="rounded-xl border border-[var(--color-border)] bg-white/55">
-                  <summary className="cursor-pointer px-4 py-3 text-xs font-semibold">
-                    <OwnerBadge owner={item.owner} /> <span className="ml-1.5">{item.name}</span> <span className="font-normal text-[var(--color-muted)]">· {CATEGORY_LABEL[item.category] ?? item.category}</span>
-                  </summary>
-                  <div className="border-t border-[var(--color-border)] p-4">
-                    <NetWorthItemEditor item={item} />
-                  </div>
-                </details>
-              ))}
-            </div>
           </div>
         ) : null}
 
+        {activeItems.length === 0 && !showAdd ? (
+          <p className="px-5 py-8 text-center text-[13px] text-[var(--color-muted)]">등록된 자산·부채가 없어요. ‘새 항목 추가’로 아파트, 보증금, 주택담보대출 등을 등록하세요.</p>
+        ) : null}
+        <ul className="divide-y divide-[var(--color-border)]">
+          {activeItems.map(item => {
+            const auto = isAutoMortgage(item)
+            const rows = history[item.id] ?? []
+            const latest = rows[0] ?? null
+            return (
+              <li key={item.id}>
+                <details className="group">
+                  <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 hover:bg-[var(--color-section)] sm:px-5">
+                    <span className="flex min-w-0 flex-1 items-center gap-2">
+                      <OwnerBadge owner={item.owner} />
+                      <span className="truncate text-[13.5px] font-semibold">{item.name}</span>
+                      <span className="shrink-0 text-[12px] text-[var(--color-muted)]">{item.kind === 'liability' ? '부채' : '자산'} · {CATEGORY_LABEL[item.category] ?? item.category}</span>
+                      {auto ? <span className="shrink-0 rounded bg-[var(--color-positive-soft)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--color-positive-strong)]">자동 상환</span> : null}
+                    </span>
+                    <span className="text-right">
+                      <span className="block text-[13.5px] font-bold tabular-nums">{latest ? krw(latest.amount) : '—'}</span>
+                      <span className="block text-[11.5px] text-[var(--color-subtle)]">{latest ? `${formatMonth(latest.month)} ${latest.source === 'manual' ? '직접 입력' : '자동'}` : '잔액 기록 없음'}</span>
+                    </span>
+                    <span aria-hidden="true" className="text-[var(--color-subtle)] transition-transform group-open:rotate-90">›</span>
+                  </summary>
+                  <div className="space-y-5 border-t border-[var(--color-border)] bg-[var(--color-section)] px-4 py-4 sm:px-5">
+                    <NetWorthItemEditor item={item} />
+                    <div className="border-t border-[var(--color-border)] pt-4">
+                      <BalanceHistory itemId={item.id} rows={rows} currentMonth={currentMonth} auto={auto} />
+                    </div>
+                    <div className="flex justify-end border-t border-[var(--color-border)] pt-3">
+                      <button type="button" disabled={pending} onClick={() => { if (confirm(`${item.name} 항목을 이번 달부터 비활성화할까요? 과거 기록은 남아요.`)) toggleItem(item.id, false) }} className="min-h-8 text-[12px] text-[var(--color-subtle)] hover:text-[var(--color-negative)] disabled:opacity-50">이 항목 비활성화</button>
+                    </div>
+                  </div>
+                </details>
+              </li>
+            )
+          })}
+        </ul>
+
         {inactiveItems.length > 0 ? (
-          <details className="mt-4 border-t border-[var(--color-border)] pt-4">
+          <details className="border-t border-[var(--color-border)] px-4 py-3 sm:px-5">
             <summary className="cursor-pointer text-xs font-semibold text-[var(--color-muted)]">비활성 항목 {inactiveItems.length}개</summary>
             <div className="mt-3 flex flex-wrap gap-2">
               {inactiveItems.map(item => (
@@ -450,7 +476,10 @@ function SnapshotGroup({
   items,
   amounts,
   setAmounts,
-  onToggle,
+  month,
+  latestMonths,
+  correcting,
+  setCorrecting,
   liability = false,
 }: {
   title: string
@@ -458,9 +487,18 @@ function SnapshotGroup({
   items: NetWorthItem[]
   amounts: Record<string, number>
   setAmounts: React.Dispatch<React.SetStateAction<Record<string, number>>>
-  onToggle: (id: string, active: boolean) => void
+  month: string
+  latestMonths: Record<string, string>
+  correcting: Set<string>
+  setCorrecting: React.Dispatch<React.SetStateAction<Set<string>>>
   liability?: boolean
 }) {
+  const toggle = (id: string, open: boolean) => setCorrecting(current => {
+    const next = new Set(current)
+    if (open) next.add(id)
+    else next.delete(id)
+    return next
+  })
   return (
     <div className="border-[var(--color-border)] p-4 lg:border-r lg:last:border-r-0 sm:p-5">
       <div className="mb-4">
@@ -469,38 +507,50 @@ function SnapshotGroup({
       </div>
       {items.length === 0 ? <p className="py-6 text-center text-xs text-[var(--color-subtle)]">등록된 {title} 항목이 없습니다.</p> : null}
       <div className="space-y-3">
-        {items.map(item => (
-          <div key={item.id} className="rounded-xl border border-[var(--color-border)] bg-white/70 p-3">
-            <div className="mb-2 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex min-w-0 items-center gap-2">
-                  <OwnerBadge owner={item.owner} />
-                  <p className="truncate text-xs font-semibold">{item.name}</p>
-                </div>
-                <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{CATEGORY_LABEL[item.category] ?? item.category}</p>
-                {item.interest_rate != null || item.monthly_payment != null || item.maturity_date ? (
-                  <p className="mt-1 text-[11.5px] text-amber-700">
-                    {item.interest_rate != null ? `연 ${Number(item.interest_rate).toFixed(2)}%` : null}
-                    {item.monthly_payment != null ? `${item.interest_rate != null ? ' · ' : ''}월 ${formatKrw(Number(item.monthly_payment))}` : null}
-                    {item.maturity_date ? `${item.interest_rate != null || item.monthly_payment != null ? ' · ' : ''}${item.maturity_date} 만기` : null}
+        {items.map(item => {
+          const auto = isAutoMortgage(item)
+          const editable = !auto || correcting.has(item.id)
+          const recordedMonth = latestMonths[item.id]
+          return (
+            <div key={item.id} className="rounded-xl border border-[var(--color-border)] bg-white/70 p-3">
+              <div className="mb-2 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <OwnerBadge owner={item.owner} />
+                    <p className="truncate text-xs font-semibold">{item.name}</p>
+                    {auto ? <span className="shrink-0 rounded bg-[var(--color-positive-soft)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--color-positive-strong)]">자동 상환</span> : null}
+                  </div>
+                  <p className="mt-1 text-[12px] text-[var(--color-muted)]">
+                    {CATEGORY_LABEL[item.category] ?? item.category}
+                    {recordedMonth && recordedMonth !== month ? ` · ${formatMonth(recordedMonth)} 값을 불러왔어요` : ''}
                   </p>
+                </div>
+                {auto ? (
+                  <button type="button" onClick={() => toggle(item.id, !correcting.has(item.id))} className="min-h-8 shrink-0 text-[12px] font-semibold text-[var(--color-primary)]">{correcting.has(item.id) ? '바로잡기 취소' : '바로잡기'}</button>
                 ) : null}
               </div>
-              <button type="button" onClick={() => onToggle(item.id, false)} className="shrink-0 text-[11.5px] text-[var(--color-subtle)] hover:text-red-600">비활성화</button>
+              {editable ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    name={`amount_${item.id}`}
+                    value={formatInput(amounts[item.id] ?? 0)}
+                    onChange={event => setAmounts(current => ({ ...current, [item.id]: parseAmount(event.target.value) }))}
+                    inputMode="numeric"
+                    aria-label={`${item.name} ${liability ? '부채 잔액' : '자산 금액'}`}
+                    className={`min-w-0 flex-1 rounded-lg border bg-white px-3 py-2 text-right text-sm font-semibold tabular-nums outline-none ${liability ? 'border-amber-200 focus:border-amber-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}`}
+                  />
+                  <span className="text-xs text-[var(--color-muted)]">원</span>
+                </div>
+              ) : (
+                <div className="flex items-baseline justify-between gap-2 rounded-lg bg-[var(--color-section)] px-3 py-2">
+                  <span className="text-[12px] text-[var(--color-muted)]">대출 조건으로 계산한 잔액</span>
+                  <span className="text-sm font-semibold tabular-nums">{formatKrw(amounts[item.id] ?? 0)}</span>
+                </div>
+              )}
+              {auto && correcting.has(item.id) ? <p className="mt-1.5 text-[11.5px] text-[var(--color-muted)]">은행 잔액을 넣으면 이 달 잔액을 기준으로 이후 달을 다시 계산해요.</p> : null}
             </div>
-            <div className="flex items-center gap-2">
-              <input
-                name={`amount_${item.id}`}
-                value={formatInput(amounts[item.id] ?? 0)}
-                onChange={event => setAmounts(current => ({ ...current, [item.id]: parseAmount(event.target.value) }))}
-                inputMode="numeric"
-                aria-label={`${item.name} ${liability ? '부채 잔액' : '자산 금액'}`}
-                className={`min-w-0 flex-1 rounded-lg border bg-white px-3 py-2 text-right text-sm font-semibold tabular-nums outline-none ${liability ? 'border-amber-200 focus:border-amber-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}`}
-              />
-              <span className="text-xs text-[var(--color-muted)]">원</span>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

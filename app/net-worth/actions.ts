@@ -4,6 +4,7 @@ import { runAction, type ActionResult } from '@/lib/action-result'
 import { revalidatePath } from 'next/cache'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import { syncMortgageSchedule } from '@/lib/mortgage-sync'
+import { pickBalances } from '@/lib/calc/net-worth-items'
 
 const ASSET_CATEGORIES = new Set([
   'cash', 'savings', 'real_estate', 'deposit', 'vehicle', 'other_asset',
@@ -94,13 +95,12 @@ export async function saveNetWorthSnapshot(formData: FormData): Promise<ActionRe
       .eq('is_active', true)
     if (itemError) throw new Error(itemError.message)
 
-    const rows = (items ?? []).map(item => {
-      const raw = String(formData.get(`amount_${item.id}`) ?? '').replace(/,/g, '').trim()
-      if (!raw) throw new Error('모든 항목의 금액을 입력해 주세요.')
-      const amount = Number(raw)
-      if (!Number.isFinite(amount) || amount < 0) throw new Error('금액은 0 이상의 숫자로 입력해 주세요.')
-      return { item_id: item.id, amount }
+    // 폼에 있는 항목만 저장한다. 자동 상환 대출처럼 입력칸이 없는 항목은 그달 기록을 건드리지 않는다.
+    const rows = pickBalances((items ?? []).map(item => item.id as string), name => {
+      const value = formData.get(name)
+      return value === null ? null : String(value)
     })
+    if (rows.length === 0) throw new Error('저장할 금액이 없습니다.')
 
     if (rows.length > 0) {
       const { error } = await supabase.rpc('save_net_worth_snapshot', {
@@ -126,19 +126,27 @@ export async function updateNetWorthItem(id: string, formData: FormData): Promis
     const startDate = String(formData.get('start_date') ?? '') || null
     const maturityDate = String(formData.get('maturity_date') ?? '') || null
     const owner = String(formData.get('owner') ?? '')
+    const category = String(formData.get('category') ?? '')
 
     if (!['household', 'me', 'spouse'].includes(owner)) throw new Error('올바른 소유자를 선택해 주세요.')
     if (startDate && maturityDate && maturityDate < startDate) throw new Error('만기일은 시작일 이후여야 합니다.')
+
+    const { data: current, error: currentError } = await supabase.from('net_worth_items').select('kind').eq('id', id).eq('user_id', userId).single()
+    if (currentError) throw new Error(currentError.message)
+    const liability = current.kind === 'liability'
+    if (category && !(liability ? LIABILITY_CATEGORIES : ASSET_CATEGORIES).has(category)) throw new Error('올바른 분류를 선택해 주세요.')
 
     const { error } = await supabase
       .from('net_worth_items')
       .update({
         name: requiredText(formData, 'name'),
         owner,
-        interest_rate: interestRate,
-        monthly_payment: monthlyPayment,
+        ...(category ? { category } : {}),
+        // 대출 조건은 부채에만 쓴다. 자산은 비운다.
+        interest_rate: liability ? interestRate : null,
+        monthly_payment: liability ? monthlyPayment : null,
         start_date: startDate,
-        maturity_date: maturityDate,
+        maturity_date: liability ? maturityDate : null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
@@ -179,6 +187,46 @@ export async function setNetWorthItemActive(id: string, active: boolean, month: 
       .eq('user_id', userId)
     if (error) throw new Error(error.message)
 
+    await syncMortgageSchedule(supabase, userId)
+    revalidatePath('/net-worth')
+    revalidatePath('/mortgage')
+    revalidatePath('/')
+  })
+}
+
+/** 한 항목의 한 달 잔액만 저장한다(직접 입력). 자동 상환 대출은 이 값을 기준으로 다시 계산한다. */
+export async function saveItemBalance(itemId: string, month: string, amountText: string): Promise<ActionResult> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('올바른 달을 선택해 주세요.')
+    const [row] = pickBalances([itemId], () => amountText)
+    const { error } = await supabase.rpc('save_net_worth_snapshot', { p_user_id: userId, p_month: month, p_balances: [row] })
+    if (error) throw new Error(error.message)
+    await syncMortgageSchedule(supabase, userId)
+    revalidatePath('/net-worth')
+    revalidatePath('/mortgage')
+    revalidatePath('/')
+  })
+}
+
+/** 직접 입력한 한 달 잔액을 지운다. 자동 상환 잔액은 남은 기록을 기준으로 다시 계산한다. */
+export async function deleteItemBalance(itemId: string, month: string): Promise<ActionResult> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('올바른 달을 선택해 주세요.')
+    const { count, error: countError } = await supabase.from('net_worth_snapshots').select('id', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('item_id', itemId).eq('source', 'manual')
+    if (countError) throw new Error(countError.message)
+    if ((count ?? 0) <= 1) throw new Error('마지막 남은 잔액 기록은 지울 수 없어요. 금액을 고쳐 주세요.')
+    const { error } = await supabase.from('net_worth_snapshots').delete()
+      .eq('user_id', userId).eq('item_id', itemId).eq('month', month).eq('source', 'manual')
+    if (error) throw new Error(error.message)
+    // 지운 기준점으로 계산된 자동 잔액을 비우고 남은 기준점으로 다시 채운다.
+    const { error: autoError } = await supabase.from('net_worth_snapshots').delete()
+      .eq('user_id', userId).eq('item_id', itemId).eq('source', 'mortgage_auto')
+    if (autoError) throw new Error(autoError.message)
+    const { error: recomputeError } = await supabase.rpc('recompute_mortgage_snapshots', { p_user_id: userId })
+    if (recomputeError) throw new Error(recomputeError.message)
     await syncMortgageSchedule(supabase, userId)
     revalidatePath('/net-worth')
     revalidatePath('/mortgage')
