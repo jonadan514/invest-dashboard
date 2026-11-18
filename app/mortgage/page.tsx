@@ -15,13 +15,14 @@ export default async function MortgagePage() {
 
   const [{ data: itemRows }, { data: budgetRows }, { data: planRow }] = await Promise.all([
     supabase.from('net_worth_items').select('*').eq('user_id', userId).eq('category', 'mortgage').order('sort_order').throwOnError(),
-    supabase.from('monthly_budgets').select('*').eq('user_id', userId).lte('month', currentMonth).order('month', { ascending: false }).limit(1).throwOnError(),
+    supabase.from('monthly_budgets').select('*').eq('user_id', userId).lte('month', currentMonth).order('month', { ascending: false }).limit(6).throwOnError(),
     supabase.from('financial_plan_settings').select('*').eq('user_id', userId).maybeSingle().throwOnError(),
   ])
 
   const items = ((itemRows ?? []) as NetWorthItem[])
     .filter(item => item.is_active && (!item.inactive_from_month || currentMonth < item.inactive_from_month))
-  const latestBudget = ((budgetRows ?? []) as MonthlyBudget[])[0] ?? null
+  const recentBudgets = (budgetRows ?? []) as MonthlyBudget[]
+  const latestBudget = recentBudgets[0] ?? null
   const plan = planRow as FinancialPlanSettingsRow | null
 
   const { data: snapshotRows } = items.length > 0
@@ -53,6 +54,7 @@ export default async function MortgagePage() {
       monthlyPayment: payment,
       paymentSource: item.monthly_payment != null ? 'item' : payment != null ? (latestBudget ? 'budget' : 'plan') : 'none',
       maturityDate: item.maturity_date,
+      recorded: single ? recentBudgets.filter(row => Number(row.mortgage_interest) > 0 || Number(row.mortgage_principal) > 0).map(row => ({ month: row.month, interest: Number(row.mortgage_interest), principal: Number(row.mortgage_principal) })).reverse() : [],
       history: snapshots.filter(snapshot => snapshot.item_id === item.id).slice(-5).map(snapshot => ({ month: snapshot.month, amount: Number(snapshot.amount) })),
     }]
   })
@@ -78,7 +80,7 @@ export default async function MortgagePage() {
             return (
               <p className={`mb-4 rounded-xl px-4 py-3 text-[13px] leading-6 ${autoReady ? 'bg-[var(--color-positive-soft)] text-[var(--color-positive-strong)]' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'}`}>
                 {autoReady
-                  ? '자동 상환 켜짐 · 월간 기록이 없는 달도 잔액이 매달 줄어요. 이자는 그달 일수만큼 계산해서 달마다 조금씩 달라요. 직접 입력한 잔액이 있으면 그 값을 기준으로 다시 계산해요.'
+                  ? '자동 상환 켜짐 · 월간 기록이 없는 달도 잔액이 매달 줄어요. 이자는 전달 납부일부터 이번 달 납부일 전날까지의 일수로 계산해서 달마다 조금씩 달라요. 직접 입력한 잔액이 있으면 그 값을 기준으로 다시 계산해요.'
                   : '밸런스 시트의 주택담보대출 항목에 금리와 월 상환액(원리금)을 입력하면, 월간 기록이 없는 달도 잔액이 자동으로 줄어요.'}
               </p>
             )

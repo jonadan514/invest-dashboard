@@ -1,6 +1,6 @@
 'use client'
 
-import { daysInMonth } from '@/lib/calc/loan-interest'
+import { interestDays } from '@/lib/calc/loan-interest'
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -191,7 +191,7 @@ export default function MonthlyForm({
             <div className="space-y-4">
               {!entry && mortgageDefaults ? (
                 <p className="rounded-lg bg-[var(--color-primary-soft)] px-3 py-2 text-[12.5px] leading-5 text-[var(--color-primary)]">
-                  직전 달 대출 잔액과 연 금리로 이번 달 일수({daysInMonth(month)}일)만큼 계산한 이자예요{mortgageDefaults.principal !== null ? '. 정기 원금은 월 상환액에서 기준 이자를 뺀 값이에요' : ''}. 실제 납부액이 다르면 고쳐서 저장하세요.
+                  직전 달 대출 잔액과 연 금리로 이자 기간({interestDays(month)}일: 전달 납부일~이번 달 납부일 전날)만큼 계산한 이자예요{mortgageDefaults.principal !== null ? '. 정기 원금은 월 상환액에서 기준 이자를 뺀 값이에요' : ''}. 실제 납부액이 다르면 고쳐서 저장하세요.
                 </p>
               ) : null}
               <MoneyInput label="이번 달 이자" value={mortgageInterest} onChange={setMortgageInterest} placeholder="2,500,000" />

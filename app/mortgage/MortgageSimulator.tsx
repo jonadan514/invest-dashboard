@@ -19,6 +19,8 @@ export interface MortgageLoan {
   maturityDate: string | null
   /** 최근 잔액 기록(오래된 순). 지난 달 상환 내역 계산에 쓴다. */
   history: { month: string; amount: number }[]
+  /** 월간 기록에 적은 실제 이자·원금(대출이 하나일 때만). */
+  recorded: { month: string; interest: number; principal: number }[]
 }
 
 const RATE_NOTE: Record<MortgageLoan['rateSource'], string> = {
@@ -77,7 +79,7 @@ function LoanSimulator({ loan }: { loan: MortgageLoan }) {
   const plan = ready ? simulateMortgage({ balance: loan.balance, annualRate, monthlyPayment: payment, lumpSum, extraMonthly, startMonth }) : null
   const hasExtra = lumpSum > 0 || extraMonthly > 0
   const rateValid = rate.trim() !== '' && Number.isFinite(annualRate) && annualRate >= 0
-  const repayments = buildRepaymentTable({ balance: loan.balance, balanceMonth: loan.balanceMonth, annualRate: rateValid ? annualRate : null, monthlyPayment: payment > 0 ? payment : null, history: loan.history })
+  const repayments = buildRepaymentTable({ balance: loan.balance, balanceMonth: loan.balanceMonth, annualRate: rateValid ? annualRate : null, monthlyPayment: payment > 0 ? payment : null, history: loan.history, recorded: loan.recorded })
 
   return (
     <div className="space-y-4">

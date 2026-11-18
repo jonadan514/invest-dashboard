@@ -27,7 +27,7 @@ export interface ScheduledMonth {
 
 /**
  * 한 달 상환: 정기 원금은 월 상환액에서 기준 이자(잔액 × 연금리/12)를 뺀 값(잔액을 넘지 않음).
- * month를 주면 이자를 그달 일수로 계산한다(잔액 × 연금리 × 일수/365). 일수가 다르면 이자가 달라져
+ * month를 주면 이자를 이자 기간(전달) 일수로 계산한다(잔액 × 연금리 × 일수/365). 일수가 다르면 이자가 달라져
  * 원금 + 이자(실제 납부액)도 조금씩 달라진다. month가 없으면 기준 이자를 그대로 쓴다.
  */
 export function amortizeMonth(balance: number, annualRatePercent: number, monthlyPayment: number, month?: string) {

@@ -9,7 +9,7 @@ export default function RepaymentTable({ rows, hasRate, hasPayment }: { rows: Re
     <section className="app-card overflow-hidden" aria-label="월별 상환 내역">
       <div className="border-b border-[var(--color-border)] px-5 py-4">
         <h2 className="text-[15px] font-bold">월별 상환 내역</h2>
-        <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">이자는 잔액 × 연 금리 × 그달 일수 ÷ 365예요. 일수가 다른 달은 이자와 납부액이 조금씩 달라져요.</p>
+        <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">이자는 잔액 × 연 금리 × 이자 기간 일수 ÷ 365예요. 이자 기간은 전달 납부일부터 이번 달 납부일 전날까지라서, 11월 납부분은 10월 일수(31일)예요.</p>
       </div>
 
       {!hasRate ? (
@@ -35,7 +35,7 @@ export default function RepaymentTable({ rows, hasRate, hasPayment }: { rows: Re
                 <thead>
                   <tr className="border-b border-[var(--color-border)] text-[12.5px] text-[var(--color-muted)]">
                     <th className="px-5 py-2.5 text-left font-semibold">달</th>
-                    <th className="px-3 py-2.5 text-right font-semibold">일수</th>
+                    <th className="px-3 py-2.5 text-right font-semibold">이자 일수</th>
                     <th className="px-3 py-2.5 text-right font-semibold">이자</th>
                     <th className="px-3 py-2.5 text-right font-semibold">원금</th>
                     <th className="px-3 py-2.5 text-right font-semibold">납부액</th>
@@ -45,19 +45,19 @@ export default function RepaymentTable({ rows, hasRate, hasPayment }: { rows: Re
                 <tbody>
                   {rows.map(row => (
                     <tr key={row.month} className={`border-b border-[var(--color-section)] last:border-0 ${row === next ? 'bg-[var(--color-primary-soft)]' : ''}`}>
-                      <td className="px-5 py-2.5 font-semibold">{formatMonth(row.month)} <span className="ml-1 text-[11.5px] font-normal text-[var(--color-muted)]">{row.kind === 'past' ? '기록' : row === next ? '예정' : '예상'}</span></td>
+                      <td className="px-5 py-2.5 font-semibold">{formatMonth(row.month)} <span className="ml-1 text-[11.5px] font-normal text-[var(--color-muted)]">{row.kind === 'past' ? (row.recorded ? '실제' : '기록') : row === next ? '예정' : '예상'}</span></td>
                       <td className="px-3 py-2.5 text-right tabular-nums text-[var(--color-muted)]">{row.days}일</td>
                       <td className="px-3 py-2.5 text-right tabular-nums">{krw(row.interest)}</td>
                       <td className="px-3 py-2.5 text-right tabular-nums">{krw(row.principal)}</td>
                       <td className="px-3 py-2.5 text-right font-semibold tabular-nums">{krw(row.total)}</td>
-                      <td className="px-5 py-2.5 text-right tabular-nums text-[var(--color-muted)]">{krw(row.balanceAfter)}</td>
+                      <td className="px-5 py-2.5 text-right tabular-nums text-[var(--color-muted)]">{row.balanceAfter === null ? '—' : krw(row.balanceAfter)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
-          <p className="px-5 py-3 text-[11.5px] leading-4 text-[var(--color-subtle)]">‘기록’은 잔액 기록의 변화로, ‘예정·예상’은 위에 입력한 금리와 월 상환액으로 계산해요. 실제 납부액은 은행 조회 결과를 확인하세요.</p>
+          <p className="px-5 py-3 text-[11.5px] leading-4 text-[var(--color-subtle)]">‘실제’는 월간 기록에 적은 이자·원금, ‘기록’은 잔액 기록의 변화, ‘예정·예상’은 위에 입력한 금리와 월 상환액으로 계산해요. 실제 납부액은 은행 조회 결과를 확인하세요.</p>
         </>
       )}
     </section>
