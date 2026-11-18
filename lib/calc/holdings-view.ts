@@ -1,0 +1,77 @@
+import type { Holding } from '../types.ts'
+
+export type HoldingSort = 'value' | 'return' | 'pnl' | 'name'
+export type HoldingFilter = 'all' | 'gain' | 'loss'
+
+export const HOLDING_SORTS: readonly HoldingSort[] = ['value', 'return', 'pnl', 'name']
+export const HOLDING_FILTERS: readonly HoldingFilter[] = ['all', 'gain', 'loss']
+
+export function parseSort(value: string | undefined): HoldingSort {
+  return HOLDING_SORTS.find(item => item === value) ?? 'value'
+}
+
+export function parseFilter(value: string | undefined): HoldingFilter {
+  return HOLDING_FILTERS.find(item => item === value) ?? 'all'
+}
+
+/** 구분(assetClass)·손익 필터를 적용하고 정렬한다. 현재가가 없는 종목은 숫자 정렬에서 맨 뒤로 보낸다. */
+export function viewHoldings(
+  holdings: Holding[],
+  options: { sort?: HoldingSort; filter?: HoldingFilter; assetClass?: string | null },
+): Holding[] {
+  const { sort = 'value', filter = 'all', assetClass = null } = options
+  const rows = holdings.filter(holding => {
+    if (assetClass && holding.asset_class !== assetClass) return false
+    if (filter === 'gain') return (holding.unrealized_pnl_krw ?? 0) > 0
+    if (filter === 'loss') return (holding.unrealized_pnl_krw ?? 0) < 0
+    return true
+  })
+  const metric = (holding: Holding): number | null => {
+    if (sort === 'return') return holding.unrealized_pnl_pct
+    if (sort === 'pnl') return holding.unrealized_pnl_krw
+    return holding.market_value_krw
+  }
+  return rows.sort((a, b) => {
+    if (sort === 'name') return a.name.localeCompare(b.name, 'ko')
+    const av = metric(a)
+    const bv = metric(b)
+    if (av === null && bv === null) return a.name.localeCompare(b.name, 'ko')
+    if (av === null) return 1
+    if (bv === null) return -1
+    return bv - av
+  })
+}
+
+export interface ReturnGroup {
+  key: string
+  cost: number
+  value: number
+  pnl: number
+  rate: number | null
+  count: number
+}
+
+/** 현재가가 있는 종목만 모아 구분별·종목별 수익률 요약을 만든다. */
+export function summarizeReturns(holdings: Holding[], groupOf: (holding: Holding) => string) {
+  const priced = holdings.filter(holding => holding.market_value_krw !== null)
+  const groups = new Map<string, ReturnGroup>()
+  for (const holding of priced) {
+    const key = groupOf(holding)
+    const group = groups.get(key) ?? { key, cost: 0, value: 0, pnl: 0, rate: null, count: 0 }
+    group.cost += holding.total_cost_krw
+    group.value += holding.market_value_krw!
+    group.count += 1
+    groups.set(key, group)
+  }
+  const byGroup = [...groups.values()].map(group => {
+    const pnl = group.value - group.cost
+    return { ...group, pnl, rate: group.cost > 0 ? pnl / group.cost * 100 : null }
+  }).sort((a, b) => b.value - a.value)
+  const ranked = priced.filter(holding => holding.unrealized_pnl_pct !== null)
+    .sort((a, b) => b.unrealized_pnl_pct! - a.unrealized_pnl_pct!)
+  return {
+    byGroup,
+    best: ranked.length > 0 ? ranked[0] : null,
+    worst: ranked.length > 1 ? ranked[ranked.length - 1] : null,
+  }
+}
