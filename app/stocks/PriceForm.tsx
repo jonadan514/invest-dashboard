@@ -31,7 +31,7 @@ export default function PriceForm({ rows, usdKrw, usdAsOf }: { rows: PriceRowInp
           setMessage(result.error)
           return
         }
-        setMessage(`${result.saved ?? 0}개 값을 저장했습니다.`)
+        setMessage(`${result.saved}개 값을 저장했습니다.`)
         router.refresh()
       } catch (cause) {
         setMessage(cause instanceof Error ? cause.message : '저장하지 못했습니다.')
