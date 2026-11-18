@@ -10,7 +10,8 @@ import { getHouseholdContext } from '@/lib/supabase/server'
 import type { Account, AccountMonthlySnapshot, Asset, Holding } from '@/lib/types'
 import PriceForm from './PriceForm'
 import TradeActions from './TradeActions'
-import TradeForm, { type TradeInitial } from './TradeForm'
+import TradeForm, { type TradeCostContext, type TradeInitial } from './TradeForm'
+import { inferFeeRates } from '@/lib/calc/trade-costs'
 
 export const metadata = { title: '주식 계좌' }
 
@@ -96,7 +97,8 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
   const assetMap = new Map(assets.map(asset => [asset.id, asset]))
   const accountMap = new Map(accounts.map(account => [account.id, account]))
   const latestEvaluations = latestSnapshotsAtMonth((snapshotRows ?? []) as AccountMonthlySnapshot[], currentMonth)
-  const tradeAccounts = accounts.map(account => ({ id: account.id, name: account.name, owner: account.owner }))
+  const tradeAccounts = accounts.map(account => ({ id: account.id, name: account.name, owner: account.owner, type: account.type }))
+  const tradeCosts: TradeCostContext = { feeRates: inferFeeRates(trades), usdKrw }
   const tradeAssets = assets.map(asset => ({ id: asset.id, name: asset.name, symbol: asset.symbol, currency: asset.currency, asset_class: asset.asset_class }))
   const href = (next: Partial<{ tab: Tab; account: string | null }>) => {
     const query = new URLSearchParams()
@@ -203,7 +205,7 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
             <div className="space-y-4">
               <section className="app-card p-5" aria-label="거래 추가">
                 <h2 className="mb-3 text-[15px] font-bold">거래 추가</h2>
-                <TradeForm accounts={selectedAccount ? tradeAccounts.filter(account => account.id === selectedAccount.id) : tradeAccounts} assets={tradeAssets} />
+                <TradeForm key={selectedAccount?.id ?? 'all'} accounts={selectedAccount ? tradeAccounts.filter(account => account.id === selectedAccount.id) : tradeAccounts} assets={tradeAssets} costs={tradeCosts} />
               </section>
               <section className="app-card overflow-hidden" aria-label="거래 기록">
                 <div className="border-b border-[var(--color-border)] px-5 py-4">
@@ -237,7 +239,7 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
                               {isUsd && trade.fx_rate ? ` · 환율 ${Number(trade.fx_rate).toLocaleString('ko-KR')}원` : ''}
                             </p>
                           </div>
-                          <TradeActions trade={initial} accounts={tradeAccounts} assets={tradeAssets} />
+                          <TradeActions trade={initial} accounts={tradeAccounts} assets={tradeAssets} costs={tradeCosts} />
                         </li>
                       )
                     })}
