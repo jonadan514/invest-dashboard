@@ -39,6 +39,11 @@ export function proxy(request: NextRequest) {
     return NextResponse.json({ error: '접근 비밀번호가 필요합니다.' }, { status: 401 })
   }
 
+  // 서버 액션 요청을 여기서 307로 돌리면 브라우저가 /access로 다시 POST하고 액션은 아무 결과 없이 끝난다.
+  // 모든 서버 액션은 getHouseholdContext()에서 접근을 다시 확인하므로, 통과시켜 액션 안의
+  // redirect('/access')가 화면을 접근 페이지로 옮기게 한다.
+  if (request.method === 'POST' && request.headers.has('next-action')) return NextResponse.next()
+
   const accessUrl = new URL('/access', request.url)
   accessUrl.searchParams.set('next', `${pathname}${search}`)
   if (!isAccessConfigured()) accessUrl.searchParams.set('error', 'config')

@@ -42,7 +42,11 @@ export default function PlanSettingsForm({ settings }: { settings: FinancialPlan
 
     startTransition(async () => {
       try {
-        await saveFinancialPlanSettings(formData)
+        const result = await saveFinancialPlanSettings(formData)
+        if (!result.ok) {
+          setError(result.error)
+          return
+        }
         setSaved(true)
       } catch (saveError) {
         setError(saveError instanceof Error ? saveError.message : '설정을 저장하지 못했습니다.')

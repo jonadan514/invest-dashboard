@@ -18,7 +18,11 @@ export default function BalanceForm({ accountId, accountType, defaultDate }: Pro
     setResult(null)
     startTransition(async () => {
       try {
-        await saveAccountBalance(accountId, formData)
+        const result = await saveAccountBalance(accountId, formData)
+        if (!result.ok) {
+          setResult({ kind: 'error', message: result.error })
+          return
+        }
         formRef.current?.reset()
         setResult({ kind: 'success', message: '잔액을 기록했습니다' })
       } catch (error) {

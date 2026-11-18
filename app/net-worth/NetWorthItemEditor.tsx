@@ -14,7 +14,11 @@ export default function NetWorthItemEditor({ item }: { item: NetWorthItem }) {
     setMessage(null)
     startTransition(async () => {
       try {
-        await updateNetWorthItem(item.id, formData)
+        const result = await updateNetWorthItem(item.id, formData)
+        if (!result.ok) {
+          setMessage(result.error)
+          return
+        }
         setMessage('수정했습니다.')
       } catch (error) {
         setMessage(error instanceof Error ? error.message : '수정하지 못했습니다.')
