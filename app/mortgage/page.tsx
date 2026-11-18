@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import TabNav from '@/components/TabNav'
 import { DEFAULT_FINANCIAL_PLAN } from '@/lib/calc/budget'
 import { estimateAnnualRate } from '@/lib/calc/mortgage'
 import { getHouseholdContext } from '@/lib/supabase/server'
@@ -85,8 +86,8 @@ export default async function MortgagePage({ searchParams }: { searchParams: Pro
       {loans.length === 0 ? (
         <div className="app-card p-10 text-center">
           <p className="text-sm text-[var(--color-muted)]">잔액이 기록된 주택담보대출이 없어요.</p>
-          <p className="mt-1 text-xs text-[var(--color-subtle)]">밸런스 시트에서 분류가 ‘주택담보대출’인 부채를 추가하고 잔액을 기록해 주세요.</p>
-          <Link href="/net-worth" className="mt-3 inline-block text-xs font-semibold text-[var(--color-primary)] hover:underline">밸런스 시트로 →</Link>
+          <p className="mt-1 text-[12.5px] text-[var(--color-subtle)]">밸런스 시트에서 분류가 ‘주택담보대출’인 부채를 추가하고 잔액을 기록해 주세요.</p>
+          <Link href="/net-worth?view=settings" className="mt-3 inline-block text-[12.5px] font-semibold text-[var(--color-primary)] hover:underline">밸런스 시트로 →</Link>
         </div>
       ) : (
         <>
@@ -100,11 +101,9 @@ export default async function MortgagePage({ searchParams }: { searchParams: Pro
               </p>
             )
           })()}
-          <nav aria-label="대출 상환 메뉴" className="mb-4 flex w-fit rounded-xl bg-white p-1 shadow-[var(--shadow-card)]">
-            {([['status', '상환 현황', '/mortgage'], ['prepay', '한 번에 더 갚기', '/mortgage?tab=prepay']] as const).map(([value, label, href]) => (
-              <Link key={value} href={href} aria-current={tab === value ? 'page' : undefined} className={`inline-flex min-h-9 items-center rounded-lg px-4 text-[13px] font-semibold ${tab === value ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--color-muted)] hover:text-[var(--color-ink)]'}`}>{label}</Link>
-            ))}
-          </nav>
+          <div className="mb-4">
+            <TabNav label="대출 상환 탭" active={tab} items={[{ value: 'status', label: '상환 현황', href: '/mortgage' }, { value: 'prepay', label: '한 번에 더 갚기', href: '/mortgage?tab=prepay' }]} />
+          </div>
           <div className="space-y-8">
             {loans.map(loan => tab === 'prepay' ? (
               <PrepaymentCalculator key={loan.overview.id} loan={{

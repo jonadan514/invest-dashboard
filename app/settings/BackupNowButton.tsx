@@ -28,7 +28,7 @@ export default function BackupNowButton() {
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <button type="button" onClick={run} disabled={pending} className="rounded-lg bg-[var(--color-ink)] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
+      <button type="button" onClick={run} disabled={pending} className="rounded-lg bg-[var(--color-ink)] px-4 py-2 text-[12.5px] font-semibold text-white disabled:opacity-50">
         {pending ? '백업 중…' : '지금 백업하기'}
       </button>
       {message ? <span role="status" className="text-[12.5px] text-[var(--color-muted)]">{message}</span> : null}

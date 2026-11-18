@@ -3,8 +3,9 @@
 import { useRef, useState, useTransition } from 'react'
 import { ACCOUNT_TYPE_LABEL, formatAmountInput as formatInput, formatMonth, krw, parseAmountInput as parseAmount } from '@/lib/labels'
 import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { CircleGauge, ClipboardCheck, ListTree, type LucideIcon } from 'lucide-react'
+import { ChevronRight, CircleGauge, ClipboardCheck, ListTree, type LucideIcon } from 'lucide-react'
+import MonthNavigator from '@/components/MonthNavigator'
+import { TAB_LIST, tabClass } from '@/components/TabNav'
 import type { Account, NetWorthItem } from '@/lib/types'
 import AccountForm from '@/app/accounts/AccountForm'
 import DeleteButton from '@/app/accounts/DeleteButton'
@@ -15,7 +16,7 @@ import { ASSET_CATEGORIES, CATEGORY_LABEL, LIABILITY_CATEGORIES, OWNER_LABEL } f
 import { isAutoMortgage } from '@/lib/calc/net-worth-items'
 
 export { CATEGORY_LABEL }
-const INPUT = 'w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]'
+const INPUT = 'field-input'
 
 type WorkspaceView = 'overview' | 'record' | 'settings'
 
@@ -61,9 +62,6 @@ export default function NetWorthManager({
   investmentValue,
   investmentRecordedMonth,
 }: Props) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
   const addFormRef = useRef<HTMLFormElement>(null)
   const [view, setView] = useState<WorkspaceView>(initialView)
   const [kind, setKind] = useState<'asset' | 'liability'>('asset')
@@ -73,12 +71,6 @@ export default function NetWorthManager({
   const [showAdd, setShowAdd] = useState(false)
   const [correcting, setCorrecting] = useState<Set<string>>(new Set())
   const [pending, startTransition] = useTransition()
-
-  function changeMonth(nextMonth: string) {
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('month', nextMonth)
-    router.push(`${pathname}?${params.toString()}`)
-  }
 
   function addItem(formData: FormData) {
     setMessage(null)
@@ -139,46 +131,21 @@ export default function NetWorthManager({
 
   return (
     <div className="space-y-4">
-      <nav aria-label="밸런스 시트 메뉴" className="grid grid-cols-1 overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-strong)] sm:grid-cols-3">
+      <nav aria-label="밸런스 시트 메뉴" className={TAB_LIST}>
         {VIEWS.map(item => {
           const active = view === item.id
           const Icon = item.icon
           return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setView(item.id)}
-              aria-current={active ? 'page' : undefined}
-              className={`relative flex min-h-14 items-center gap-3 border-b px-4 py-2.5 text-left transition-colors last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0 ${active ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary-strong)] after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-[var(--color-primary)]' : 'bg-[var(--color-surface-strong)] hover:bg-[var(--color-section)]'}`}
-            >
-              <span aria-hidden="true" className={`grid size-7 shrink-0 place-items-center ${active ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]'}`}><Icon size={17} strokeWidth={active ? 2.2 : 1.7} /></span>
-              <span className="min-w-0">
-                <span className={`block text-xs font-extrabold ${active ? 'text-[var(--color-primary)]' : 'text-[var(--color-ink)]'}`}>{item.label}</span>
-                <span className="mt-0.5 hidden truncate text-[11.5px] text-[var(--color-muted)] sm:block">{item.description}</span>
-              </span>
+            <button key={item.id} type="button" onClick={() => setView(item.id)} aria-current={active ? 'page' : undefined} title={item.description} className={tabClass(active)}>
+              <Icon size={15} strokeWidth={active ? 2.2 : 1.8} aria-hidden="true" />{item.label}
             </button>
           )
         })}
       </nav>
 
       {view !== 'settings' ? <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <label htmlFor="net-worth-month" className="mb-1 block text-[12.5px] font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-            기준 월
-          </label>
-          <select
-            id="net-worth-month"
-            value={month}
-            onChange={event => changeMonth(event.target.value)}
-            className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-sm font-semibold outline-none"
-          >
-            {months.map(value => {
-              const [year, number] = value.split('-')
-              return <option key={value} value={value}>{year}년 {Number(number)}월</option>
-            })}
-          </select>
-        </div>
-        <p className="text-xs text-[var(--color-muted)]">
+        <MonthNavigator month={month} months={months} label="기준 월 선택" />
+        <p className="text-[12.5px] text-[var(--color-muted)]">
           {hasExactSnapshot ? '● 저장된 월말 기록' : '직전 기록을 불러왔습니다. 금액을 확인하고 저장하세요.'}
         </p>
       </div> : null}
@@ -186,7 +153,7 @@ export default function NetWorthManager({
       {view === 'overview' ? overview : null}
 
       {view === 'settings' ? <section className="app-card overflow-hidden">
-        <div className="border-b border-[var(--color-border)] bg-blue-50/55 px-4 py-4 sm:px-5">
+        <div className="border-b border-[var(--color-border)] bg-[var(--color-primary-soft)] px-4 py-4 sm:px-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-bold text-[var(--color-ink)]">금융계좌</h2>
@@ -205,14 +172,14 @@ export default function NetWorthManager({
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <OwnerBadge owner={account.owner} />
-                      <Link href={`/accounts/${account.id}`} className="truncate text-xs font-semibold text-[var(--color-ink)] hover:text-[var(--color-primary)]">{account.name}</Link>
-                      {account.is_emergency_fund ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11.5px] font-semibold text-amber-700">비상금</span> : null}
+                      <Link href={`/accounts/${account.id}`} className="truncate text-[12.5px] font-semibold text-[var(--color-ink)] hover:text-[var(--color-primary)]">{account.name}</Link>
+                      {account.is_emergency_fund ? <span className="rounded-full bg-[var(--color-accent-soft)] px-2 py-0.5 text-[11.5px] font-semibold text-[var(--color-accent)]">비상금</span> : null}
                     </div>
                     <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{ACCOUNT_TYPE_LABEL[account.type] ?? account.type}{account.broker ? ` · ${account.broker}` : ''}</p>
                   </div>
                   <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
                     <div className="text-right">
-                      <p className="text-xs font-semibold tabular-nums text-[var(--color-ink)]">{krw(latest?.amount ?? 0)}</p>
+                      <p className="text-[12.5px] font-semibold tabular-nums text-[var(--color-ink)]">{krw(latest?.amount ?? 0)}</p>
                       <p className="mt-0.5 text-[11.5px] text-[var(--color-subtle)]">{latest ? `${latest.month.replace('-', '년 ')}월 기록` : '월말 기록 없음'}</p>
                     </div>
                     <DeleteButton id={account.id} name={account.name} />
@@ -222,11 +189,11 @@ export default function NetWorthManager({
             })}
           </div>
         ) : (
-          <p className="px-5 py-6 text-center text-xs text-[var(--color-subtle)]">등록된 금융계좌가 없습니다.</p>
+          <p className="px-5 py-6 text-center text-[12.5px] text-[var(--color-subtle)]">등록된 금융계좌가 없습니다.</p>
         )}
 
         <details className="border-t border-[var(--color-border)]">
-          <summary className="cursor-pointer px-4 py-3 text-xs font-semibold text-[var(--color-primary)] sm:px-5">＋ 새 금융계좌 추가</summary>
+          <summary className="cursor-pointer px-4 py-3 text-[12.5px] font-semibold text-[var(--color-primary)] sm:px-5">＋ 새 금융계좌 추가</summary>
           <div className="border-t border-[var(--color-border)] bg-white/45 p-4 sm:p-5">
             <AccountForm compact />
           </div>
@@ -235,7 +202,7 @@ export default function NetWorthManager({
 
       {view === 'record' ? (
         <section className="app-card overflow-hidden">
-          <div className="border-b border-[var(--color-border)] bg-blue-50/55 px-4 py-4 sm:px-5">
+          <div className="border-b border-[var(--color-border)] bg-[var(--color-primary-soft)] px-4 py-4 sm:px-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-base font-bold text-[var(--color-ink)]">금융계좌 월말 현황</h2>
@@ -256,13 +223,13 @@ export default function NetWorthManager({
                     <div className="min-w-0">
                       <div className="flex min-w-0 items-center gap-2">
                         <OwnerBadge owner={account.owner} />
-                        <p className="truncate text-xs font-semibold text-[var(--color-ink)]">{account.name}</p>
-                        {account.is_emergency_fund ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11.5px] font-semibold text-amber-700">비상금</span> : null}
+                        <p className="truncate text-[12.5px] font-semibold text-[var(--color-ink)]">{account.name}</p>
+                        {account.is_emergency_fund ? <span className="rounded-full bg-[var(--color-accent-soft)] px-2 py-0.5 text-[11.5px] font-semibold text-[var(--color-accent)]">비상금</span> : null}
                       </div>
                       <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{ACCOUNT_TYPE_LABEL[account.type] ?? account.type}{account.broker ? ` · ${account.broker}` : ''}</p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <p className="text-xs font-semibold tabular-nums text-[var(--color-ink)]">{krw(latest?.amount ?? 0)}</p>
+                      <p className="text-[12.5px] font-semibold tabular-nums text-[var(--color-ink)]">{krw(latest?.amount ?? 0)}</p>
                       <p className="mt-0.5 text-[11.5px] text-[var(--color-subtle)]">{latest ? `${latest.month.replace('-', '년 ')}월 기록` : '월말 기록 없음'}</p>
                     </div>
                   </div>
@@ -270,7 +237,7 @@ export default function NetWorthManager({
               })}
             </div>
           ) : (
-            <p className="px-5 py-6 text-center text-xs text-[var(--color-subtle)]">등록된 금융계좌가 없습니다. 항목 관리에서 계좌를 추가해 주세요.</p>
+            <p className="px-5 py-6 text-center text-[12.5px] text-[var(--color-subtle)]">등록된 금융계좌가 없습니다. 항목 관리에서 계좌를 추가해 주세요.</p>
           )}
         </section>
       ) : null}
@@ -278,7 +245,7 @@ export default function NetWorthManager({
       {view === 'record' && activeItems.length > 0 ? (
         <form action={saveSnapshot} className="app-card overflow-hidden">
           <input type="hidden" name="month" value={month} />
-          <div className="border-b border-[var(--color-border)] bg-blue-50/55 px-4 py-3 sm:px-5">
+          <div className="border-b border-[var(--color-border)] bg-[var(--color-primary-soft)] px-4 py-3 sm:px-5">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-bold text-[var(--color-ink)]">계좌 외 자산·부채 월말 기록</p>
@@ -298,7 +265,7 @@ export default function NetWorthManager({
           </div>
           <div className="flex flex-col gap-3 border-t border-[var(--color-border)] bg-white/45 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <p className="text-[12.5px] leading-5 text-[var(--color-muted)]">입력칸이 있는 항목만 이 달 잔액으로 저장해요. 자동 상환 대출은 건드리지 않아요. 항목 이름·조건·지난 잔액은 항목 관리에서 고쳐요.</p>
-            <button type="submit" disabled={pending} className="min-h-10 shrink-0 rounded-xl bg-[var(--color-primary)] px-5 text-xs font-semibold text-white disabled:opacity-50">
+            <button type="submit" disabled={pending} className="min-h-10 shrink-0 rounded-xl bg-[var(--color-primary)] px-5 text-[12.5px] font-semibold text-white disabled:opacity-50">
               {pending ? '저장 중…' : `${formatMonth(month)} 기록 저장`}
             </button>
           </div>
@@ -306,12 +273,12 @@ export default function NetWorthManager({
       ) : view === 'record' ? (
         <div className="app-card px-5 py-10 text-center">
           <p className="text-sm font-semibold">계좌 외 자산이나 부채가 있다면 항목을 추가하세요.</p>
-          <p className="mt-1 text-xs text-[var(--color-muted)]">예: 아파트, 전월세 보증금, 차량, 주택담보대출</p>
-          <button type="button" onClick={() => setView('settings')} className="mt-4 min-h-9 rounded-lg bg-[var(--color-primary)] px-4 text-xs font-semibold text-white">항목 관리로 이동</button>
+          <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">예: 아파트, 전월세 보증금, 차량, 주택담보대출</p>
+          <button type="button" onClick={() => setView('settings')} className="mt-4 min-h-9 rounded-lg bg-[var(--color-primary)] px-4 text-[12.5px] font-semibold text-white">항목 관리로 이동</button>
         </div>
       ) : null}
 
-      {message ? <p role="status" className="rounded-xl bg-blue-50 px-4 py-3 text-xs text-[var(--color-primary)]">{message}</p> : null}
+      {message ? <p role="status" className="rounded-xl bg-[var(--color-primary-soft)] px-4 py-3 text-[12.5px] text-[var(--color-primary)]">{message}</p> : null}
 
       {view === 'settings' ? <section className="app-card overflow-hidden">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--color-border)] px-4 py-4 sm:px-5">
@@ -327,11 +294,11 @@ export default function NetWorthManager({
         <form ref={addFormRef} action={addItem} className="mt-4 space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
-            <label className="mb-1 block text-xs text-[var(--color-muted)]">항목 이름</label>
+            <label className="mb-1 block text-[12.5px] text-[var(--color-muted)]">항목 이름</label>
             <input name="name" required placeholder={kind === 'asset' ? '예: 우리집 아파트' : '예: 주택담보대출'} className={INPUT} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-[var(--color-muted)]">구분</label>
+            <label className="mb-1 block text-[12.5px] text-[var(--color-muted)]">구분</label>
             <select
               name="kind"
               value={kind}
@@ -347,13 +314,13 @@ export default function NetWorthManager({
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-[var(--color-muted)]">분류</label>
+            <label className="mb-1 block text-[12.5px] text-[var(--color-muted)]">분류</label>
             <select name="category" value={category} onChange={event => setCategory(event.target.value)} className={INPUT}>
               {(kind === 'asset' ? ASSET_CATEGORIES : LIABILITY_CATEGORIES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-[var(--color-muted)]">소유</label>
+            <label className="mb-1 block text-[12.5px] text-[var(--color-muted)]">소유</label>
             <select name="owner" className={INPUT}>
               <option value="household">공동</option>
               <option value="me">나</option>
@@ -363,41 +330,41 @@ export default function NetWorthManager({
           </div>
 
           <div className="rounded-xl border border-[var(--color-border)] bg-white/55 p-4">
-            <h3 className="text-xs font-semibold">최초 기록</h3>
+            <h3 className="text-[12.5px] font-semibold">최초 기록</h3>
             <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">항목을 만들면서 선택한 월의 잔액도 함께 저장합니다.</p>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs text-[var(--color-muted)]">기준 월</label>
+                <label className="mb-1 block text-[12.5px] text-[var(--color-muted)]">기준 월</label>
                 <input name="initial_month" type="month" required defaultValue={currentMonth} max={currentMonth} className={INPUT} />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-[var(--color-muted)]">현재 금액</label>
+                <label className="mb-1 block text-[12.5px] text-[var(--color-muted)]">현재 금액</label>
                 <div className="flex items-center gap-2">
                   <input name="initial_amount" required inputMode="numeric" placeholder="0" className={`${INPUT} text-right`} />
-                  <span className="shrink-0 text-xs text-[var(--color-muted)]">원</span>
+                  <span className="shrink-0 text-[12.5px] text-[var(--color-muted)]">원</span>
                 </div>
               </div>
             </div>
           </div>
 
           {hasFinancialTerms ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50/45 p-4">
-              <h3 className="text-xs font-semibold text-amber-800">대출·부채 조건</h3>
+            <div className="rounded-xl border border-[var(--color-gold)] bg-[var(--color-accent-soft)] p-4">
+              <h3 className="text-[12.5px] font-semibold text-[var(--color-accent)]">대출·부채 조건</h3>
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
-                  <label className="mb-1 block text-xs text-[var(--color-muted)]">연 이율</label>
-                  <div className="flex items-center gap-2"><input name="interest_rate" type="number" min="0" step="0.01" placeholder="3.5" className={`${INPUT} text-right`} /><span className="text-xs text-[var(--color-muted)]">%</span></div>
+                  <label className="mb-1 block text-[12.5px] text-[var(--color-muted)]">연 이율</label>
+                  <div className="flex items-center gap-2"><input name="interest_rate" type="number" min="0" step="0.01" placeholder="3.5" className={`${INPUT} text-right`} /><span className="text-[12.5px] text-[var(--color-muted)]">%</span></div>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-[var(--color-muted)]">월 {kind === 'liability' ? '상환액' : '납입액'}</label>
-                  <div className="flex items-center gap-2"><input name="monthly_payment" inputMode="numeric" placeholder="0" className={`${INPUT} text-right`} /><span className="text-xs text-[var(--color-muted)]">원</span></div>
+                  <label className="mb-1 block text-[12.5px] text-[var(--color-muted)]">월 {kind === 'liability' ? '상환액' : '납입액'}</label>
+                  <div className="flex items-center gap-2"><input name="monthly_payment" inputMode="numeric" placeholder="0" className={`${INPUT} text-right`} /><span className="text-[12.5px] text-[var(--color-muted)]">원</span></div>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-[var(--color-muted)]">시작일</label>
+                  <label className="mb-1 block text-[12.5px] text-[var(--color-muted)]">시작일</label>
                   <input name="start_date" type="date" className={INPUT} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-[var(--color-muted)]">만기일</label>
+                  <label className="mb-1 block text-[12.5px] text-[var(--color-muted)]">만기일</label>
                   <input name="maturity_date" type="date" className={INPUT} />
                 </div>
               </div>
@@ -405,7 +372,7 @@ export default function NetWorthManager({
           ) : null}
 
           <div className="flex justify-end">
-            <button type="submit" disabled={pending} className="min-h-10 rounded-xl bg-[var(--color-ink)] px-5 text-xs font-semibold text-white disabled:opacity-50">
+            <button type="submit" disabled={pending} className="min-h-10 rounded-xl bg-[var(--color-ink)] px-5 text-[12.5px] font-semibold text-white disabled:opacity-50">
               {pending ? '추가 중…' : '항목과 최초 금액 저장'}
             </button>
           </div>
@@ -427,15 +394,15 @@ export default function NetWorthManager({
                   <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 hover:bg-[var(--color-section)] sm:px-5">
                     <span className="flex min-w-0 flex-1 items-center gap-2">
                       <OwnerBadge owner={item.owner} />
-                      <span className="truncate text-[13.5px] font-semibold">{item.name}</span>
-                      <span className="shrink-0 text-[12px] text-[var(--color-muted)]">{item.kind === 'liability' ? '부채' : '자산'} · {CATEGORY_LABEL[item.category] ?? item.category}</span>
-                      {auto ? <span className="shrink-0 rounded bg-[var(--color-positive-soft)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--color-positive-strong)]">자동 상환</span> : null}
+                      <span className="truncate text-[13px] font-semibold">{item.name}</span>
+                      <span className="shrink-0 text-[12.5px] text-[var(--color-muted)]">{item.kind === 'liability' ? '부채' : '자산'} · {CATEGORY_LABEL[item.category] ?? item.category}</span>
+                      {auto ? <span className="shrink-0 rounded bg-[var(--color-positive-soft)] px-1.5 py-0.5 text-[11.5px] font-semibold text-[var(--color-positive-strong)]">자동 상환</span> : null}
                     </span>
                     <span className="text-right">
-                      <span className="block text-[13.5px] font-bold tabular-nums">{latest ? krw(latest.amount) : '—'}</span>
+                      <span className="block text-[13px] font-bold tabular-nums">{latest ? krw(latest.amount) : '—'}</span>
                       <span className="block text-[11.5px] text-[var(--color-subtle)]">{latest ? `${formatMonth(latest.month)} ${latest.source === 'manual' ? '직접 입력' : '자동'}` : '잔액 기록 없음'}</span>
                     </span>
-                    <span aria-hidden="true" className="text-[var(--color-subtle)] transition-transform group-open:rotate-90">›</span>
+                    <ChevronRight aria-hidden="true" size={16} className="text-[var(--color-subtle)] transition-transform group-open:rotate-90" />
                   </summary>
                   <div className="space-y-5 border-t border-[var(--color-border)] bg-[var(--color-section)] px-4 py-4 sm:px-5">
                     <NetWorthItemEditor item={item} />
@@ -443,7 +410,7 @@ export default function NetWorthManager({
                       <BalanceHistory itemId={item.id} rows={rows} currentMonth={currentMonth} auto={auto} />
                     </div>
                     <div className="flex justify-end border-t border-[var(--color-border)] pt-3">
-                      <button type="button" disabled={pending} onClick={() => { if (confirm(`${item.name} 항목을 이번 달부터 비활성화할까요? 과거 기록은 남아요.`)) toggleItem(item.id, false) }} className="min-h-8 text-[12px] text-[var(--color-subtle)] hover:text-[var(--color-negative)] disabled:opacity-50">이 항목 비활성화</button>
+                      <button type="button" disabled={pending} onClick={() => { if (confirm(`${item.name} 항목을 이번 달부터 비활성화할까요? 과거 기록은 남아요.`)) toggleItem(item.id, false) }} className="min-h-8 text-[12.5px] text-[var(--color-subtle)] hover:text-[var(--color-negative)] disabled:opacity-50">이 항목 비활성화</button>
                     </div>
                   </div>
                 </details>
@@ -454,10 +421,10 @@ export default function NetWorthManager({
 
         {inactiveItems.length > 0 ? (
           <details className="border-t border-[var(--color-border)] px-4 py-3 sm:px-5">
-            <summary className="cursor-pointer text-xs font-semibold text-[var(--color-muted)]">비활성 항목 {inactiveItems.length}개</summary>
+            <summary className="cursor-pointer text-[12.5px] font-semibold text-[var(--color-muted)]">비활성 항목 {inactiveItems.length}개</summary>
             <div className="mt-3 flex flex-wrap gap-2">
               {inactiveItems.map(item => (
-                <button key={item.id} type="button" onClick={() => toggleItem(item.id, true)} className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs">
+                <button key={item.id} type="button" onClick={() => toggleItem(item.id, true)} className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-[12.5px]">
                   {item.name} · 다시 사용
                 </button>
               ))}
@@ -504,7 +471,7 @@ function SnapshotGroup({
         <h2 className="text-base font-bold text-[var(--color-ink)]">{title}</h2>
         <p className="mt-0.5 text-[12.5px] text-[var(--color-muted)]">{description}</p>
       </div>
-      {items.length === 0 ? <p className="py-6 text-center text-xs text-[var(--color-subtle)]">등록된 {title} 항목이 없습니다.</p> : null}
+      {items.length === 0 ? <p className="py-6 text-center text-[12.5px] text-[var(--color-subtle)]">등록된 {title} 항목이 없습니다.</p> : null}
       <div className="space-y-3">
         {items.map(item => {
           const auto = isAutoMortgage(item)
@@ -516,16 +483,16 @@ function SnapshotGroup({
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-2">
                     <OwnerBadge owner={item.owner} />
-                    <p className="truncate text-xs font-semibold">{item.name}</p>
-                    {auto ? <span className="shrink-0 rounded bg-[var(--color-positive-soft)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--color-positive-strong)]">자동 상환</span> : null}
+                    <p className="truncate text-[12.5px] font-semibold">{item.name}</p>
+                    {auto ? <span className="shrink-0 rounded bg-[var(--color-positive-soft)] px-1.5 py-0.5 text-[11.5px] font-semibold text-[var(--color-positive-strong)]">자동 상환</span> : null}
                   </div>
-                  <p className="mt-1 text-[12px] text-[var(--color-muted)]">
+                  <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">
                     {CATEGORY_LABEL[item.category] ?? item.category}
                     {recordedMonth && recordedMonth !== month ? ` · ${formatMonth(recordedMonth)} 값을 불러왔어요` : ''}
                   </p>
                 </div>
                 {auto ? (
-                  <button type="button" onClick={() => toggle(item.id, !correcting.has(item.id))} className="min-h-8 shrink-0 text-[12px] font-semibold text-[var(--color-primary)]">{correcting.has(item.id) ? '바로잡기 취소' : '바로잡기'}</button>
+                  <button type="button" onClick={() => toggle(item.id, !correcting.has(item.id))} className="min-h-8 shrink-0 text-[12.5px] font-semibold text-[var(--color-primary)]">{correcting.has(item.id) ? '바로잡기 취소' : '바로잡기'}</button>
                 ) : null}
               </div>
               {editable ? (
@@ -536,13 +503,13 @@ function SnapshotGroup({
                     onChange={event => setAmounts(current => ({ ...current, [item.id]: parseAmount(event.target.value) }))}
                     inputMode="numeric"
                     aria-label={`${item.name} ${liability ? '부채 잔액' : '자산 금액'}`}
-                    className={`min-w-0 flex-1 rounded-lg border bg-white px-3 py-2 text-right text-sm font-semibold tabular-nums outline-none ${liability ? 'border-amber-200 focus:border-amber-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}`}
+                    className="field-input max-w-[11.5rem] flex-1 text-right font-semibold tabular-nums"
                   />
-                  <span className="text-xs text-[var(--color-muted)]">원</span>
+                  <span className="text-[12.5px] text-[var(--color-muted)]">원</span>
                 </div>
               ) : (
                 <div className="flex items-baseline justify-between gap-2 rounded-lg bg-[var(--color-section)] px-3 py-2">
-                  <span className="text-[12px] text-[var(--color-muted)]">대출 조건으로 계산한 잔액</span>
+                  <span className="text-[12.5px] text-[var(--color-muted)]">대출 조건으로 계산한 잔액</span>
                   <span className="text-sm font-semibold tabular-nums">{krw(amounts[item.id] ?? 0)}</span>
                 </div>
               )}
@@ -559,7 +526,7 @@ function OwnerBadge({ owner }: { owner: string }) {
   const tone = owner === 'spouse'
     ? 'bg-[var(--color-spouse-soft)] text-[var(--color-spouse)]'
     : owner === 'household'
-      ? 'bg-slate-200 text-slate-700'
+      ? 'bg-[var(--color-section)] text-[var(--color-muted)]'
       : 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]'
 
   return (

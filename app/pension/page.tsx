@@ -7,8 +7,8 @@ import { calcDeductible, pensionBreakdown, projectYearEnd, PENSION_CREDIT_RATE, 
 import MonthlyContributionEditor from './MonthlyContributionEditor'
 import { PensionYearEndPlan } from '@/components/PensionYearEnd'
 import { Stat, StatStrip } from '@/components/Stat'
-import { wonShort } from '@/lib/labels'
-import { compactKrw, formatMonth, krw as fmtKrw } from '@/lib/labels'
+import { compactKrw, formatMonth, krw as fmtKrw, wonShort } from '@/lib/labels'
+import { Check } from 'lucide-react'
 
 export const metadata = { title: '연금 현황' }
 
@@ -58,7 +58,7 @@ export default async function PensionPage() {
           <h1 className="page-title">연금 현황</h1>
           <div className="app-card mt-5 p-10 text-center">
             <p className="text-sm text-[var(--color-muted)]">연금저축·IRP 계좌가 없습니다.</p>
-            <Link href="/net-worth" className="mt-3 inline-block text-xs font-semibold text-[var(--color-primary)] hover:underline">밸런스 시트에서 계좌 추가하기 →</Link>
+            <Link href="/net-worth?view=settings" className="mt-3 inline-block text-[12.5px] font-semibold text-[var(--color-primary)] hover:underline">밸런스 시트에서 계좌 추가하기 →</Link>
           </div>
         </div>
       </>
@@ -126,7 +126,7 @@ export default async function PensionPage() {
             <h1 className="page-title">연금 현황</h1>
             <p className="page-subtitle">월말에 입력한 올해 누적 납입액으로 달성률을 계산합니다.</p>
           </div>
-          <Link href={`/budget?month=${currentMonth}`} className="inline-flex min-h-10 w-fit items-center rounded-lg bg-[var(--color-primary)] px-4 text-xs font-semibold text-white hover:bg-[var(--color-primary-strong)]">
+          <Link href={`/budget?month=${currentMonth}`} className="inline-flex min-h-10 w-fit items-center rounded-lg bg-[var(--color-primary)] px-4 text-[12.5px] font-semibold text-white hover:bg-[var(--color-primary-strong)]">
             {formatMonth(currentMonth)} 기록하기
           </Link>
         </header>
@@ -208,15 +208,15 @@ function PersonCard({ person }: { person: PersonStats }) {
     <article className="app-card p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${isSpouse ? 'bg-[var(--color-spouse-soft)] text-[var(--color-spouse)]' : 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]'}`}>{person.label}</span>
+          <span className={`rounded-full px-2.5 py-1 text-[12.5px] font-semibold ${isSpouse ? 'bg-[var(--color-spouse-soft)] text-[var(--color-spouse)]' : 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]'}`}>{person.label}</span>
           <h2 className="mt-3 text-base font-bold text-[var(--color-ink)]">연금 납입 달성률</h2>
         </div>
         <div className="text-right">
           <strong className="text-2xl tabular-nums text-[var(--color-ink)]">{Math.round(percent)}%</strong>
-          {breakdown.totalDone ? <p className="text-[11.5px] font-bold text-[var(--color-positive-strong)]">✓ 세액공제 한도 완료</p> : null}
+          {breakdown.totalDone ? <p className="text-[11.5px] font-bold text-[var(--color-positive-strong)]"><Check size={12} strokeWidth={2.5} className="mr-0.5 inline" aria-hidden="true" />세액공제 한도 완료</p> : null}
         </div>
       </div>
-      <div className="mt-4 flex items-end justify-between gap-3 text-xs">
+      <div className="mt-4 flex items-end justify-between gap-3 text-[12.5px]">
         <strong className="text-base tabular-nums text-[var(--color-ink)]">{fmtKrw(breakdown.total)}</strong>
         <span className="text-[var(--color-muted)]">목표 {fmtKrw(TOTAL_DEDUCT_LIMIT)}</span>
       </div>
@@ -254,7 +254,7 @@ function LimitRow({ label, counted, limit, done, color }: { label: string; count
       <div className="flex items-baseline justify-between gap-2 text-[12.5px]">
         <span className="flex items-center gap-1.5 font-semibold text-[var(--color-ink)]"><span aria-hidden="true" className="size-2.5 rounded-sm" style={{ backgroundColor: color }} />{label}</span>
         {done
-          ? <span className="rounded-full bg-[var(--color-positive-soft)] px-2 py-0.5 text-[11.5px] font-bold text-[var(--color-positive-strong)]">✓ {label} 한도 완료</span>
+          ? <span className="rounded-full bg-[var(--color-positive-soft)] px-2 py-0.5 text-[11.5px] font-bold text-[var(--color-positive-strong)]"><Check size={12} strokeWidth={2.5} className="mr-0.5 inline" aria-hidden="true" />{label} 한도 완료</span>
           : <span className="tabular-nums text-[var(--color-muted)]">{compactKrw(counted)} / {compactKrw(limit)}</span>}
       </div>
       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--color-border)]/75"><div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: color }} /></div>

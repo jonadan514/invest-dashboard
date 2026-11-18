@@ -141,6 +141,27 @@ a {
 }
 
 @layer components {
+  /* 입력칸 공통 모양: 숫자 크기에 맞춘 높이. 화면에서 준 너비·정렬 유틸리티가 덮어쓸 수 있다. */
+  .field-input {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background: #fff;
+    padding: 0.375rem 0.625rem;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--color-ink);
+  }
+  .field-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-soft);
+  }
+  .field-input:disabled {
+    opacity: 0.6;
+  }
+
   /* 컴포넌트 단계에 두어, 화면에서 준 border-dashed·border-t 같은 유틸리티가 덮어쓸 수 있게 한다. */
   .app-card {
     border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);

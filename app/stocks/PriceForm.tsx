@@ -48,7 +48,7 @@ export default function PriceForm({ rows, usdKrw, usdAsOf }: { rows: PriceRowInp
       {hasUsd ? (
         <label className="mb-4 flex flex-wrap items-center gap-3 rounded-xl bg-[var(--color-section)] px-4 py-3">
           <span className="text-[13px] font-semibold">원/달러 환율</span>
-          <input name="usd_krw" inputMode="decimal" defaultValue={usdKrw ?? ''} placeholder="예: 1,390" className="min-h-10 w-36 rounded-lg border border-[var(--color-border)] bg-white px-3 text-right text-[14px] tabular-nums" />
+          <input name="usd_krw" inputMode="decimal" defaultValue={usdKrw ?? ''} placeholder="예: 1,390" className="min-h-10 w-36 rounded-lg border border-[var(--color-border)] bg-white px-3 text-right text-sm tabular-nums" />
           <span className="text-[12.5px] text-[var(--color-muted)]">{usdAsOf ? `${formatDate(usdAsOf)} 입력` : '아직 입력 전'}</span>
         </label>
       ) : null}
@@ -56,12 +56,12 @@ export default function PriceForm({ rows, usdKrw, usdAsOf }: { rows: PriceRowInp
         {rows.map(row => (
           <li key={row.asset_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
             <div className="min-w-0">
-              <p className="truncate text-[14px] font-semibold">{row.name}{row.symbol ? <span className="ml-1.5 text-[12.5px] font-normal text-[var(--color-subtle)]">{row.symbol}</span> : null}</p>
+              <p className="truncate text-sm font-semibold">{row.name}{row.symbol ? <span className="ml-1.5 text-[12.5px] font-normal text-[var(--color-subtle)]">{row.symbol}</span> : null}</p>
               <p className="text-[12.5px] text-[var(--color-muted)]">보유 {row.quantity.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}주 · {row.as_of ? `${formatDate(row.as_of)} 입력` : '현재가 미입력'}</p>
             </div>
             <label className="flex items-center gap-2">
               <span className="sr-only">{row.name} 현재가</span>
-              <input name={`price_${row.asset_id}`} inputMode="decimal" defaultValue={row.price ?? ''} placeholder="현재가" className="min-h-10 w-36 rounded-lg border border-[var(--color-border)] bg-white px-3 text-right text-[14px] tabular-nums" />
+              <input name={`price_${row.asset_id}`} inputMode="decimal" defaultValue={row.price ?? ''} placeholder="현재가" className="min-h-10 w-36 rounded-lg border border-[var(--color-border)] bg-white px-3 text-right text-sm tabular-nums" />
               <span className="w-6 text-[12.5px] text-[var(--color-muted)]">{row.currency === 'USD' ? '$' : '원'}</span>
             </label>
           </li>

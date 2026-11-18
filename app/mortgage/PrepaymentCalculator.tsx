@@ -17,7 +17,7 @@ export interface PrepayLoan {
 }
 
 const PRESETS = [10_000_000, 30_000_000, 50_000_000, 100_000_000]
-const INPUT = 'w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2.5 text-[14px] outline-none focus:border-[var(--color-primary)]'
+const INPUT = 'field-input'
 
 function years(months: number) {
   const y = Math.floor(months / 12)
@@ -131,7 +131,7 @@ export default function PrepaymentCalculator({ loan }: { loan: PrepayLoan }) {
               </table>
             </div>
 
-            <p className="text-[12px] leading-5 text-[var(--color-muted)]">
+            <p className="text-[12.5px] leading-5 text-[var(--color-muted)]">
               계산만 하고 기록은 바꾸지 않아요. 실제로 갚았다면 <Link href={`/budget?month=${month}`} className="font-semibold text-[var(--color-primary)] hover:underline">{formatMonth(month)} 월간 기록</Link>의 ‘추가 원금 상환’에 적거나, 밸런스 시트 잔액 이력에 은행 잔액을 넣으세요.
               {method === 'reduce' ? ' 월 상환액 감소를 골랐다면 은행이 바꿔 준 월 상환액도 대출 정보에 넣어 주세요.' : ''}
             </p>

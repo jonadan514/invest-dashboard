@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { CalendarPlus } from 'lucide-react'
+import { AlertCircle, CalendarPlus, Check } from 'lucide-react'
 import { buildAccountTotalTrend, isAccountActiveAtMonth, latestSnapshotsAtMonth, latestYearContributions } from '@/lib/calc/account-snapshots'
 import { DEFAULT_FINANCIAL_PLAN } from '@/lib/calc/budget'
 import {
@@ -222,17 +222,19 @@ export default async function DashboardPage() {
           composition={composition.map(item => ({ label: item.label, value: item.value }))}
         />
 
-        <MonthEndBanner reminder={reminder} />
-
-        <StockAlerts alerts={stockAlerts} limit={3} />
-
-        {pensionAccounts.length > 0 ? (
-          <PensionYearEndBanner
-            persons={[{ label: '나', pension: mePensionSavings, irp: meIrp }, { label: '아내', pension: spousePensionSavings, irp: spouseIrp }]}
-            today={todayKst}
-            recordMonth={pensionRecordMonth}
-          />
-        ) : null}
+        {/* 월말 기록·주식·연금 마감 알림을 한 상자로 묶는다. 알림이 하나도 없으면 상자도 보이지 않는다(empty:hidden). */}
+        <section aria-label="알림" className="app-card divide-y divide-[var(--color-border)] overflow-hidden empty:hidden">
+          <MonthEndBanner reminder={reminder} embedded />
+          {stockAlerts.length > 0 ? <StockAlerts alerts={stockAlerts} limit={3} embedded /> : null}
+          {pensionAccounts.length > 0 ? (
+            <PensionYearEndBanner
+              embedded
+              persons={[{ label: '나', pension: mePensionSavings, irp: meIrp }, { label: '아내', pension: spousePensionSavings, irp: spouseIrp }]}
+              today={todayKst}
+              recordMonth={pensionRecordMonth}
+            />
+          ) : null}
+        </section>
 
         <section aria-label="변화와 목표" className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,1fr)]">
           <ChangeDriversCard
@@ -298,7 +300,7 @@ function StripCard({ mark, markClass, title, value, percent, barColor, caption, 
       <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[15px] font-extrabold ${markClass}`} aria-hidden="true">{mark}</span>
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline justify-between gap-3">
-          <span className="truncate text-[14px] font-bold text-[var(--color-ink)]">{title}</span>
+          <span className="truncate text-sm font-bold text-[var(--color-ink)]">{title}</span>
           <span className="text-[15px] font-extrabold tabular-nums text-[var(--color-ink)]">{value}</span>
         </span>
         <span className="mt-2.5 block h-2 overflow-hidden rounded-full bg-[var(--color-section)]">
@@ -343,8 +345,8 @@ function MonthlyCheckCard({
   return (
     <article className="app-card flex flex-col p-5">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-[14px] font-bold text-[var(--color-ink)]">{formatMonth(currentMonth).replace(/^\d+년 /, '')} 기록</h2>
-        <span className={`rounded-full px-2.5 py-0.5 text-[12px] font-bold ${remaining === 0 ? 'bg-[var(--color-positive-soft)] text-[var(--color-positive)]' : 'bg-[var(--color-negative-soft)] text-[var(--color-negative)]'}`}>
+        <h2 className="text-sm font-bold text-[var(--color-ink)]">{formatMonth(currentMonth).replace(/^\d+년 /, '')} 기록</h2>
+        <span className={`rounded-full px-2.5 py-0.5 text-[12.5px] font-bold ${remaining === 0 ? 'bg-[var(--color-positive-soft)] text-[var(--color-positive)]' : 'bg-[var(--color-negative-soft)] text-[var(--color-negative)]'}`}>
           {remaining === 0 ? '모두 완료' : `${remaining}개 남음`}
         </span>
       </div>
@@ -356,7 +358,7 @@ function MonthlyCheckCard({
               title={item.detail}
               className={`inline-flex min-h-8 items-center gap-1 rounded-full border px-3 py-1 text-[12.5px] font-semibold ${item.done ? 'border-transparent bg-[var(--color-section)] text-[var(--color-muted)]' : 'border-[var(--color-negative)]/40 bg-white text-[var(--color-negative)]'}`}
             >
-              {item.done ? '✓' : '!'} {item.label}
+              {item.done ? <Check size={13} strokeWidth={2.5} aria-hidden="true" /> : <AlertCircle size={13} aria-hidden="true" />} {item.label}
             </Link>
           </li>
         ))}

@@ -149,7 +149,7 @@ export default async function BudgetPage({
                 return (
                   <li key={record.id} className={`px-4 py-3.5 ${record.month === month ? 'bg-[var(--color-primary-soft)]' : ''}`}>
                     <div className="flex items-center justify-between gap-3">
-                      <a href={`/budget?month=${record.month}`} className="inline-flex min-h-8 items-center text-[14px] font-bold text-[var(--color-ink)]">
+                      <a href={`/budget?month=${record.month}`} className="inline-flex min-h-8 items-center text-sm font-bold text-[var(--color-ink)]">
                         {Number(record.month.slice(0, 4))}년 {Number(record.month.slice(5))}월
                       </a>
                       <span className="rounded-full bg-[var(--color-section)] px-2 py-0.5 text-[11.5px] font-semibold text-[var(--color-muted)]">비상금 {stage}</span>
@@ -167,7 +167,7 @@ export default async function BudgetPage({
               })}
             </ul>
             <div className="hidden overflow-x-auto sm:block">
-              <table className="w-full text-xs">
+              <table className="w-full text-[12.5px]">
                 <thead>
                   <tr className="border-b border-[var(--color-section)] text-[var(--color-muted)]">
                     <th className="whitespace-nowrap px-4 py-2.5 text-left font-medium">월</th>
@@ -185,7 +185,7 @@ export default async function BudgetPage({
                     const [year, monthNumber] = record.month.split('-')
                     const emergencyFund = Number(record.cash_balance)
                     return (
-                      <tr key={record.id} className={`border-b border-[var(--color-section)] last:border-0 ${record.month === month ? 'bg-blue-50' : ''}`}>
+                      <tr key={record.id} className={`border-b border-[var(--color-section)] last:border-0 ${record.month === month ? 'bg-[var(--color-primary-soft)]' : ''}`}>
                         <td className="whitespace-nowrap px-4 py-3 font-medium text-[var(--color-ink)]">
                           {year}년 {Number(monthNumber)}월
                           {record.month === month ? <span className="ml-1 text-[11.5px] text-[var(--color-primary)]">●</span> : null}
@@ -200,7 +200,7 @@ export default async function BudgetPage({
                           {accountTotalByMonth.has(record.month) ? <>{krw(accountTotalByMonth.get(record.month)!.total)}<Change value={accountTotalByMonth.get(record.month)!.change} /></> : '-'}
                         </td>
                         <td className="px-3 py-3 text-center">
-                          <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-medium ${emergencyFund >= settings.stage2Target ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : emergencyFund >= settings.stage1Target ? 'bg-amber-100 text-amber-700' : 'bg-[var(--color-section)] text-[var(--color-muted)]'}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-medium ${emergencyFund >= settings.stage2Target ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : emergencyFund >= settings.stage1Target ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]' : 'bg-[var(--color-section)] text-[var(--color-muted)]'}`}>
                             {emergencyFund >= settings.stage2Target ? stageLabel(settings.stage2Target) : emergencyFund >= settings.stage1Target ? stageLabel(settings.stage1Target) : '달성 전'}
                           </span>
                         </td>

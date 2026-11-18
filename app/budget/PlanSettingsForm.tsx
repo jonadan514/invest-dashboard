@@ -66,14 +66,14 @@ export default function PlanSettingsForm({ settings }: { settings: FinancialPlan
           <h2 className="text-base font-bold text-[var(--color-ink)]">월간 기록 기본값</h2>
           <p className="mt-1 text-[12.5px] font-medium text-[var(--color-muted)]">고정비·공금·비상금 목표 · 주담대 납부는 대출 정보로 자동 계산</p>
         </div>
-        <span className="text-xs text-[var(--color-muted)]">{open ? '접기' : '수정'}</span>
+        <span className="text-[12.5px] text-[var(--color-muted)]">{open ? '접기' : '수정'}</span>
       </button>
 
       {open ? (
         <form onSubmit={submit} className="border-t border-[var(--color-border)] bg-[var(--color-section)]/55 px-5 py-5">
           <div className="grid gap-6 lg:grid-cols-2">
             <div>
-              <h3 className="mb-3 text-xs font-semibold text-[var(--color-ink)]">가계 기준</h3>
+              <h3 className="mb-3 text-[12.5px] font-semibold text-[var(--color-ink)]">가계 기준</h3>
               <div className="space-y-3">
                 <AmountField label="매월 고정비" value={values.monthlyFixedCost} onChange={value => set('monthlyFixedCost', value)} />
                 <p className="rounded-xl bg-[var(--color-section)] px-3 py-2 text-[12.5px] leading-5 text-[var(--color-muted)]">
@@ -87,7 +87,7 @@ export default function PlanSettingsForm({ settings }: { settings: FinancialPlan
             </div>
 
             <div>
-              <h3 className="mb-3 text-xs font-semibold text-[var(--color-ink)]">비상금 목표</h3>
+              <h3 className="mb-3 text-[12.5px] font-semibold text-[var(--color-ink)]">비상금 목표</h3>
               <div className="space-y-3">
                 <AmountField label="첫 번째 목표" value={values.stage1Target} onChange={value => set('stage1Target', value)} />
                 <AmountField label="최종 목표" value={values.stage2Target} onChange={value => set('stage2Target', value)} />
@@ -96,13 +96,13 @@ export default function PlanSettingsForm({ settings }: { settings: FinancialPlan
             </div>
           </div>
 
-          {error ? <p className="mt-4 text-xs text-[var(--color-negative)]" role="alert">{error}</p> : null}
+          {error ? <p className="mt-4 text-[12.5px] text-[var(--color-negative)]" role="alert">{error}</p> : null}
           <button
             type="submit"
             disabled={pending}
-            className="mt-5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-[var(--color-primary-strong)] disabled:opacity-50"
+            className="mt-5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-[12.5px] font-semibold text-white transition-colors hover:bg-[var(--color-primary-strong)] disabled:opacity-50"
           >
-            {pending ? '저장 중…' : saved ? 'Supabase 저장됨 ✓' : '기본값 저장'}
+            {pending ? '저장 중…' : saved ? '저장됨' : '기본값 저장'}
           </button>
         </form>
       ) : null}
@@ -114,15 +114,15 @@ function AmountField({ label, value, onChange }: { label: string; value: number;
   const id = `plan-${label.replace(/[^가-힣a-zA-Z0-9]/g, '-')}`
   return (
     <div className="flex items-center gap-3">
-      <label htmlFor={id} className="min-w-28 flex-1 text-xs text-[var(--color-muted)]">{label}</label>
+      <label htmlFor={id} className="min-w-28 flex-1 text-[12.5px] text-[var(--color-muted)]">{label}</label>
       <input
         id={id}
         inputMode="numeric"
         value={formatInput(value)}
         onChange={event => onChange(parseNumber(event.target.value))}
-        className="w-36 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-right text-xs tabular-nums outline-none focus:border-[var(--color-primary)]"
+        className="field-input w-36 text-right tabular-nums"
       />
-      <span className="text-xs text-[var(--color-muted)]">원</span>
+      <span className="text-[12.5px] text-[var(--color-muted)]">원</span>
     </div>
   )
 }

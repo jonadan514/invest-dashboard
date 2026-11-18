@@ -2,7 +2,7 @@
 import { useRef, useTransition } from 'react'
 import { createAccount } from './actions'
 
-const INPUT = 'w-full min-w-0 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm focus:border-[var(--color-primary)] focus:outline-none'
+const INPUT = 'field-input'
 
 export default function AccountForm({ compact = false }: { compact?: boolean }) {
   const formRef = useRef<HTMLFormElement>(null)
@@ -27,25 +27,25 @@ export default function AccountForm({ compact = false }: { compact?: boolean }) 
     <form ref={formRef} action={handleSubmit} className="space-y-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs text-[var(--color-muted)]">계좌명 *</label>
+          <label className="mb-1 block text-[12.5px] text-[var(--color-muted)]">계좌명 *</label>
           <input name="name" required placeholder="예) 부부 공동 MMF" className={INPUT} />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-[var(--color-muted)]">증권사/은행</label>
+          <label className="mb-1 block text-[12.5px] text-[var(--color-muted)]">증권사/은행</label>
           <input name="broker" placeholder="예) 미래에셋" className={INPUT} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs text-[var(--color-muted)]">소유자 *</label>
+          <label className="mb-1 block text-[12.5px] text-[var(--color-muted)]">소유자 *</label>
           <select name="owner" className={INPUT}>
             <option value="me">나</option>
             <option value="spouse">아내</option>
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs text-[var(--color-muted)]">계좌 유형 *</label>
+          <label className="mb-1 block text-[12.5px] text-[var(--color-muted)]">계좌 유형 *</label>
           <select name="type" defaultValue="general" className={INPUT}>
             <option value="cash">입출금·공동계좌</option>
             <option value="mmf">CMA·MMF</option>
@@ -59,14 +59,14 @@ export default function AccountForm({ compact = false }: { compact?: boolean }) 
       </div>
       <div className="flex items-center gap-2">
         <input type="checkbox" name="tax_benefit" value="true" id="tax_benefit" className="h-4 w-4 accent-[var(--color-primary)]" />
-        <label htmlFor="tax_benefit" className="text-xs text-[var(--color-ink)]">
+        <label htmlFor="tax_benefit" className="text-[12.5px] text-[var(--color-ink)]">
           세제혜택 계좌 (연금저축·IRP·ISA 등)
         </label>
       </div>
 
       <div className="flex items-center gap-2">
         <input type="checkbox" name="is_emergency_fund" value="true" id="is_emergency_fund" className="h-4 w-4 accent-[var(--color-primary)]" />
-        <label htmlFor="is_emergency_fund" className="text-xs text-[var(--color-ink)]">
+        <label htmlFor="is_emergency_fund" className="text-[12.5px] text-[var(--color-ink)]">
           비상금 목표 금액에 합산
         </label>
       </div>

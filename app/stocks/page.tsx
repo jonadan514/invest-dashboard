@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import TabNav from '@/components/TabNav'
 import { Stat, StatStrip, toneOf } from '@/components/Stat'
 import { latestSnapshotsAtMonth } from '@/lib/calc/account-snapshots'
 import { buildHoldings, type PriceRow } from '@/lib/calc/holdings'
@@ -173,19 +174,13 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
 
       {accounts.length === 0 ? (
         <div className="app-card p-10 text-center">
-          <p className="text-[14px] text-[var(--color-muted)]">주식·ISA·연금 계좌가 없어요.</p>
+          <p className="text-sm text-[var(--color-muted)]">주식·ISA·연금 계좌가 없어요.</p>
           <Link href="/net-worth?tab=items" className="mt-3 inline-flex min-h-8 items-center text-[13px] font-semibold text-[var(--color-primary)] hover:underline">밸런스 시트에서 계좌 추가하기 →</Link>
         </div>
       ) : (
         <>
-          <nav aria-label="주식 계좌 메뉴" className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex rounded-xl bg-white p-1 shadow-[var(--shadow-card)]">
-              {([['holdings', '보유 현황'], ['trades', '거래 기록'], ['dividends', '배당'], ['prices', '현재가 입력'], ['assets', '종목 관리']] as const).map(([value, label]) => (
-                <Link key={value} href={href({ tab: value })} aria-current={tab === value ? 'page' : undefined} className={`inline-flex min-h-9 items-center rounded-lg px-4 text-[13px] font-semibold ${tab === value ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--color-muted)] hover:text-[var(--color-ink)]'}`}>
-                  {label}
-                </Link>
-              ))}
-            </div>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <TabNav label="주식 계좌 탭" active={tab} items={([['holdings', '보유 현황'], ['trades', '거래 기록'], ['dividends', '배당'], ['prices', '현재가 입력'], ['assets', '종목 관리']] as const).map(([value, label]) => ({ value, label, href: href({ tab: value }) }))} />
             {tab !== 'prices' && tab !== 'assets' ? (
               <div className="flex flex-wrap gap-1.5" aria-label="계좌 선택">
                 <Link href={href({ account: null })} className={chipClass(!selectedAccount)}>전체</Link>
@@ -194,7 +189,7 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
                 ))}
               </div>
             ) : null}
-          </nav>
+          </div>
 
           {tab === 'holdings' ? (
             <div className="space-y-4">
@@ -226,19 +221,19 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
                   <>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-[var(--color-border)] px-5 py-3" aria-label="정렬과 필터">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[12px] font-semibold text-[var(--color-muted)]">정렬</span>
+                        <span className="text-[12.5px] font-semibold text-[var(--color-muted)]">정렬</span>
                         {([['value', '평가금액'], ['return', '수익률'], ['pnl', '평가손익'], ['name', '이름']] as const).map(([value, label]) => (
                           <Link key={value} href={href({ sort: value })} className={chipClass(sort === value)}>{label}</Link>
                         ))}
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[12px] font-semibold text-[var(--color-muted)]">손익</span>
+                        <span className="text-[12.5px] font-semibold text-[var(--color-muted)]">손익</span>
                         {([['all', '전체'], ['gain', '이익'], ['loss', '손실']] as const).map(([value, label]) => (
                           <Link key={value} href={href({ filter: value })} className={chipClass(filter === value)}>{label}</Link>
                         ))}
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[12px] font-semibold text-[var(--color-muted)]">구분</span>
+                        <span className="text-[12.5px] font-semibold text-[var(--color-muted)]">구분</span>
                         <Link href={href({ class: null })} className={chipClass(!classFilter)}>전체</Link>
                         {STOCK_CLASSES.filter(item => holdings.some(holding => holding.asset_class === item.value)).map(item => (
                           <Link key={item.value} href={href({ class: item.value })} className={chipClass(classFilter === item.value)}>{item.label}</Link>
@@ -308,15 +303,15 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
                       return (
                         <Link key={account.id} href={href({ account: account.id })} className="app-card block p-4 hover:border-[var(--color-primary)]">
                           <div className="flex items-start justify-between gap-2">
-                            <p className="min-w-0 truncate text-[14px] font-bold">{account.name}</p>
-                            <span className="shrink-0 text-[12px] text-[var(--color-muted)]">{rows.length}종목</span>
+                            <p className="min-w-0 truncate text-sm font-bold">{account.name}</p>
+                            <span className="shrink-0 text-[12.5px] text-[var(--color-muted)]">{rows.length}종목</span>
                           </div>
                           <p className="mt-2 text-[22px] font-bold tabular-nums leading-none">{missing === rows.length ? '현재가 필요' : wonShort(value)}</p>
                           <p className={`mt-1.5 text-[13px] font-semibold tabular-nums ${pnl > 0 ? 'text-[var(--color-positive)]' : pnl < 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-muted)]'}`}>
-                            {rate === null ? '—' : `${rate > 0 ? '+' : ''}${rate.toFixed(1)}%`} <span className="text-[12px] font-medium">{rate === null ? '' : signedWonShort(pnl)}</span>
+                            {rate === null ? '—' : `${rate > 0 ? '+' : ''}${rate.toFixed(1)}%`} <span className="text-[12.5px] font-medium">{rate === null ? '' : signedWonShort(pnl)}</span>
                           </p>
                           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--color-section)]"><span className="block h-full rounded-full" style={{ width: `${share}%`, background: colorAt(index) }} /></div>
-                          <p className="mt-1.5 flex flex-wrap justify-between gap-x-2 text-[12px] tabular-nums text-[var(--color-muted)]">
+                          <p className="mt-1.5 flex flex-wrap justify-between gap-x-2 text-[12.5px] tabular-nums text-[var(--color-muted)]">
                             <span>전체의 {share.toFixed(0)}%{missing > 0 && missing < rows.length ? ` · 미입력 ${missing}` : ''}</span>
                             {recorded ? <span>{formatMonth(recorded.month)} 기록 {wonShort(Number(recorded.evaluation_amount))}</span> : null}
                           </p>
@@ -354,7 +349,7 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
                       return (
                         <li key={trade.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-5 py-3">
                           <div className="min-w-0">
-                            <p className="flex flex-wrap items-center gap-x-2 text-[14px]">
+                            <p className="flex flex-wrap items-center gap-x-2 text-sm">
                               <span className={`rounded-md px-1.5 py-0.5 text-[11.5px] font-bold ${trade.type === 'buy' ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : trade.type === 'sell' ? 'bg-[var(--color-negative-soft)] text-[var(--color-negative)]' : 'bg-[var(--color-positive-soft)] text-[var(--color-positive)]'}`}>{TYPE_LABEL[trade.type]}</span>
                               <span className="font-semibold">{asset?.name ?? '알 수 없는 종목'}</span>
                               <span className="text-[12.5px] text-[var(--color-muted)]">{trade.date} · {accountMap.get(trade.account_id)?.name ?? '계좌'}</span>
@@ -465,8 +460,8 @@ function HoldingsTable({ holdings, total }: { holdings: Holding[]; total: number
         {holdings.map(holding => (
           <li key={`${holding.account_id}-${holding.asset_id}`} className="px-5 py-3.5">
             <div className="flex items-baseline justify-between gap-3">
-              <Link href={`/stocks/${holding.asset_id}`} className="min-w-0 truncate text-[14px] font-bold hover:text-[var(--color-primary)]">{holding.name}</Link>
-              <p className="shrink-0 text-[14px] font-bold tabular-nums">{holding.market_value_krw === null ? '현재가 필요' : wonShort(holding.market_value_krw)}</p>
+              <Link href={`/stocks/${holding.asset_id}`} className="min-w-0 truncate text-sm font-bold hover:text-[var(--color-primary)]">{holding.name}</Link>
+              <p className="shrink-0 text-sm font-bold tabular-nums">{holding.market_value_krw === null ? '현재가 필요' : wonShort(holding.market_value_krw)}</p>
             </div>
             <div className="mt-1 flex items-baseline justify-between gap-3 text-[12.5px] tabular-nums text-[var(--color-muted)]">
               <span className="truncate">{holding.account_name} · {holding.quantity.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}주 · 평단 {money(holding, holding.avg_cost)}</span>
@@ -494,8 +489,8 @@ function HoldingsTable({ holdings, total }: { holdings: Holding[]; total: number
               return (
                 <tr key={`${holding.account_id}-${holding.asset_id}`} className="border-b border-[var(--color-section)] last:border-0">
                   <td className="px-5 py-3">
-                    <p className="font-semibold"><Link href={`/stocks/${holding.asset_id}`} className="hover:text-[var(--color-primary)] hover:underline">{holding.name}</Link>{holding.symbol ? <span className="ml-1.5 text-[12px] font-normal text-[var(--color-subtle)]">{holding.symbol}</span> : null}</p>
-                    <p className="text-[12px] text-[var(--color-muted)]">{holding.account_name}</p>
+                    <p className="font-semibold"><Link href={`/stocks/${holding.asset_id}`} className="hover:text-[var(--color-primary)] hover:underline">{holding.name}</Link>{holding.symbol ? <span className="ml-1.5 text-[12.5px] font-normal text-[var(--color-subtle)]">{holding.symbol}</span> : null}</p>
+                    <p className="text-[12.5px] text-[var(--color-muted)]">{holding.account_name}</p>
                   </td>
                   <td className="px-3 py-3 text-right tabular-nums">{holding.quantity.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}</td>
                   <td className="px-3 py-3 text-right tabular-nums">{money(holding, holding.avg_cost)}</td>
@@ -505,7 +500,7 @@ function HoldingsTable({ holdings, total }: { holdings: Holding[]; total: number
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
                       <span className="h-1.5 w-20 overflow-hidden rounded-full bg-[var(--color-section)]"><span className="block h-full rounded-full bg-[var(--color-primary)]" style={{ width: `${weight}%` }} /></span>
-                      <span className="w-10 text-right text-[12px] tabular-nums text-[var(--color-muted)]">{weight.toFixed(0)}%</span>
+                      <span className="w-10 text-right text-[12.5px] tabular-nums text-[var(--color-muted)]">{weight.toFixed(0)}%</span>
                     </div>
                   </td>
                 </tr>
@@ -524,7 +519,7 @@ function PnL({ holding }: { holding: Holding }) {
   return (
     <span className={`shrink-0 font-semibold tabular-nums ${tone}`} title={krw(holding.unrealized_pnl_krw)}>
       {signedWonShort(holding.unrealized_pnl_krw)}
-      {holding.unrealized_pnl_pct !== null ? <span className="ml-1 text-[12px] font-medium">({holding.unrealized_pnl_pct > 0 ? '+' : ''}{holding.unrealized_pnl_pct.toFixed(1)}%)</span> : null}
+      {holding.unrealized_pnl_pct !== null ? <span className="ml-1 text-[12.5px] font-medium">({holding.unrealized_pnl_pct > 0 ? '+' : ''}{holding.unrealized_pnl_pct.toFixed(1)}%)</span> : null}
     </span>
   )
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition, type ReactNode } from 'reac
 import { useRouter } from 'next/navigation'
 import type { ActionResult } from '@/lib/action-result'
 import { krw } from '@/lib/labels'
+import { Check } from 'lucide-react'
 import type { HouseholdGoal } from '@/lib/types'
 import {
   deleteHouseholdGoal,
@@ -108,7 +109,7 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
 
   return (
     <div className="space-y-4">
-      {message ? <p className="rounded-xl bg-blue-50 px-4 py-3 text-xs text-[var(--color-primary)]" role="status">{message}</p> : null}
+      {message ? <p className="rounded-xl bg-[var(--color-primary-soft)] px-4 py-3 text-[12.5px] text-[var(--color-primary)]" role="status">{message}</p> : null}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
       <div className="space-y-4">
       <p className="text-[13px] font-bold text-[var(--color-muted)]">가계 설정</p>
@@ -116,10 +117,10 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
         <h2 className="text-sm font-semibold">월 소득</h2>
         <p className="mt-1 text-[11.5px] text-[var(--color-muted)]">대시보드 저축률 계산에 사용합니다. 실제로 들어오는 부부 합산 세후 월급을 입력하세요. 성과급은 월간 기록에 따로 입력합니다.</p>
         <div className="mt-3 flex items-center gap-2">
-          <input aria-label="월 소득(원)" value={monthlyIncome > 0 ? formatNumber(monthlyIncome) : ''} onChange={event => setMonthlyIncome(parseNumber(event.target.value))} inputMode="numeric" className="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-right text-sm" />
-          <span className="text-xs text-[var(--color-muted)]">원</span>
+          <input aria-label="월 소득(원)" value={monthlyIncome > 0 ? formatNumber(monthlyIncome) : ''} onChange={event => setMonthlyIncome(parseNumber(event.target.value))} inputMode="numeric" className="field-input flex-1 text-right tabular-nums" />
+          <span className="text-[12.5px] text-[var(--color-muted)]">원</span>
         </div>
-        <button type="button" onClick={saveSettings} disabled={pending} className="mt-4 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">
+        <button type="button" onClick={saveSettings} disabled={pending} className="mt-4 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-[12.5px] font-semibold text-white disabled:opacity-40">
           {pending ? '저장 중…' : '설정 저장'}
         </button>
       </section>
@@ -127,15 +128,15 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
       <section className="app-card p-5" id="goals">
         <div className="flex items-center justify-between gap-3">
           <div><h2 className="text-sm font-semibold">목표 마일스톤</h2><p className="mt-1 text-[11.5px] text-[var(--color-muted)]">첫 번째 미달성 목표가 대시보드에 표시됩니다.</p></div>
-          <button type="button" onClick={() => { setEditingGoal(null); setShowGoalForm(current => !current) }} className="rounded-lg bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white">＋ 목표</button>
+          <button type="button" onClick={() => { setEditingGoal(null); setShowGoalForm(current => !current) }} className="rounded-lg bg-[var(--color-primary)] px-3 py-2 text-[12.5px] font-semibold text-white">＋ 목표</button>
         </div>
         {showGoalForm ? <GoalForm initial={editingGoal} nextOrder={initialGoals.length} pending={pending} onSave={input => goalAction(() => saveHouseholdGoal(input), '목표를 저장했습니다.')} onCancel={() => { setShowGoalForm(false); setEditingGoal(null) }} /> : null}
         <div className="mt-4 space-y-2">
-          {initialGoals.length === 0 ? <p className="py-4 text-center text-xs text-[var(--color-muted)]">등록된 목표가 없습니다.</p> : null}
+          {initialGoals.length === 0 ? <p className="py-4 text-center text-[12.5px] text-[var(--color-muted)]">등록된 목표가 없습니다.</p> : null}
           {initialGoals.map(goal => (
             <div key={goal.id} className={`rounded-xl border border-[var(--color-border)] px-4 py-3 ${goal.achieved_at ? 'opacity-55' : 'bg-white/55'}`}>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                <div><p className="text-xs font-semibold">{goal.name} {goal.achieved_at ? '✓' : ''}</p><p className="mt-1 text-[11.5px] text-[var(--color-muted)]">{goal.statement} · 목표 {krw(Number(goal.target))}</p></div>
+                <div><p className="text-[12.5px] font-semibold">{goal.name}{goal.achieved_at ? <Check size={12} strokeWidth={2.5} className="ml-1 inline text-[var(--color-positive)]" aria-label="달성" /> : null}</p><p className="mt-1 text-[11.5px] text-[var(--color-muted)]">{goal.statement} · 목표 {krw(Number(goal.target))}</p></div>
                 <div className="flex shrink-0 gap-1.5 text-[12.5px] font-semibold">
                   <button type="button" className="min-h-8 rounded-md border border-[var(--color-border)] bg-white px-2.5" onClick={() => { setEditingGoal(goal); setShowGoalForm(true) }}>수정</button>
                   <button type="button" className="min-h-8 rounded-md border border-[var(--color-border)] bg-white px-2.5 text-[var(--color-primary)]" onClick={() => goalAction(() => setGoalAchieved(goal.id, !goal.achieved_at), goal.achieved_at ? '달성을 취소했습니다.' : '목표를 달성 처리했습니다.')}>{goal.achieved_at ? '되돌리기' : '달성'}</button>
@@ -155,10 +156,10 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
         <h2 className="text-sm font-semibold">전체 데이터 백업·복원</h2>
         <p className="mt-1 text-[11.5px] leading-5 text-[var(--color-muted)]">금융계좌, 거래, 월간 기록, 밸런스 시트, 목표와 설정을 하나의 JSON 파일로 보관합니다.</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <a href="/api/export/full" className="rounded-lg bg-[var(--color-ink)] px-4 py-2 text-xs font-semibold text-white">전체 백업 다운로드</a>
-          <button type="button" onClick={() => importRef.current?.click()} disabled={pending} className="rounded-lg border border-[var(--color-border)] bg-white px-4 py-2 text-xs font-semibold">백업 복원</button>
+          <a href="/api/export/full" className="rounded-lg bg-[var(--color-ink)] px-4 py-2 text-[12.5px] font-semibold text-white">전체 백업 다운로드</a>
+          <button type="button" onClick={() => importRef.current?.click()} disabled={pending} className="rounded-lg border border-[var(--color-border)] bg-white px-4 py-2 text-[12.5px] font-semibold">백업 복원</button>
           <input ref={importRef} type="file" accept="application/json,.json" className="hidden" onChange={event => { const file = event.target.files?.[0]; if (file) void restoreBackup(file) }} />
-          <a href="/api/export/transactions" className="rounded-lg border border-[var(--color-border)] bg-white px-4 py-2 text-xs">거래 CSV</a>
+          <a href="/api/export/transactions" className="rounded-lg border border-[var(--color-border)] bg-white px-4 py-2 text-[12.5px]">거래 CSV</a>
         </div>
       </section>
       {backupPanel}
@@ -176,11 +177,11 @@ function GoalForm({ initial, nextOrder, pending, onSave, onCancel }: { initial: 
   return (
     <form onSubmit={event => { event.preventDefault(); onSave({ id: initial?.id, name, statement, sub: initial?.sub ?? '', type, target, nextHint: initial?.next_hint ?? '', sortOrder: initial?.sort_order ?? nextOrder }) }} className="mt-4 rounded-xl border border-[var(--color-border)] bg-white p-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <input aria-label="목표 이름" required value={name} onChange={event => setName(event.target.value)} placeholder="목표 이름" className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-xs" />
-        <select aria-label="목표 유형" value={type} onChange={event => setType(event.target.value as HouseholdGoal['type'])} className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs"><option value="cash">현금</option><option value="investment">투자</option><option value="net_worth">순자산</option><option value="other">기타</option></select>
-        <input aria-label="목표 문장" required value={statement} onChange={event => setStatement(event.target.value)} placeholder="목표 문장" className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-xs sm:col-span-2" />
-        <input aria-label="목표 금액" required inputMode="numeric" value={target > 0 ? formatNumber(target) : ''} onChange={event => setTarget(parseNumber(event.target.value))} placeholder="목표 금액" className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-right text-xs" />
-        <div className="flex justify-end gap-2"><button type="button" onClick={onCancel} className="px-3 text-xs">취소</button><button type="submit" disabled={pending} className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-xs font-semibold text-white">저장</button></div>
+        <input aria-label="목표 이름" required value={name} onChange={event => setName(event.target.value)} placeholder="목표 이름" className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-[12.5px]" />
+        <select aria-label="목표 유형" value={type} onChange={event => setType(event.target.value as HouseholdGoal['type'])} className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-[12.5px]"><option value="cash">현금</option><option value="investment">투자</option><option value="net_worth">순자산</option><option value="other">기타</option></select>
+        <input aria-label="목표 문장" required value={statement} onChange={event => setStatement(event.target.value)} placeholder="목표 문장" className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-[12.5px] sm:col-span-2" />
+        <input aria-label="목표 금액" required inputMode="numeric" value={target > 0 ? formatNumber(target) : ''} onChange={event => setTarget(parseNumber(event.target.value))} placeholder="목표 금액" className="field-input w-auto text-right tabular-nums" />
+        <div className="flex justify-end gap-2"><button type="button" onClick={onCancel} className="px-3 text-[12.5px]">취소</button><button type="submit" disabled={pending} className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-[12.5px] font-semibold text-white">저장</button></div>
       </div>
     </form>
   )

@@ -113,7 +113,7 @@ export default async function StockDetailPage({ params }: { params: Promise<{ as
                     <p className="font-semibold">{row.date} 매도 {row.quantity.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}주</p>
                     <p className="text-[12.5px] tabular-nums text-[var(--color-muted)]">매도가 {money(row.sell_price)} · 평단 {money(row.avg_cost)}</p>
                   </div>
-                  <p className={`shrink-0 text-right font-bold tabular-nums ${toneClass(row.pnl_krw)}`}>{signedWonShort(row.pnl_krw)}<span className="ml-1 text-[12px] font-medium">({row.pnl_pct > 0 ? '+' : ''}{row.pnl_pct.toFixed(1)}%)</span></p>
+                  <p className={`shrink-0 text-right font-bold tabular-nums ${toneClass(row.pnl_krw)}`}>{signedWonShort(row.pnl_krw)}<span className="ml-1 text-[12.5px] font-medium">({row.pnl_pct > 0 ? '+' : ''}{row.pnl_pct.toFixed(1)}%)</span></p>
                 </li>
               ))}
             </ul>
@@ -147,7 +147,7 @@ export default async function StockDetailPage({ params }: { params: Promise<{ as
                     </div>
                     <div className="text-right tabular-nums">
                       <p className="font-semibold">{money(Number(trade.amount ?? 0))}</p>
-                      {trade.runningQuantity !== null ? <p className="text-[12px] text-[var(--color-muted)]">거래 후 {trade.runningQuantity.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}주</p> : null}
+                      {trade.runningQuantity !== null ? <p className="text-[12.5px] text-[var(--color-muted)]">거래 후 {trade.runningQuantity.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}주</p> : null}
                     </div>
                   </li>
                 )

@@ -53,10 +53,10 @@ export default async function AccessPage({
             <p role="alert" className="mt-3 rounded-lg bg-[var(--color-negative-soft)] px-3 py-2 text-sm font-semibold text-[var(--color-negative-strong)]">비밀번호가 올바르지 않습니다.</p>
           ) : null}
           {configError ? (
-            <p role="alert" className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold leading-5 text-amber-800">서버에 접근 비밀번호가 아직 설정되지 않았습니다.</p>
+            <p role="alert" className="mt-3 rounded-lg bg-[var(--color-accent-soft)] px-3 py-2 text-sm font-semibold leading-5 text-[var(--color-accent)]">서버에 접근 비밀번호가 아직 설정되지 않았습니다.</p>
           ) : null}
           {rateError ? (
-            <p role="alert" className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold leading-5 text-amber-800">비밀번호 입력이 여러 번 실패했습니다. 약 15분 뒤 다시 시도해 주세요.</p>
+            <p role="alert" className="mt-3 rounded-lg bg-[var(--color-accent-soft)] px-3 py-2 text-sm font-semibold leading-5 text-[var(--color-accent)]">비밀번호 입력이 여러 번 실패했습니다. 약 15분 뒤 다시 시도해 주세요.</p>
           ) : null}
 
           <button type="submit" disabled={rateError} className="mt-5 h-12 w-full rounded-xl bg-[var(--color-primary)] text-sm font-extrabold text-white shadow-sm transition hover:bg-[var(--color-primary-strong)] disabled:cursor-not-allowed disabled:opacity-50">
