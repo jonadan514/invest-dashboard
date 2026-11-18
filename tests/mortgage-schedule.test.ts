@@ -103,3 +103,22 @@ test('월별 상환 예정: 월부금 고정, 이자는 줄고 원금은 늘며 
   const paid = buildRepaymentTable({ balance: 1_000_000, balanceMonth: '2026-09', annualRate: RATE, monthlyPayment: PAYMENT, history: [] })
   assert.deepEqual(paid.future.map(row => row.balanceAfter), [0], '완납하면 거기서 끝')
 })
+
+test('상환 이력: 월간 기록의 추가 원금 상환을 따로 보여 준다', () => {
+  const { past } = buildRepaymentTable({
+    balance: 745_812_811, balanceMonth: '2026-12', annualRate: RATE, monthlyPayment: PAYMENT,
+    history: [{ month: '2026-12', amount: 745_812_811 }],
+    recorded: [{ month: '2026-12', interest: 2_487_883, principal: 456_909, extra: 10_000_000 }],
+  })
+  assert.deepEqual(past.map(row => [row.month, row.total, row.extra]), [['2026-12', 2_487_883 + 456_909, 10_000_000]])
+})
+
+test('추가 원금을 적은 달은 그만큼 잔액이 줄고 다음 달 이자도 줄어든다', () => {
+  const schedule = buildMortgageSchedule({
+    item: loan, snapshots: [{ month: '2026-11', amount: BANK[2].after, source: 'manual' }],
+    budgetPrincipal: new Map([['2026-12', 456_909 + 10_000_000]]), throughMonth: '2027-01',
+  })
+  assert.equal(schedule[0].balance, BANK[2].after - 456_909 - 10_000_000)
+  assert.equal(schedule[1].interest, monthlyInterest(schedule[0].balance, RATE))
+  assert.ok(schedule[1].interest < monthlyInterest(BANK[2].after - 456_909, RATE))
+})

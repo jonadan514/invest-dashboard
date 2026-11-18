@@ -44,7 +44,7 @@ export default function LoanRepayment({ loan, past, future }: { loan: LoanOvervi
       </section>
 
       <Rows title="상환 이력" rows={past} empty="아직 상환 이력이 없어요. 밸런스 시트에 지난 달 잔액을 입력하거나 월간 기록에 이자·원금을 적으면 여기에 쌓여요."
-        caption="‘실제’는 월간 기록에 적은 이자·원금, ‘계산’은 잔액 기록의 변화예요." />
+        caption="‘실제’는 월간 기록에 적은 이자·원금·추가 상환, ‘계산’은 잔액 기록의 변화예요. 추가 상환은 월간 기록의 ‘추가 원금 상환’에 적으면 잔액에서 빠져요." />
       <Rows title="월별 상환 예정" rows={future} empty={loan.annualRate === null || loan.monthlyPayment === null ? '연 금리와 월 상환액(또는 만기)을 밸런스 시트에 입력하면 앞으로의 일정이 보여요.' : '남은 상환 일정이 없어요.'}
         caption="이자는 납부 전 잔액 × 연 금리 ÷ 12(원 미만 버림), 원금은 월 상환액에서 이자를 뺀 값이에요. 금리가 바뀌면 달라져요." highlight={next?.month} />
     </div>
@@ -62,6 +62,7 @@ function Item({ label, value, note, strong = false }: { label: string; value: st
 }
 
 function Rows({ title, rows, empty, caption, highlight }: { title: string; rows: RepaymentRow[]; empty: string; caption: string; highlight?: string }) {
+  const hasExtra = rows.some(row => (row.extra ?? 0) > 0)
   return (
     <section className="app-card overflow-hidden" aria-label={title}>
       <div className="border-b border-[var(--color-border)] px-5 py-4">
@@ -79,6 +80,7 @@ function Rows({ title, rows, empty, caption, highlight }: { title: string; rows:
                 <th className="px-3 py-2.5 text-right font-semibold">원금</th>
                 <th className="px-3 py-2.5 text-right font-semibold">이자</th>
                 <th className="px-3 py-2.5 text-right font-semibold">납부액</th>
+                {hasExtra ? <th className="px-3 py-2.5 text-right font-semibold">추가 상환</th> : null}
                 <th className="px-5 py-2.5 text-right font-semibold">납부 후 잔액</th>
               </tr>
             </thead>
@@ -92,6 +94,7 @@ function Rows({ title, rows, empty, caption, highlight }: { title: string; rows:
                   <td className="px-3 py-2.5 text-right tabular-nums">{krw(row.principal)}</td>
                   <td className="px-3 py-2.5 text-right tabular-nums">{krw(row.interest)}</td>
                   <td className="px-3 py-2.5 text-right font-semibold tabular-nums">{krw(row.total)}</td>
+                  {hasExtra ? <td className="px-3 py-2.5 text-right tabular-nums text-[var(--color-positive-strong)]">{(row.extra ?? 0) > 0 ? krw(row.extra!) : '—'}</td> : null}
                   <td className="px-5 py-2.5 text-right tabular-nums text-[var(--color-muted)]">{row.balanceAfter === null ? '—' : krw(row.balanceAfter)}</td>
                 </tr>
               ))}
