@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
-import { krw } from '@/lib/labels'
+import { ACCOUNT_TYPE_LABEL, formatAmountInput as formatInput, formatMonth, krw, parseAmountInput as parseAmount } from '@/lib/labels'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { CircleGauge, ClipboardCheck, ListTree, type LucideIcon } from 'lucide-react'
@@ -13,7 +13,6 @@ import NetWorthItemEditor from './NetWorthItemEditor'
 import BalanceHistory, { type BalanceRow } from './BalanceHistory'
 import { ASSET_CATEGORIES, CATEGORY_LABEL, LIABILITY_CATEGORIES, OWNER_LABEL } from './categories'
 import { isAutoMortgage } from '@/lib/calc/net-worth-items'
-import { formatMonth } from '@/lib/labels'
 
 export { CATEGORY_LABEL }
 const INPUT = 'w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]'
@@ -193,7 +192,7 @@ export default function NetWorthManager({
               <h2 className="text-base font-bold text-[var(--color-ink)]">금융계좌</h2>
               <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">현금·MMF·주식·연금 계좌는 여기서 한 번 등록하고, 월말 금액은 월간 기록에서 갱신합니다.</p>
             </div>
-            <p className="text-sm font-bold tabular-nums text-[var(--color-primary)]">{formatKrw(investmentValue)}</p>
+            <p className="text-sm font-bold tabular-nums text-[var(--color-primary)]">{krw(investmentValue)}</p>
           </div>
         </div>
 
@@ -209,11 +208,11 @@ export default function NetWorthManager({
                       <Link href={`/accounts/${account.id}`} className="truncate text-xs font-semibold text-[var(--color-ink)] hover:text-[var(--color-primary)]">{account.name}</Link>
                       {account.is_emergency_fund ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11.5px] font-semibold text-amber-700">비상금</span> : null}
                     </div>
-                    <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{accountTypeLabel(account.type)}{account.broker ? ` · ${account.broker}` : ''}</p>
+                    <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{ACCOUNT_TYPE_LABEL[account.type] ?? account.type}{account.broker ? ` · ${account.broker}` : ''}</p>
                   </div>
                   <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
                     <div className="text-right">
-                      <p className="text-xs font-semibold tabular-nums text-[var(--color-ink)]">{formatKrw(latest?.amount ?? 0)}</p>
+                      <p className="text-xs font-semibold tabular-nums text-[var(--color-ink)]">{krw(latest?.amount ?? 0)}</p>
                       <p className="mt-0.5 text-[11.5px] text-[var(--color-subtle)]">{latest ? `${latest.month.replace('-', '년 ')}월 기록` : '월말 기록 없음'}</p>
                     </div>
                     <DeleteButton id={account.id} name={account.name} />
@@ -243,7 +242,7 @@ export default function NetWorthManager({
                 <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">이 금액은 월간 기록에서 입력하며, 밸런스 시트에 자동으로 반영됩니다.</p>
               </div>
               <div className="text-right">
-                <p className="text-sm font-bold tabular-nums text-[var(--color-primary)]">{formatKrw(investmentValue)}</p>
+                <p className="text-sm font-bold tabular-nums text-[var(--color-primary)]">{krw(investmentValue)}</p>
                 <Link href={`/budget?month=${month}`} className="mt-1 inline-block text-[12.5px] font-semibold text-[var(--color-primary)] hover:underline">월간 기록에서 수정 →</Link>
               </div>
             </div>
@@ -260,10 +259,10 @@ export default function NetWorthManager({
                         <p className="truncate text-xs font-semibold text-[var(--color-ink)]">{account.name}</p>
                         {account.is_emergency_fund ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11.5px] font-semibold text-amber-700">비상금</span> : null}
                       </div>
-                      <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{accountTypeLabel(account.type)}{account.broker ? ` · ${account.broker}` : ''}</p>
+                      <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{ACCOUNT_TYPE_LABEL[account.type] ?? account.type}{account.broker ? ` · ${account.broker}` : ''}</p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <p className="text-xs font-semibold tabular-nums text-[var(--color-ink)]">{formatKrw(latest?.amount ?? 0)}</p>
+                      <p className="text-xs font-semibold tabular-nums text-[var(--color-ink)]">{krw(latest?.amount ?? 0)}</p>
                       <p className="mt-0.5 text-[11.5px] text-[var(--color-subtle)]">{latest ? `${latest.month.replace('-', '년 ')}월 기록` : '월말 기록 없음'}</p>
                     </div>
                   </div>
@@ -289,7 +288,7 @@ export default function NetWorthManager({
               </div>
               <div className="text-right">
                 <p className="text-[11.5px] text-[var(--color-muted)]">자동 반영 금융계좌{investmentRecordedMonth ? ` · ${investmentRecordedMonth.replace('-', '년 ')}월` : ''}</p>
-                <p className="mt-0.5 text-sm font-bold tabular-nums text-[var(--color-primary)]">{formatKrw(investmentValue)}</p>
+                <p className="mt-0.5 text-sm font-bold tabular-nums text-[var(--color-primary)]">{krw(investmentValue)}</p>
               </div>
             </div>
           </div>
@@ -544,7 +543,7 @@ function SnapshotGroup({
               ) : (
                 <div className="flex items-baseline justify-between gap-2 rounded-lg bg-[var(--color-section)] px-3 py-2">
                   <span className="text-[12px] text-[var(--color-muted)]">대출 조건으로 계산한 잔액</span>
-                  <span className="text-sm font-semibold tabular-nums">{formatKrw(amounts[item.id] ?? 0)}</span>
+                  <span className="text-sm font-semibold tabular-nums">{krw(amounts[item.id] ?? 0)}</span>
                 </div>
               )}
               {auto && correcting.has(item.id) ? <p className="mt-1.5 text-[11.5px] text-[var(--color-muted)]">은행 잔액을 넣으면 이 달 잔액을 기준으로 이후 달을 다시 계산해요.</p> : null}
@@ -568,30 +567,4 @@ function OwnerBadge({ owner }: { owner: string }) {
       {OWNER_LABEL[owner] ?? owner}
     </span>
   )
-}
-
-function parseAmount(value: string) {
-  const amount = Number(value.replace(/[^0-9]/g, ''))
-  return Number.isFinite(amount) ? amount : 0
-}
-
-function formatInput(value: number) {
-  return value > 0 ? new Intl.NumberFormat('ko-KR').format(value) : ''
-}
-
-function formatKrw(value: number) {
-  return krw(value)
-}
-
-function accountTypeLabel(type: Account['type']) {
-  const labels: Partial<Record<Account['type'], string>> = {
-    cash: '입출금·공동계좌',
-    mmf: 'CMA·MMF',
-    general: '주식·증권계좌',
-    pension: '연금저축',
-    irp: 'IRP',
-    isa: 'ISA',
-    crypto: '코인',
-  }
-  return labels[type] ?? type
 }

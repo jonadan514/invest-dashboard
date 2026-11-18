@@ -20,3 +20,17 @@ test('증감은 부호를 붙인다', () => {
   assert.equal(signedWonShort(-700_000), '-70만')
   assert.equal(signedWonShort(0), '0원')
 })
+
+import { formatAmountInput, kstMonth, parseAmountInput } from '../lib/labels.ts'
+
+test('이번 달은 한국 시간 기준: 1일 오전 9시 전(UTC로는 전날)도 새 달', () => {
+  assert.equal(kstMonth(new Date('2026-11-30T15:30:00Z')), '2026-12', '한국 12월 1일 00:30')
+  assert.equal(kstMonth(new Date('2026-11-30T14:59:00Z')), '2026-11')
+})
+
+test('금액 입력칸: 0은 빈칸, 숫자만 읽는다', () => {
+  assert.equal(formatAmountInput(0), '')
+  assert.equal(formatAmountInput(2_944_792), '2,944,792')
+  assert.equal(parseAmountInput('2,944,792원'), 2_944_792)
+  assert.equal(parseAmountInput(''), 0)
+})

@@ -116,7 +116,7 @@ export default function ChildGiftManager({
           <StatStrip columns={4} label="자녀 증여 요약">
             <SummaryCard label="등록 자녀" value={`${childProfiles.length}명`} description="별도 자녀 재산으로 관리" />
             <SummaryCard label="누적 납입액" value={wonShort(totalDeposited)} description="증여·생활비·용돈 전체" />
-            <SummaryCard label="최근 10년 증여" value={wonShort(totalTaxableWindow)} description={`한도 제외 분류 ${formatKrw(totalNonTaxableWindow)}`} />
+            <SummaryCard label="최근 10년 증여" value={wonShort(totalTaxableWindow)} description={`한도 제외 분류 ${krw(totalNonTaxableWindow)}`} />
             <SummaryCard label="남은 관계별 공제" value={wonShort(totalRemaining)} description="직계존속·기타 친족 한도 합계" positive />
           </StatStrip>
 
@@ -147,21 +147,21 @@ export default function ChildGiftManager({
                     </div>
                     {status.nonRelativeAmount > 0 ? (
                       <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[11.5px] font-semibold text-[var(--color-negative-strong)]">
-                        친족 외 증여 {formatKrw(status.nonRelativeAmount)}에는 관계별 증여재산공제가 없습니다.
+                        친족 외 증여 {krw(status.nonRelativeAmount)}에는 관계별 증여재산공제가 없습니다.
                       </p>
                     ) : null}
                     <div className="mt-4 grid grid-cols-3 gap-3 border-t border-[var(--color-border)] pt-4 text-[12.5px]">
                       <div>
                         <p className="text-[var(--color-muted)]">전체 누적 납입</p>
-                        <p className="mt-1 font-bold tabular-nums text-[var(--color-ink)]">{formatKrw(status.totalDeposited)}</p>
+                        <p className="mt-1 font-bold tabular-nums text-[var(--color-ink)]">{krw(status.totalDeposited)}</p>
                       </div>
                       <div>
                         <p className="text-[var(--color-muted)]">최근 10년 증여</p>
-                        <p className="mt-1 font-bold tabular-nums text-[var(--color-ink)]">{formatKrw(status.taxableInWindow)}</p>
+                        <p className="mt-1 font-bold tabular-nums text-[var(--color-ink)]">{krw(status.taxableInWindow)}</p>
                       </div>
                       <div>
                         <p className="text-[var(--color-muted)]">한도 제외 분류</p>
-                        <p className="mt-1 font-bold tabular-nums text-[var(--color-positive-strong)]">{formatKrw(status.nonTaxableInWindow)}</p>
+                        <p className="mt-1 font-bold tabular-nums text-[var(--color-positive-strong)]">{krw(status.nonTaxableInWindow)}</p>
                       </div>
                     </div>
                   </article>
@@ -277,7 +277,7 @@ export default function ChildGiftManager({
                       <td className="px-3 py-3 text-[var(--color-muted)]">{gift.donor_name || DONOR_LABEL[gift.donor]}</td>
                       <td className="px-3 py-3"><span className={`rounded-full px-2 py-1 text-[11.5px] font-semibold ${gift.transfer_type === 'gift' ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'bg-amber-100 text-amber-800'}`}>{TRANSFER_LABEL[gift.transfer_type]}</span></td>
                       <td className="px-3 py-3 text-[var(--color-muted)]">{gift.account_name || '-'}</td>
-                      <td className="whitespace-nowrap px-3 py-3 text-right font-bold tabular-nums text-[var(--color-primary)]">{formatKrw(Number(gift.amount))}</td>
+                      <td className="whitespace-nowrap px-3 py-3 text-right font-bold tabular-nums text-[var(--color-primary)]">{krw(Number(gift.amount))}</td>
                       <td className="max-w-[180px] truncate px-3 py-3 text-[var(--color-muted)]">{gift.memo || '-'}</td>
                       <td className="px-5 py-3 text-right"><button type="button" onClick={() => removeGift(gift.id)} disabled={pending} className="text-[11.5px] text-[var(--color-subtle)] hover:text-[var(--color-negative)]">삭제</button></td>
                     </tr>
@@ -311,15 +311,15 @@ function DeductionBucketCard({
           <p className="mt-0.5 text-[11.5px] text-[var(--color-subtle)]">{description}</p>
         </div>
         <p className={`text-[11.5px] font-bold ${bucket.overage > 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-positive-strong)]'}`}>
-          {bucket.overage > 0 ? `초과 ${formatKrw(bucket.overage)}` : `남음 ${formatKrw(bucket.remaining)}`}
+          {bucket.overage > 0 ? `초과 ${krw(bucket.overage)}` : `남음 ${krw(bucket.remaining)}`}
         </p>
       </div>
-      <p className="mt-3 text-lg font-bold tabular-nums text-[var(--color-ink)]">{formatKrw(bucket.used)}</p>
+      <p className="mt-3 text-lg font-bold tabular-nums text-[var(--color-ink)]">{krw(bucket.used)}</p>
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
         <div className="h-full rounded-full" style={{ width: `${bucket.percent}%`, backgroundColor: tone }} />
       </div>
       <div className="mt-2 flex justify-between gap-2 text-[11.5px] text-[var(--color-subtle)]">
-        <span>{Math.round(bucket.percent)}% · 한도 {formatKrw(bucket.limit)}</span>
+        <span>{Math.round(bucket.percent)}% · 한도 {krw(bucket.limit)}</span>
         <span>{bucket.nextReleaseDate ? `${formatDate(bucket.nextReleaseDate)} 회복` : '기록 없음'}</span>
       </div>
     </section>
@@ -332,10 +332,6 @@ function SummaryCard({ label, value, description, positive = false }: { label: s
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <label className="block"><span className="mb-1 block text-xs font-medium text-[var(--color-muted)]">{label}</span>{children}</label>
-}
-
-function formatKrw(value: number) {
-  return krw(value)
 }
 
 function formatDate(value: string) {

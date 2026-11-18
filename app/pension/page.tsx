@@ -8,6 +8,7 @@ import MonthlyContributionEditor from './MonthlyContributionEditor'
 import { PensionYearEndPlan } from '@/components/PensionYearEnd'
 import { Stat, StatStrip } from '@/components/Stat'
 import { wonShort } from '@/lib/labels'
+import { compactKrw, formatMonth, krw as fmtKrw } from '@/lib/labels'
 
 export const metadata = { title: '연금 현황' }
 
@@ -302,20 +303,4 @@ function buildYearlyData(accounts: Account[], snapshots: AccountMonthlySnapshot[
     }
     return { year, me, spouse, total: me + spouse }
   }).filter(point => point.total > 0)
-}
-
-
-function fmtKrw(value: number) {
-  return `₩${new Intl.NumberFormat('ko-KR').format(Math.round(value))}`
-}
-
-function compactKrw(value: number) {
-  if (value >= 100_000_000) return `${(value / 100_000_000).toFixed(1).replace('.0', '')}억`
-  if (value >= 10_000) return `${Math.round(value / 10_000).toLocaleString('ko-KR')}만`
-  return `${Math.round(value).toLocaleString('ko-KR')}원`
-}
-
-function formatMonth(month: string) {
-  const [year, value] = month.split('-')
-  return `${year}년 ${Number(value)}월`
 }

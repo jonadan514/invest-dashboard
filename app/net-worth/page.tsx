@@ -6,6 +6,7 @@ import { Stat, StatStrip } from '@/components/Stat'
 import { krw as formatWon, signedWonShort, wonShort } from '@/lib/labels'
 import NetWorthChart from './NetWorthChart'
 import NetWorthManager from './NetWorthManager'
+import { kstMonth } from '@/lib/labels'
 import { trySyncMortgageSchedule } from '@/lib/mortgage-sync'
 
 export const metadata = { title: '밸런스 시트' }
@@ -15,13 +16,6 @@ interface TrendPoint {
   assets: number
   liabilities: number
   netWorth: number
-}
-
-function currentMonth() {
-  const now = new Date()
-  return new Intl.DateTimeFormat('en-CA', {
-    year: 'numeric', month: '2-digit', timeZone: 'Asia/Seoul',
-  }).format(now)
 }
 
 function monthOptions(selected: string) {
@@ -72,7 +66,7 @@ export default async function NetWorthPage({
 }) {
   const params = await searchParams
   const requested = params.month
-  const month = requested && /^\d{4}-(0[1-9]|1[0-2])$/.test(requested) ? requested : currentMonth()
+  const month = requested && /^\d{4}-(0[1-9]|1[0-2])$/.test(requested) ? requested : kstMonth()
   const { supabase, userId } = await getHouseholdContext()
   await trySyncMortgageSchedule(supabase, userId)
 
@@ -200,7 +194,7 @@ export default async function NetWorthPage({
           initialAmounts={latestAmounts}
           latestMonths={latestMonths}
           history={history}
-          currentMonth={currentMonth()}
+          currentMonth={kstMonth()}
           initialView={params.view === 'settings' || params.view === 'record' ? params.view : 'overview'}
           hasExactSnapshot={exactSnapshots.length > 0 || accountSnapshots.some(snapshot => snapshot.month === month)}
           investmentValue={portfolioValue}

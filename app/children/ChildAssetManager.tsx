@@ -4,7 +4,7 @@ import { valuationStatus } from '@/lib/calc/child-valuation'
 import { useRef, useState, useTransition } from 'react'
 import type { ChildAccount, ChildAccountMonthlySnapshot, ChildProfile, ChildGiftDeposit } from '@/lib/types'
 import { createChildAccount, deleteChildAccountSnapshot, saveChildAccountSnapshot } from './actions'
-import { krw } from '@/lib/labels'
+import { formatMonth, krw } from '@/lib/labels'
 
 const INPUT = 'w-full min-w-0 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]'
 
@@ -112,10 +112,10 @@ export default function ChildAssetManager({
 
       <div className="p-5">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label="누적 납입" value={formatKrw(deposited)} detail="증여 탭 전체 납입액" />
-          <Metric label="현재 평가금액" value={activeAccounts.length > 0 ? formatKrw(currentValue) : '-'} detail={unrecordedCount > 0 ? `미평가 계좌 ${unrecordedCount}개 · 기록된 계좌만 합산` : latestMonth ? '계좌별 최근 기록 기준' : '운용 계좌 등록 필요'} />
+          <Metric label="누적 납입" value={krw(deposited)} detail="증여 탭 전체 납입액" />
+          <Metric label="현재 평가금액" value={activeAccounts.length > 0 ? krw(currentValue) : '-'} detail={unrecordedCount > 0 ? `미평가 계좌 ${unrecordedCount}개 · 기록된 계좌만 합산` : latestMonth ? '계좌별 최근 기록 기준' : '운용 계좌 등록 필요'} />
           <Metric label="운용손익" value={hasCompleteValuation ? signedKrw(gain) : '-'} detail={hasCompleteValuation && deposited > 0 ? `${signedPercent(returnRate)} · ${valuation.reason}` : valuation.reason} tone={hasCompleteValuation && gain > 0 ? 'positive' : hasCompleteValuation && gain < 0 ? 'negative' : 'default'} />
-          <Metric label="현금 / 투자" value={`${ratio(cashValue, currentValue)} / ${ratio(investmentValue, currentValue)}`} detail={`${formatKrw(cashValue)} / ${formatKrw(investmentValue)}`} />
+          <Metric label="현금 / 투자" value={`${ratio(cashValue, currentValue)} / ${ratio(investmentValue, currentValue)}`} detail={`${krw(cashValue)} / ${krw(investmentValue)}`} />
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
@@ -130,7 +130,7 @@ export default function ChildAssetManager({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-extrabold text-[var(--color-ink)]">{child.name}</h3>
-                    <p className="mt-1 text-[11.5px] text-[var(--color-muted)]">납입 {formatKrw(childDeposited)} · 평가 {formatKrw(childValue)}</p>
+                    <p className="mt-1 text-[11.5px] text-[var(--color-muted)]">납입 {krw(childDeposited)} · 평가 {krw(childValue)}</p>
                   </div>
                   <p className={`text-sm font-extrabold tabular-nums ${childValuationComplete && childValue - childDeposited > 0 ? 'text-[var(--color-positive-strong)]' : childValuationComplete && childValue - childDeposited < 0 ? 'text-[var(--color-negative-strong)]' : 'text-[var(--color-muted)]'}`}>
                     {childValuationComplete ? signedKrw(childValue - childDeposited) : childValuation.reason}
@@ -145,7 +145,7 @@ export default function ChildAssetManager({
                           <p className="truncate font-bold text-[var(--color-ink)]">{account.name}</p>
                           <p className="text-[11.5px] text-[var(--color-subtle)]">{account.asset_type === 'cash' ? '현금성' : '투자'} · {latest ? formatMonth(latest.month) : '평가 기록 없음'}</p>
                         </div>
-                        <p className="shrink-0 font-bold tabular-nums text-[var(--color-primary)]">{latest ? formatKrw(latest.evaluation_amount) : '-'}</p>
+                        <p className="shrink-0 font-bold tabular-nums text-[var(--color-primary)]">{latest ? krw(latest.evaluation_amount) : '-'}</p>
                       </div>
                     )
                   }) : <p className="text-[11.5px] text-[var(--color-subtle)]">운용 계좌를 추가하면 월말 평가를 기록할 수 있습니다.</p>}
@@ -214,7 +214,7 @@ export default function ChildAssetManager({
               <tbody className="divide-y divide-[var(--color-border)] bg-white">
                 {snapshots.map(snapshot => {
                   const account = accountById.get(snapshot.account_id)
-                  return <tr key={snapshot.id}><td className="whitespace-nowrap px-4 py-3 font-medium">{formatMonth(snapshot.month)}</td><td className="px-3 py-3 font-bold">{account ? childNameById.get(account.child_id) : '-'}</td><td className="px-3 py-3 text-[var(--color-muted)]">{account?.name ?? '삭제된 계좌'}</td><td className="whitespace-nowrap px-3 py-3 text-right font-bold tabular-nums text-[var(--color-primary)]">{formatKrw(snapshot.evaluation_amount)}</td><td className="max-w-[180px] truncate px-3 py-3 text-[var(--color-muted)]">{snapshot.memo || '-'}</td><td className="px-4 py-3 text-right"><button type="button" onClick={() => removeSnapshot(snapshot.id)} disabled={pending} className="text-[11.5px] text-[var(--color-subtle)] hover:text-[var(--color-negative)]">삭제</button></td></tr>
+                  return <tr key={snapshot.id}><td className="whitespace-nowrap px-4 py-3 font-medium">{formatMonth(snapshot.month)}</td><td className="px-3 py-3 font-bold">{account ? childNameById.get(account.child_id) : '-'}</td><td className="px-3 py-3 text-[var(--color-muted)]">{account?.name ?? '삭제된 계좌'}</td><td className="whitespace-nowrap px-3 py-3 text-right font-bold tabular-nums text-[var(--color-primary)]">{krw(snapshot.evaluation_amount)}</td><td className="max-w-[180px] truncate px-3 py-3 text-[var(--color-muted)]">{snapshot.memo || '-'}</td><td className="px-4 py-3 text-right"><button type="button" onClick={() => removeSnapshot(snapshot.id)} disabled={pending} className="text-[11.5px] text-[var(--color-subtle)] hover:text-[var(--color-negative)]">삭제</button></td></tr>
                 })}
               </tbody>
             </table>
@@ -246,20 +246,11 @@ function ratio(value: number, total: number) {
   return total > 0 ? `${Math.round(value / total * 100)}%` : '0%'
 }
 
-function formatKrw(value: number) {
-  return krw(value)
-}
-
 function signedKrw(value: number) {
   if (value === 0) return '0원'
-  return `${value > 0 ? '+' : '-'}${formatKrw(Math.abs(value))}`
+  return `${value > 0 ? '+' : '-'}${krw(Math.abs(value))}`
 }
 
 function signedPercent(value: number) {
   return `${value > 0 ? '+' : ''}${value.toFixed(1)}%`
-}
-
-function formatMonth(value: string) {
-  const [year, month] = value.split('-')
-  return `${year}년 ${Number(month)}월`
 }

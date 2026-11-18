@@ -4,6 +4,7 @@ import { getHouseholdContext } from '@/lib/supabase/server'
 import type { Account, AccountMonthlySnapshot } from '@/lib/types'
 import { Stat, StatStrip, toneOf } from '@/components/Stat'
 import { wonShort } from '@/lib/labels'
+import { formatMonth, krw as fmtKrw } from '@/lib/labels'
 
 export const metadata = { title: '계좌 기록' }
 
@@ -108,13 +109,4 @@ function MetricCard({ label, value, detail, signed = false, wide = false }: { la
       wide={wide}
     />
   )
-}
-
-function fmtKrw(value: number) {
-  return `₩${new Intl.NumberFormat('ko-KR').format(Math.round(value))}`
-}
-
-function formatMonth(month: string) {
-  const [year, value] = month.split('-')
-  return `${year}년 ${Number(value)}월`
 }

@@ -1,3 +1,4 @@
+import { compactKrw } from '@/lib/labels'
 interface Point {
   month: string
   assets: number
@@ -56,12 +57,4 @@ export default function NetWorthChart({ data }: { data: Point[] }) {
 
 function Legend({ color, label }: { color: string; label: string }) {
   return <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded" style={{ backgroundColor: color }} />{label}</span>
-}
-
-function compactKrw(value: number) {
-  const absolute = Math.abs(value)
-  const sign = value < 0 ? '-' : ''
-  if (absolute >= 100_000_000) return `${sign}${(absolute / 100_000_000).toFixed(1)}억`
-  if (absolute >= 10_000) return `${sign}${Math.round(absolute / 10_000)}만`
-  return `${sign}${Math.round(absolute)}`
 }

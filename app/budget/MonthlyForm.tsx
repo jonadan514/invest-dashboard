@@ -7,18 +7,7 @@ import type { FinancialPlanSettings } from '@/lib/calc/budget'
 import type { Account } from '@/lib/types'
 import { neighborMonths, ownerLabel, stageLabel, type AccountRecordState } from '@/lib/calc/monthly-record'
 import { saveBudgetEntry } from './actions'
-
-function formatKrw(value: number) {
-  return `₩${new Intl.NumberFormat('ko-KR').format(Math.round(value))}`
-}
-
-function parseNumber(value: string) {
-  return Number(value.replace(/,/g, '')) || 0
-}
-
-function formatInput(value: number) {
-  return value === 0 ? '' : new Intl.NumberFormat('ko-KR').format(value)
-}
+import { ACCOUNT_TYPE_LABEL, formatAmountInput as formatInput, krw as formatKrw, parseAmountInput as parseNumber } from '@/lib/labels'
 
 const NAV_BUTTON = 'grid size-10 place-items-center rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-muted)] shadow-sm transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] active:scale-90 active:bg-[var(--color-primary-soft)] disabled:cursor-not-allowed disabled:opacity-40'
 
@@ -255,7 +244,7 @@ export default function MonthlyForm({
                   <li key={account.id} className={`grid grid-cols-1 gap-3 px-5 py-4 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.8fr)_minmax(0,1.3fr)_minmax(0,1fr)] md:items-start ${carried ? 'bg-[var(--color-accent-soft)]/40' : ''}`}>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-[var(--color-ink)]">{account.name}</p>
-                      <p className="mt-0.5 text-[12px] text-[var(--color-muted)]">{ownerLabel(account.owner)} · {accountTypeLabel(account.type)}{account.broker ? ` · ${account.broker}` : ''}</p>
+                      <p className="mt-0.5 text-[12px] text-[var(--color-muted)]">{ownerLabel(account.owner)} · {ACCOUNT_TYPE_LABEL[account.type] ?? account.type}{account.broker ? ` · ${account.broker}` : ''}</p>
                       <div className="mt-1 flex gap-1">
                         {account.is_emergency_fund ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">비상금</span> : null}
                         {isPension ? <span className="rounded-full bg-[var(--color-spouse-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-spouse)]">연금</span> : null}
@@ -361,13 +350,6 @@ function Progress({ done, label }: { done: boolean; label: string }) {
 
 function GoalBadge({ label, achieved }: { label: string; achieved: boolean }) {
   return <span className={`rounded-full px-2 py-1 text-[11.5px] font-semibold ${achieved ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'bg-[var(--color-section)] text-[var(--color-subtle)]'}`}>{achieved ? '✓ ' : ''}{label}</span>
-}
-
-function accountTypeLabel(type: Account['type']) {
-  const labels: Partial<Record<Account['type'], string>> = {
-    cash: '입출금·공동계좌', mmf: 'CMA·MMF', general: '주식·증권계좌', pension: '연금저축', irp: 'IRP', isa: 'ISA', crypto: '코인',
-  }
-  return labels[type] ?? type
 }
 
 function StockImport({ stock, onImport }: { stock: { value: number; holdings: number; missing: number; priceDate: string | null }; onImport: () => void }) {

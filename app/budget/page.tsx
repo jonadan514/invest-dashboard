@@ -3,34 +3,25 @@ import { DEFAULT_FINANCIAL_PLAN, type FinancialPlanSettings } from '@/lib/calc/b
 import { getHouseholdContext } from '@/lib/supabase/server'
 import type { Account, AccountMonthlySnapshot, FinancialPlanSettingsRow, MonthlyBudget } from '@/lib/types'
 import { expectedMortgagePayment } from '@/lib/calc/mortgage-schedule'
-import { buildHoldings, type PriceRow } from '@/lib/calc/holdings'
 import { stockValueByAccount, type AccountStockValue } from '@/lib/calc/stock-valuation'
-import type { Asset } from '@/lib/types'
 import MonthlyForm from './MonthlyForm'
 import PlanSettingsForm from './PlanSettingsForm'
-import { trySyncMortgageSchedule } from '@/lib/mortgage-sync'
+import { loadStockPortfolio } from '@/lib/stock-portfolio'
+import { krw, kstMonth } from '@/lib/labels'
 import { accountRecordState, stageLabel } from '@/lib/calc/monthly-record'
 import { buildAccountTotalTrend } from '@/lib/calc/account-snapshots'
 
 export const metadata = { title: '월간 기록' }
 
-function formatKrw(value: number) {
-  return `₩${new Intl.NumberFormat('ko-KR').format(Math.round(value))}`
-}
-
 function generateMonths(count = 18) {
+  // 한국 시간 기준 이번 달에서 2달 뒤부터 count달 전까지.
+  const [year, month] = kstMonth().split('-').map(Number)
   const months: string[] = []
-  const now = new Date()
   for (let index = -2; index < count; index += 1) {
-    const date = new Date(now.getFullYear(), now.getMonth() - index, 1)
-    months.push(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`)
+    const date = new Date(Date.UTC(year, month - 1 - index, 1))
+    months.push(`${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`)
   }
   return months
-}
-
-function currentMonth() {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
 function toSettings(row: FinancialPlanSettingsRow | null): FinancialPlanSettings {
@@ -56,9 +47,8 @@ export default async function BudgetPage({
   searchParams: Promise<{ month?: string }>
 }) {
   const { month: requestedMonth } = await searchParams
-  const month = requestedMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth) ? requestedMonth : currentMonth()
+  const month = requestedMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth) ? requestedMonth : kstMonth()
   const { supabase, userId } = await getHouseholdContext()
-  await trySyncMortgageSchedule(supabase, userId)
 
   const [
     { data: entryData },
@@ -111,30 +101,11 @@ export default async function BudgetPage({
 
   // 주식 계좌 화면의 보유종목 평가액. 현재가는 '지금' 값이라 이번 달 기록에서만 불러오기를 제공한다.
   const stockValues: Record<string, AccountStockValue & { priceDate: string | null }> = {}
-  if (month === currentMonth()) {
-    const [{ data: assetRows }, { data: tradeRows }, { data: fxRow }] = await Promise.all([
-      supabase.from('assets').select('*').eq('user_id', userId).throwOnError(),
-      supabase.from('transactions').select('date, created_at, account_id, asset_id, type, quantity, price, amount, fee, tax, fx_rate')
-        .eq('user_id', userId).in('type', ['buy', 'sell']).throwOnError(),
-      supabase.from('fx_rates').select('rate').eq('pair', 'USDKRW').maybeSingle().throwOnError(),
-    ])
-    const assets = (assetRows ?? []) as Asset[]
-    if (assets.length > 0 && (tradeRows ?? []).length > 0) {
-      const { data: priceRows } = await supabase.from('prices').select('asset_id, price, prev_close, currency, as_of')
-        .in('asset_id', assets.map(asset => asset.id)).throwOnError()
-      const usdKrw = fxRow ? Number(fxRow.rate) : null
-      const priceMap = new Map<string, PriceRow>()
-      const priceDates = new Map<string, string>()
-      for (const row of priceRows ?? []) {
-        if (row.currency === 'USD' && usdKrw === null) continue
-        priceMap.set(row.asset_id, { asset_id: row.asset_id, price: Number(row.price), prev_close: row.prev_close, currency: row.currency })
-        priceDates.set(row.asset_id, row.as_of)
-      }
-      const holdings = buildHoldings(tradeRows ?? [], assets, accounts, priceMap, usdKrw ?? 1)
-      for (const [accountId, value] of Object.entries(stockValueByAccount(holdings))) {
-        const dates = holdings.filter(holding => holding.account_id === accountId).map(holding => priceDates.get(holding.asset_id)).filter((date): date is string => Boolean(date))
-        stockValues[accountId] = { ...value, priceDate: dates.length > 0 ? dates.sort()[0] : null }
-      }
+  if (month === kstMonth()) {
+    const portfolio = await loadStockPortfolio(supabase, userId)
+    for (const [accountId, value] of Object.entries(stockValueByAccount(portfolio.holdings))) {
+      const dates = portfolio.holdings.filter(holding => holding.account_id === accountId).map(holding => portfolio.priceAsOf.get(holding.asset_id)).filter((date): date is string => Boolean(date))
+      stockValues[accountId] = { ...value, priceDate: dates.length > 0 ? dates.sort()[0] : null }
     }
   }
 
@@ -184,11 +155,11 @@ export default async function BudgetPage({
                       <span className="rounded-full bg-[var(--color-section)] px-2 py-0.5 text-[11.5px] font-semibold text-[var(--color-muted)]">비상금 {stage}</span>
                     </div>
                     <dl className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1 text-[12.5px]">
-                      <div className="flex justify-between gap-2"><dt className="text-[var(--color-muted)]">비상금</dt><dd className="tabular-nums">{formatKrw(record.cash_balance)}</dd></div>
-                      <div className="flex justify-between gap-2"><dt className="text-[var(--color-muted)]">공금</dt><dd className="tabular-nums">{formatKrw(record.joint_savings)}</dd></div>
-                      <div className="flex justify-between gap-2"><dt className="text-[var(--color-muted)]">성과급</dt><dd className="tabular-nums">{record.bonus_to_plan > 0 ? formatKrw(record.bonus_to_plan) : '-'}</dd></div>
-                      <div className="flex justify-between gap-2"><dt className="text-[var(--color-muted)]">원금 상환</dt><dd className="tabular-nums">{principal > 0 ? formatKrw(principal) : '-'}</dd></div>
-                      {accountTotalByMonth.has(record.month) ? <div className="col-span-2 flex justify-between gap-2"><dt className="text-[var(--color-muted)]">계좌 평가 합계</dt><dd className="tabular-nums">{formatKrw(accountTotalByMonth.get(record.month)!.total)}<Change value={accountTotalByMonth.get(record.month)!.change} /></dd></div> : null}
+                      <div className="flex justify-between gap-2"><dt className="text-[var(--color-muted)]">비상금</dt><dd className="tabular-nums">{krw(record.cash_balance)}</dd></div>
+                      <div className="flex justify-between gap-2"><dt className="text-[var(--color-muted)]">공금</dt><dd className="tabular-nums">{krw(record.joint_savings)}</dd></div>
+                      <div className="flex justify-between gap-2"><dt className="text-[var(--color-muted)]">성과급</dt><dd className="tabular-nums">{record.bonus_to_plan > 0 ? krw(record.bonus_to_plan) : '-'}</dd></div>
+                      <div className="flex justify-between gap-2"><dt className="text-[var(--color-muted)]">원금 상환</dt><dd className="tabular-nums">{principal > 0 ? krw(principal) : '-'}</dd></div>
+                      {accountTotalByMonth.has(record.month) ? <div className="col-span-2 flex justify-between gap-2"><dt className="text-[var(--color-muted)]">계좌 평가 합계</dt><dd className="tabular-nums">{krw(accountTotalByMonth.get(record.month)!.total)}<Change value={accountTotalByMonth.get(record.month)!.change} /></dd></div> : null}
                     </dl>
                     {record.memo ? <p className="mt-1.5 text-[12.5px] leading-5 text-[var(--color-muted)]">{record.memo}</p> : null}
                   </li>
@@ -219,14 +190,14 @@ export default async function BudgetPage({
                           {year}년 {Number(monthNumber)}월
                           {record.month === month ? <span className="ml-1 text-[11.5px] text-[var(--color-primary)]">●</span> : null}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-ink)]">{formatKrw(record.cash_balance)}</td>
-                        <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-ink)]">{formatKrw(record.joint_savings)}</td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-ink)]">{krw(record.cash_balance)}</td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-ink)]">{krw(record.joint_savings)}</td>
                         <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-spouse)]">
-                          {record.bonus_to_plan > 0 ? formatKrw(record.bonus_to_plan) : '-'}
+                          {record.bonus_to_plan > 0 ? krw(record.bonus_to_plan) : '-'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-ink)]">{Number(record.mortgage_principal) + Number(record.mortgage_extra_principal) > 0 ? formatKrw(Number(record.mortgage_principal) + Number(record.mortgage_extra_principal)) : '-'}</td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-ink)]">{Number(record.mortgage_principal) + Number(record.mortgage_extra_principal) > 0 ? krw(Number(record.mortgage_principal) + Number(record.mortgage_extra_principal)) : '-'}</td>
                         <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-ink)]">
-                          {accountTotalByMonth.has(record.month) ? <>{formatKrw(accountTotalByMonth.get(record.month)!.total)}<Change value={accountTotalByMonth.get(record.month)!.change} /></> : '-'}
+                          {accountTotalByMonth.has(record.month) ? <>{krw(accountTotalByMonth.get(record.month)!.total)}<Change value={accountTotalByMonth.get(record.month)!.change} /></> : '-'}
                         </td>
                         <td className="px-3 py-3 text-center">
                           <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-medium ${emergencyFund >= settings.stage2Target ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : emergencyFund >= settings.stage1Target ? 'bg-amber-100 text-amber-700' : 'bg-[var(--color-section)] text-[var(--color-muted)]'}`}>
@@ -252,5 +223,5 @@ export default async function BudgetPage({
 
 function Change({ value }: { value: number | null }) {
   if (value === null || value === 0) return null
-  return <span className={`ml-1.5 text-[11.5px] font-semibold ${value > 0 ? 'text-[var(--color-positive)]' : 'text-[var(--color-negative)]'}`}>{value > 0 ? '+' : '−'}{formatKrw(Math.abs(value))}</span>
+  return <span className={`ml-1.5 text-[11.5px] font-semibold ${value > 0 ? 'text-[var(--color-positive)]' : 'text-[var(--color-negative)]'}`}>{value > 0 ? '+' : '−'}{krw(Math.abs(value))}</span>
 }
