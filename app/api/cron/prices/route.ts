@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import { isAuthorizedCron } from '@/lib/backup-schedule'
 import { refreshQuotes } from '@/lib/quote-refresh'
+import { syncCurrentMonthStockValues } from '@/lib/stock-sync'
 import { getTrustedHouseholdContext } from '@/lib/supabase/server'
 
-// 매일 미국 장 마감 뒤(06:40 KST) 현재가·환율을 갱신한다. 인증은 백업과 같은 CRON_SECRET.
+// 매일 미국 장 마감 뒤(06:40 KST) 현재가·환율을 갱신하고, 설정하면 월간 평가액도 맞춘다. 인증은 백업과 같은 CRON_SECRET.
 export async function GET(request: Request) {
   if (!isAuthorizedCron(request.headers.get('authorization'), process.env.CRON_SECRET)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
@@ -11,7 +12,9 @@ export async function GET(request: Request) {
   try {
     const { supabase, userId } = await getTrustedHouseholdContext()
     const result = await refreshQuotes(supabase, userId)
-    return NextResponse.json({ ok: true, ...result }, { headers: { 'Cache-Control': 'no-store' } })
+    // 환경 변수 STOCK_VALUE_AUTO_SYNC=true 일 때만, 이번 달 월간 기록이 있는 계좌의 평가액을 보유종목 평가액으로 맞춘다.
+    const synced = process.env.STOCK_VALUE_AUTO_SYNC === 'true' ? await syncCurrentMonthStockValues(supabase, userId) : null
+    return NextResponse.json({ ok: true, ...result, syncedAccounts: synced?.length ?? null }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     console.error('[cron/prices]', error)
     return NextResponse.json({ ok: false, error: (error as Error).message }, { status: 500 })

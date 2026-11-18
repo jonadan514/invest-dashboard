@@ -14,10 +14,15 @@ import RefreshPricesButton from './RefreshPricesButton'
 import AssetManager, { type ManagedAsset } from './AssetManager'
 import TradeForm, { type TradeCostContext, type TradeInitial } from './TradeForm'
 import { inferFeeRates } from '@/lib/calc/trade-costs'
+import { parseFilter, parseSort, summarizeReturns, viewHoldings, type HoldingFilter, type HoldingSort } from '@/lib/calc/holdings-view'
+import { summarizeDividends } from '@/lib/calc/dividends'
+import { stockTrend } from '@/lib/calc/stock-trend'
+import { STOCK_CLASSES, classLabel } from './asset-classes'
+import TrendChart from './TrendChart'
 
 export const metadata = { title: '주식 계좌' }
 
-type Tab = 'holdings' | 'trades' | 'prices' | 'assets'
+type Tab = 'holdings' | 'trades' | 'dividends' | 'prices' | 'assets'
 
 interface TradeRow {
   id: string
@@ -37,9 +42,9 @@ interface TradeRow {
 
 const TYPE_LABEL: Record<TradeRow['type'], string> = { buy: '매수', sell: '매도', dividend: '배당' }
 
-export default async function StocksPage({ searchParams }: { searchParams: Promise<{ tab?: string; account?: string }> }) {
+export default async function StocksPage({ searchParams }: { searchParams: Promise<{ tab?: string; account?: string; sort?: string; filter?: string; class?: string; year?: string }> }) {
   const params = await searchParams
-  const tab: Tab = params.tab === 'trades' || params.tab === 'prices' || params.tab === 'assets' ? params.tab : 'holdings'
+  const tab: Tab = params.tab === 'trades' || params.tab === 'dividends' || params.tab === 'prices' || params.tab === 'assets' ? params.tab : 'holdings'
   const { supabase, userId } = await getHouseholdContext()
   const now = new Date()
   const currentMonth = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', timeZone: 'Asia/Seoul' }).format(now)
@@ -73,6 +78,15 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
   }
 
   const holdings = buildHoldings(scopedTrades, assets, accounts, priceMap, usdKrw ?? 1)
+  const sort = parseSort(params.sort)
+  const filter = parseFilter(params.filter)
+  const classFilter = STOCK_CLASSES.find(item => item.value === params.class)?.value ?? null
+  const shownHoldings = viewHoldings(holdings, { sort, filter, assetClass: classFilter })
+  const returns = summarizeReturns(holdings, holding => classLabel(holding.asset_class))
+  const trend = stockTrend((snapshotRows ?? []) as AccountMonthlySnapshot[], (selectedAccount ? [selectedAccount] : accounts).map(account => account.id))
+  const dividendYears = summarizeDividends(scopedTrades, year).years
+  const dividendYear = params.year && /^\d{4}$/.test(params.year) ? params.year : (dividendYears.includes(year) ? year : dividendYears[0] ?? year)
+  const dividends = summarizeDividends(scopedTrades, dividendYear)
   const realizedThisYear = buildRealizedPnL(scopedTrades, assets, usdKrw ?? 1).filter(row => row.date.startsWith(`${year}-`))
   const realizedTotal = realizedThisYear.reduce((sum, row) => sum + row.pnl_krw, 0)
   const dividendsThisYear = dividendTotalKrw(scopedTrades, year)
@@ -112,12 +126,21 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
   }))
   const tradeCosts: TradeCostContext = { feeRates: inferFeeRates(trades), usdKrw }
   const tradeAssets = assets.map(asset => ({ id: asset.id, name: asset.name, symbol: asset.symbol, currency: asset.currency, asset_class: asset.asset_class }))
-  const href = (next: Partial<{ tab: Tab; account: string | null }>) => {
+  const href = (next: Partial<{ tab: Tab; account: string | null; sort: HoldingSort; filter: HoldingFilter; class: string | null; year: string }>) => {
     const query = new URLSearchParams()
     const nextTab = next.tab ?? tab
     const nextAccount = next.account === undefined ? selectedAccount?.id ?? null : next.account
+    const nextSort = next.sort ?? sort
+    const nextFilter = next.filter ?? filter
+    const nextClass = next.class === undefined ? classFilter : next.class
     if (nextTab !== 'holdings') query.set('tab', nextTab)
     if (nextAccount) query.set('account', nextAccount)
+    if (nextTab === 'holdings') {
+      if (nextSort !== 'value') query.set('sort', nextSort)
+      if (nextFilter !== 'all') query.set('filter', nextFilter)
+      if (nextClass) query.set('class', nextClass)
+    }
+    if (nextTab === 'dividends' && next.year) query.set('year', next.year)
     const text = query.toString()
     return text ? `/stocks?${text}` : '/stocks'
   }
@@ -142,7 +165,7 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
         <>
           <nav aria-label="주식 계좌 메뉴" className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex rounded-xl bg-white p-1 shadow-[var(--shadow-card)]">
-              {([['holdings', '보유 현황'], ['trades', '거래 기록'], ['prices', '현재가 입력'], ['assets', '종목 관리']] as const).map(([value, label]) => (
+              {([['holdings', '보유 현황'], ['trades', '거래 기록'], ['dividends', '배당'], ['prices', '현재가 입력'], ['assets', '종목 관리']] as const).map(([value, label]) => (
                 <Link key={value} href={href({ tab: value })} aria-current={tab === value ? 'page' : undefined} className={`inline-flex min-h-9 items-center rounded-lg px-4 text-[13px] font-semibold ${tab === value ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--color-muted)] hover:text-[var(--color-ink)]'}`}>
                   {label}
                 </Link>
@@ -183,8 +206,62 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
                 {holdings.length === 0 ? (
                   <p className="px-5 py-10 text-center text-[13px] text-[var(--color-muted)]">보유 중인 종목이 없어요. <Link href={href({ tab: 'trades' })} className="font-semibold text-[var(--color-primary)]">거래 기록</Link>에서 매수를 추가해 보세요.</p>
                 ) : (
-                  <HoldingsTable holdings={holdings} total={marketValue} />
+                  <>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-[var(--color-border)] px-5 py-3" aria-label="정렬과 필터">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[12px] font-semibold text-[var(--color-muted)]">정렬</span>
+                        {([['value', '평가금액'], ['return', '수익률'], ['pnl', '평가손익'], ['name', '이름']] as const).map(([value, label]) => (
+                          <Link key={value} href={href({ sort: value })} className={chipClass(sort === value)}>{label}</Link>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[12px] font-semibold text-[var(--color-muted)]">손익</span>
+                        {([['all', '전체'], ['gain', '이익'], ['loss', '손실']] as const).map(([value, label]) => (
+                          <Link key={value} href={href({ filter: value })} className={chipClass(filter === value)}>{label}</Link>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[12px] font-semibold text-[var(--color-muted)]">구분</span>
+                        <Link href={href({ class: null })} className={chipClass(!classFilter)}>전체</Link>
+                        {STOCK_CLASSES.filter(item => holdings.some(holding => holding.asset_class === item.value)).map(item => (
+                          <Link key={item.value} href={href({ class: item.value })} className={chipClass(classFilter === item.value)}>{item.label}</Link>
+                        ))}
+                      </div>
+                    </div>
+                    {shownHoldings.length === 0
+                      ? <p className="px-5 py-10 text-center text-[13px] text-[var(--color-muted)]">조건에 맞는 종목이 없어요.</p>
+                      : <HoldingsTable holdings={shownHoldings} total={marketValue} />}
+                  </>
                 )}
+              </section>
+
+              {returns.byGroup.length > 0 ? (
+                <section className="app-card p-5" aria-label="수익률 요약">
+                  <h2 className="text-[15px] font-bold">수익률 요약</h2>
+                  <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">현재가가 있는 종목 기준이에요. 수익률은 투자원금 대비 평가손익이에요.</p>
+                  <ul className="mt-3 divide-y divide-[var(--color-border)]">
+                    {returns.byGroup.map(group => (
+                      <li key={group.key} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-[13px]">
+                        <span className="font-semibold">{group.key} <span className="font-normal text-[var(--color-muted)]">{group.count}종목 · {wonShort(group.value)}</span></span>
+                        <span className={`font-semibold tabular-nums ${group.pnl > 0 ? 'text-[var(--color-positive)]' : group.pnl < 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-muted)]'}`}>
+                          {signedWonShort(group.pnl)}{group.rate !== null ? ` (${group.rate > 0 ? '+' : ''}${group.rate.toFixed(1)}%)` : ''}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  {returns.best ? (
+                    <p className="mt-3 text-[12.5px] text-[var(--color-muted)]">
+                      최고 <strong className="text-[var(--color-positive)]">{returns.best.name} {returns.best.unrealized_pnl_pct! > 0 ? '+' : ''}{returns.best.unrealized_pnl_pct!.toFixed(1)}%</strong>
+                      {returns.worst ? <> · 최저 <strong className="text-[var(--color-negative)]">{returns.worst.name} {returns.worst.unrealized_pnl_pct! > 0 ? '+' : ''}{returns.worst.unrealized_pnl_pct!.toFixed(1)}%</strong></> : null}
+                    </p>
+                  ) : null}
+                </section>
+              ) : null}
+
+              <section className="app-card p-5" aria-label="평가액 추이">
+                <h2 className="text-[15px] font-bold">평가액 추이</h2>
+                <p className="mb-2 mt-1 text-[12.5px] text-[var(--color-muted)]">월간 기록에 적은 {selectedAccount ? selectedAccount.name : '주식·연금·ISA 계좌'} 평가액 합계예요(최근 12개월).</p>
+                <TrendChart points={trend} />
               </section>
 
               {!selectedAccount ? (
@@ -260,6 +337,53 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
                   </ul>
                 )}
               </section>
+            </div>
+          ) : null}
+
+          {tab === 'dividends' ? (
+            <div className="space-y-4">
+              <StatStrip columns={3} label="배당 요약">
+                <Stat label={`${dividendYear}년 배당`} value={wonShort(dividends.total)} exact={krw(dividends.total)} tone="asset" detail={`${dividends.count}건`} />
+                <Stat label="월평균" value={wonShort(dividends.total / 12)} detail="12개월 기준" />
+                <Stat label="전년 대비" value={dividends.previousTotal === null ? '—' : signedWonShort(dividends.total - dividends.previousTotal)} tone={dividends.previousTotal === null ? undefined : toneOf(dividends.total - dividends.previousTotal)} detail={dividends.previousTotal === null ? '전년 기록 없음' : `${Number(dividendYear) - 1}년 ${wonShort(dividends.previousTotal)}`} />
+              </StatStrip>
+              {dividendYears.length > 1 ? (
+                <div className="flex flex-wrap gap-1.5" aria-label="연도 선택">
+                  {dividendYears.map(item => <Link key={item} href={href({ tab: 'dividends', year: item })} className={chipClass(item === dividendYear)}>{item}년</Link>)}
+                </div>
+              ) : null}
+              <section className="app-card p-5" aria-label="월별 배당">
+                <h2 className="text-[15px] font-bold">월별 배당</h2>
+                {dividends.count === 0 ? (
+                  <p className="py-6 text-center text-[13px] text-[var(--color-muted)]">{dividendYear}년 배당 기록이 없어요. <Link href={href({ tab: 'trades' })} className="font-semibold text-[var(--color-primary)]">거래 기록</Link>에서 배당을 추가해 보세요.</p>
+                ) : (
+                  <ul className="mt-3 space-y-1.5">
+                    {dividends.byMonth.map((value, index) => {
+                      const peak = Math.max(...dividends.byMonth)
+                      return (
+                        <li key={index} className="grid grid-cols-[2.5rem_minmax(0,1fr)_5rem] items-center gap-2 text-[12.5px] tabular-nums">
+                          <span className="text-[var(--color-muted)]">{index + 1}월</span>
+                          <span className="h-2 overflow-hidden rounded-full bg-[var(--color-section)]"><span className="block h-full rounded-full bg-[var(--color-positive)]" style={{ width: `${peak > 0 ? value / peak * 100 : 0}%` }} /></span>
+                          <span className="text-right">{value > 0 ? wonShort(value) : '—'}</span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </section>
+              {dividends.byAsset.length > 0 ? (
+                <section className="app-card p-5" aria-label="종목별 배당">
+                  <h2 className="text-[15px] font-bold">종목별 배당</h2>
+                  <ul className="mt-3 divide-y divide-[var(--color-border)]">
+                    {dividends.byAsset.map(row => (
+                      <li key={row.asset_id} className="flex items-center justify-between gap-3 py-2.5 text-[13px]">
+                        <span className="min-w-0 truncate font-semibold">{assetMap.get(row.asset_id)?.name ?? '알 수 없는 종목'} <span className="font-normal text-[var(--color-muted)]">{row.count}건</span></span>
+                        <span className="shrink-0 font-semibold tabular-nums" title={krw(row.total)}>{wonShort(row.total)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
             </div>
           ) : null}
 
