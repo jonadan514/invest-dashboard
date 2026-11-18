@@ -95,3 +95,12 @@ test('유효하지 않은 유형, 날짜, 현금 금액 및 USD 환율을 거부
     assert.throws(() => buildTransactionUpdate(buy, asset, owner, form({ fx_rate })), /환율/)
   }
 })
+
+test('new_asset_id로 같은 통화의 다른 종목에 거래를 옮긴다', () => {
+  const other = { id: 'other', user_id: owner, currency: 'USD' }
+  assert.equal(buildTransactionUpdate(buy, other, owner, form({ new_asset_id: 'other' })).asset_id, 'other')
+  assert.throws(() => buildTransactionUpdate(buy, other, owner, form()), /종목을 확인/)
+  assert.throws(() => buildTransactionUpdate(buy, asset, owner, form({ new_asset_id: 'other' })), /종목을 확인/)
+  assert.throws(() => buildTransactionUpdate(buy, { ...other, currency: 'KRW' }, owner, form({ new_asset_id: 'other' })), /같은 통화/)
+  assert.throws(() => buildTransactionUpdate(buy, { ...other, user_id: 'x' }, owner, form({ new_asset_id: 'other' })), /종목을 확인/)
+})

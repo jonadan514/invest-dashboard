@@ -53,8 +53,14 @@ export function buildTransactionUpdate(
   if (needsAsset !== isAssetTransaction(stored.type)) {
     throw new Error('종목 거래와 현금 거래 간 변경은 새 거래로 등록해 주세요.')
   }
-  if (needsAsset && (!stored.asset_id || !asset || asset.id !== stored.asset_id || asset.user_id !== userId)) {
+  // new_asset_id가 있으면 같은 통화의 다른 종목으로 옮긴다(잘못 고른 종목·중복 종목 정리용).
+  const rawNewAsset = form.get('new_asset_id')
+  const targetAssetId = needsAsset && typeof rawNewAsset === 'string' && rawNewAsset ? rawNewAsset : stored.asset_id
+  if (needsAsset && (!stored.asset_id || !asset || asset.id !== targetAssetId || asset.user_id !== userId)) {
     throw new Error('연결된 종목을 확인할 수 없습니다. 종목을 선택하여 새 거래로 등록해 주세요.')
+  }
+  if (needsAsset && asset!.id !== stored.asset_id && asset!.currency !== stored.currency) {
+    throw new Error('원화 종목과 달러 종목 사이로는 거래를 옮길 수 없어요. 같은 통화의 종목을 골라 주세요.')
   }
   if (!needsAsset && stored.asset_id) {
     throw new Error('현금 거래에 종목이 연결되어 있습니다. 금액과 통화를 확인하여 새 거래로 등록해 주세요.')
@@ -72,7 +78,7 @@ export function buildTransactionUpdate(
   if (!Number.isFinite(amount)) throw new Error('거래 금액이 너무 큽니다.')
   const fx_rate = fxField(form, currency)
 
-  return { date, type, asset_id: needsAsset ? stored.asset_id : null, currency, quantity, price, amount,
+  return { date, type, asset_id: needsAsset ? asset!.id : null, currency, quantity, price, amount,
     fee: numberField(form, 'fee', '수수료', 0), tax: numberField(form, 'tax', '세금', 0), fx_rate }
 }
 

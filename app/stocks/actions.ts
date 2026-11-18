@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { buildPriceUpdates } from '@/lib/stock-prices'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import { buildNewAsset, buildTransactionInsert, buildTransactionUpdate } from '@/lib/transaction-edit'
+import { assertAssetDeletable, buildAssetUpdate } from '@/lib/asset-edit'
 
 type HouseholdClient = Awaited<ReturnType<typeof getHouseholdContext>>['supabase']
 
@@ -70,9 +71,11 @@ export async function updateTrade(id: string, formData: FormData): Promise<Actio
       .select('type, asset_id, currency, user_id').eq('id', id).eq('user_id', userId).maybeSingle()
     if (readError) throw new Error(readError.message)
     let asset = null
-    if (stored?.asset_id) {
+    const newAssetId = formData.get('new_asset_id')
+    const assetId = typeof newAssetId === 'string' && newAssetId ? newAssetId : stored?.asset_id
+    if (stored?.asset_id && assetId) {
       const { data, error } = await supabase.from('assets').select('id, currency, user_id')
-        .eq('id', stored.asset_id).eq('user_id', userId).maybeSingle()
+        .eq('id', assetId).eq('user_id', userId).maybeSingle()
       if (error) throw new Error(error.message)
       asset = data
     }
@@ -111,5 +114,56 @@ export async function savePrices(formData: FormData): Promise<ActionResult<{ sav
     }
     revalidateStocks()
     return { saved: prices.length + (usdKrw !== null ? 1 : 0) }
+  })
+}
+
+async function assetHasTransactions(supabase: HouseholdClient, userId: string, assetId: string) {
+  const { data, error } = await supabase.from('transactions').select('id').eq('user_id', userId).eq('asset_id', assetId).limit(1)
+  if (error) throw new Error(error.message)
+  return (data ?? []).length > 0
+}
+
+async function loadOwnedAsset(supabase: HouseholdClient, userId: string, id: string) {
+  const { data, error } = await supabase.from('assets').select('id, user_id, currency').eq('id', id).eq('user_id', userId).maybeSingle()
+  if (error) throw new Error(error.message)
+  return data
+}
+
+/** 종목 이름·코드·구분 수정. 원화↔달러가 바뀌면 그 통화로 저장된 현재가는 지운다. */
+export async function updateAsset(id: string, formData: FormData): Promise<ActionResult> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    const stored = await loadOwnedAsset(supabase, userId, id)
+    const rawSymbol = formData.get('symbol')
+    const symbol = typeof rawSymbol === 'string' ? rawSymbol.trim() : ''
+    let duplicateSymbol = false
+    if (symbol) {
+      const { data, error } = await supabase.from('assets').select('id').eq('user_id', userId).eq('symbol', symbol)
+      if (error) throw new Error(error.message)
+      duplicateSymbol = (data ?? []).some(row => row.id !== id)
+    }
+    const hasTransactions = stored ? await assetHasTransactions(supabase, userId, id) : false
+    const { currencyChanged, ...update } = buildAssetUpdate(stored, userId, formData, { hasTransactions, duplicateSymbol })
+    const { error } = await supabase.from('assets').update(update).eq('id', id).eq('user_id', userId)
+    if (error) throw new Error(error.message)
+    if (currencyChanged) {
+      const { error: priceError } = await supabase.from('prices').delete().eq('asset_id', id)
+      if (priceError) throw new Error(priceError.message)
+    }
+    revalidateStocks()
+  })
+}
+
+/** 거래가 하나도 없는 종목만 지운다. 저장된 현재가는 함께 지워진다. */
+export async function deleteAsset(id: string): Promise<ActionResult> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    const stored = await loadOwnedAsset(supabase, userId, id)
+    assertAssetDeletable(stored, userId, stored ? await assetHasTransactions(supabase, userId, id) : false)
+    const { error: priceError } = await supabase.from('prices').delete().eq('asset_id', id)
+    if (priceError) throw new Error(priceError.message)
+    const { error } = await supabase.from('assets').delete().eq('id', id).eq('user_id', userId)
+    if (error) throw new Error(error.message)
+    revalidateStocks()
   })
 }
