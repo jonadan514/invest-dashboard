@@ -2,13 +2,14 @@ import Link from 'next/link'
 import type { MonthEndReminder } from '@/lib/calc/reminder'
 import { formatMonth } from '@/lib/labels'
 
-export default function MonthEndBanner({ reminder }: { reminder: MonthEndReminder | null }) {
+/** embedded면 홈 알림 상자 안의 한 줄로 그린다(카드 테두리 없음). */
+export default function MonthEndBanner({ reminder, embedded = false }: { reminder: MonthEndReminder | null; embedded?: boolean }) {
   if (!reminder) return null
   const overdue = reminder.kind === 'overdue'
   return (
     <section
       aria-label="월말 기록 알림"
-      className="app-card relative flex flex-col gap-3 overflow-hidden px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:py-3"
+      className={`${embedded ? '' : 'app-card '}relative flex flex-col gap-3 overflow-hidden px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:py-3`}
     >
       <span className={`absolute inset-y-0 left-0 w-1 ${overdue ? 'bg-[var(--color-negative)]' : 'bg-[var(--color-positive-bright)]'}`} aria-hidden="true" />
       <div>

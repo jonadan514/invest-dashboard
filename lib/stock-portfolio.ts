@@ -1,6 +1,6 @@
-import { buildHoldings, type PriceRow } from '@/lib/calc/holdings'
-import { INVESTMENT_ACCOUNT_TYPES } from '@/lib/calc/home-insights'
-import type { Account, Asset, Holding } from '@/lib/types'
+import { buildHoldings, type PriceRow } from './calc/holdings.ts'
+import { INVESTMENT_ACCOUNT_TYPES } from './calc/home-insights.ts'
+import type { Account, Asset, Holding } from './types.ts'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Client = { from: (table: string) => any }

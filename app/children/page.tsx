@@ -38,7 +38,7 @@ export default async function ChildrenPage() {
         </header>
 
         <details className="mb-4 overflow-hidden rounded-2xl border border-lime-300 bg-lime-50/70">
-          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-bold text-lime-900 sm:px-5">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[12.5px] font-bold text-lime-900 sm:px-5">
             <span>증여 공제·비과세 기준 안내</span>
             <span className="rounded-full bg-white/70 px-2.5 py-1 text-[11.5px] font-semibold text-lime-800">필요할 때 열어보기</span>
           </summary>
@@ -57,7 +57,7 @@ export default async function ChildrenPage() {
         {error ? (
           <section className="app-card p-6">
             <p className="text-sm font-bold text-[var(--color-ink)]">{missingTables ? '자녀 증여 기록용 Supabase 테이블을 추가해야 합니다.' : '자녀 증여 데이터를 불러오지 못했습니다.'}</p>
-            <p className="mt-2 text-xs leading-5 text-[var(--color-muted)]">
+            <p className="mt-2 text-[12.5px] leading-5 text-[var(--color-muted)]">
               {missingTables ? 'supabase/migrations/20260902022903_child_gift_tracking.sql 파일의 내용을 Supabase SQL Editor에서 실행한 뒤 새로고침하세요.' : error.message}
             </p>
           </section>

@@ -34,7 +34,7 @@ export default function StockReturnCard({ accounts, missing }: { accounts: Alloc
           </li>
         ))}
       </ul>
-      {missing > 0 ? <p className="mt-2 text-[12px] text-[var(--color-accent)]">현재가가 없는 종목 {missing}개는 제외했어요.</p> : null}
+      {missing > 0 ? <p className="mt-2 text-[12.5px] text-[var(--color-accent)]">현재가가 없는 종목 {missing}개는 제외했어요.</p> : null}
     </section>
   )
 }

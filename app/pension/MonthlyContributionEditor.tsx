@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { setMonthlyContribution } from './actions'
+import { wonShort } from '@/lib/labels'
 
 /** 계좌별 납입 방식: 매달 정기 납입액, 또는 비워 두면 돈 생길 때마다. */
 export default function MonthlyContributionEditor({ accountId, amount }: { accountId: string; amount: number | null }) {
@@ -25,24 +26,24 @@ export default function MonthlyContributionEditor({ accountId, amount }: { accou
 
   if (!editing) {
     return (
-      <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[12px] text-[var(--color-muted)]">
-        {amount ? <span className="font-semibold text-[var(--color-positive-strong)]">매달 {amount.toLocaleString('ko-KR')}원 정기 납입</span> : <span>돈 생길 때마다 납입</span>}
+      <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[12.5px] text-[var(--color-muted)]">
+        {amount ? <span className="font-semibold text-[var(--color-positive-strong)]">매달 {wonShort(amount)} 정기 납입</span> : <span>돈 생길 때마다 납입</span>}
         <button type="button" onClick={() => setEditing(true)} className="inline-flex min-h-7 items-center rounded-md border border-[var(--color-border)] bg-white px-2 text-[11.5px] font-semibold text-[var(--color-primary)] hover:border-[var(--color-primary)]">납입 방식 변경</button>
       </p>
     )
   }
   return (
     <div className="mt-2 rounded-lg bg-[var(--color-section)] p-2.5">
-      <label className="text-[12px] font-semibold text-[var(--color-muted)]">매달 정기 납입액 <span className="font-normal">(비우면 ‘돈 생길 때마다’)</span>
+      <label className="text-[12.5px] font-semibold text-[var(--color-muted)]">매달 정기 납입액 <span className="font-normal">(비우면 ‘돈 생길 때마다’)</span>
         <span className="mt-1 flex items-center gap-2">
-          <input value={draft} onChange={event => { const digits = event.target.value.replace(/[^0-9]/g, ''); setDraft(digits ? Number(digits).toLocaleString('ko-KR') : '') }} inputMode="numeric" placeholder="0" className="w-full max-w-[10rem] rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-right text-[14px] font-semibold tabular-nums outline-none focus:border-[var(--color-primary)]" />
-          <span className="text-[12px]">원</span>
-          <button type="button" disabled={pending} onClick={save} className="min-h-8 rounded-lg bg-[var(--color-primary)] px-3 text-[12px] font-semibold text-white disabled:opacity-50">{pending ? '저장 중…' : '저장'}</button>
-          <button type="button" onClick={() => { setEditing(false); setMessage(null) }} className="min-h-8 px-1 text-[12px] text-[var(--color-muted)]">취소</button>
+          <input value={draft} onChange={event => { const digits = event.target.value.replace(/[^0-9]/g, ''); setDraft(digits ? Number(digits).toLocaleString('ko-KR') : '') }} inputMode="numeric" placeholder="0" className="field-input max-w-[10rem] text-right font-semibold tabular-nums" />
+          <span className="text-[12.5px]">원</span>
+          <button type="button" disabled={pending} onClick={save} className="min-h-8 rounded-lg bg-[var(--color-primary)] px-3 text-[12.5px] font-semibold text-white disabled:opacity-50">{pending ? '저장 중…' : '저장'}</button>
+          <button type="button" onClick={() => { setEditing(false); setMessage(null) }} className="min-h-8 px-1 text-[12.5px] text-[var(--color-muted)]">취소</button>
         </span>
       </label>
       <p className="mt-1 text-[11.5px] text-[var(--color-subtle)]">설정하면 월간 기록의 올해 누적 납입액이 매달 이 금액만큼 자동으로 늘어나요.</p>
-      {message ? <p className="mt-1 text-[12px] text-[var(--color-negative)]" role="alert">{message}</p> : null}
+      {message ? <p className="mt-1 text-[12.5px] text-[var(--color-negative)]" role="alert">{message}</p> : null}
     </div>
   )
 }

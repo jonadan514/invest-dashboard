@@ -66,7 +66,7 @@ export default function NetWorthHero({ current, previous, trend, composition }: 
 
       <div className="flex min-w-0 flex-col">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <ul className="hidden gap-3 text-[12px] text-white/70 sm:flex" aria-label="그래프 범례">
+          <ul className="hidden gap-3 text-[12.5px] text-white/70 sm:flex" aria-label="그래프 범례">
             <li className="flex items-center gap-1.5"><Dot color={HERO_COLORS.netWorth} />순자산</li>
             <li className="flex items-center gap-1.5"><Dot color={HERO_COLORS.assets} />총자산</li>
             <li className="flex items-center gap-1.5"><Dot color={HERO_COLORS.liabilities} />총부채</li>
@@ -102,7 +102,7 @@ function BigWon({ value }: { value: number }) {
 function ItemStat({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div className="rounded-xl bg-white/[0.07] px-3 py-2.5" style={{ boxShadow: `inset 3px 0 0 ${color}` }} title={krw(value)}>
-      <p className="flex items-center gap-1.5 text-[12px] text-white/65"><Dot color={color} />{label}</p>
+      <p className="flex items-center gap-1.5 text-[12.5px] text-white/65"><Dot color={color} />{label}</p>
       <p className="mt-0.5 whitespace-nowrap text-[16px] font-bold tabular-nums" style={{ color }}>{wonShort(value)}</p>
     </div>
   )

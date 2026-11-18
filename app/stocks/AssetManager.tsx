@@ -18,7 +18,7 @@ export interface ManagedAsset {
   held: number
 }
 
-const INPUT = 'min-h-10 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 text-[14px] focus:border-[var(--color-primary)] focus:outline-none'
+const INPUT = 'field-input'
 
 /** 주식 계좌 > 종목 관리: 종목 이름·코드·구분 수정, 거래 없는 종목 삭제. */
 export default function AssetManager({ assets }: { assets: ManagedAsset[] }) {
@@ -76,7 +76,7 @@ function AssetRow({ asset }: { asset: ManagedAsset }) {
     <li className="px-5 py-3">
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <p className="flex flex-wrap items-center gap-x-2 text-[14px]">
+          <p className="flex flex-wrap items-center gap-x-2 text-sm">
             <span className="font-semibold">{asset.name}</span>
             {asset.symbol ? <span className="text-[12.5px] tabular-nums text-[var(--color-muted)]">{asset.symbol}</span> : null}
           </p>
@@ -120,7 +120,7 @@ function AssetRow({ asset }: { asset: ManagedAsset }) {
               </select>
             </label>
           </div>
-          <p className="text-[12px] leading-5 text-[var(--color-muted)]">
+          <p className="text-[12.5px] leading-5 text-[var(--color-muted)]">
             {currencyLocked
               ? `거래가 있어서 ${asset.currency === 'USD' ? '달러' : '원화'} 구분끼리만 바꿀 수 있어요. 통화가 잘못됐다면 새 종목으로 거래를 다시 입력하고, 이 종목의 거래를 지운 뒤 삭제해 주세요.`
               : nextCurrency !== asset.currency

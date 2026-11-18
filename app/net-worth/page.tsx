@@ -6,6 +6,7 @@ import { Stat, StatStrip } from '@/components/Stat'
 import { krw as formatWon, signedWonShort, wonShort } from '@/lib/labels'
 import NetWorthChart from './NetWorthChart'
 import NetWorthManager from './NetWorthManager'
+import { kstMonth } from '@/lib/labels'
 import { trySyncMortgageSchedule } from '@/lib/mortgage-sync'
 
 export const metadata = { title: '밸런스 시트' }
@@ -15,13 +16,6 @@ interface TrendPoint {
   assets: number
   liabilities: number
   netWorth: number
-}
-
-function currentMonth() {
-  const now = new Date()
-  return new Intl.DateTimeFormat('en-CA', {
-    year: 'numeric', month: '2-digit', timeZone: 'Asia/Seoul',
-  }).format(now)
 }
 
 function monthOptions(selected: string) {
@@ -72,7 +66,7 @@ export default async function NetWorthPage({
 }) {
   const params = await searchParams
   const requested = params.month
-  const month = requested && /^\d{4}-(0[1-9]|1[0-2])$/.test(requested) ? requested : currentMonth()
+  const month = requested && /^\d{4}-(0[1-9]|1[0-2])$/.test(requested) ? requested : kstMonth()
   const { supabase, userId } = await getHouseholdContext()
   await trySyncMortgageSchedule(supabase, userId)
 
@@ -160,7 +154,7 @@ export default async function NetWorthPage({
                       <h2 className="text-base font-bold text-[var(--color-ink)]">이번 달 순자산 변동</h2>
                       <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{previous.month} 월말과 {current.month} 월말의 실제 잔액 비교</p>
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${netWorthChange > 0 ? 'bg-[var(--color-positive-soft)] text-[var(--color-positive-strong)]' : netWorthChange < 0 ? 'bg-[var(--color-negative-soft)] text-[var(--color-negative-strong)]' : 'bg-[var(--color-section)] text-[var(--color-muted)]'}`}>
+                    <span className={`rounded-full px-3 py-1 text-[12.5px] font-semibold ${netWorthChange > 0 ? 'bg-[var(--color-positive-soft)] text-[var(--color-positive-strong)]' : netWorthChange < 0 ? 'bg-[var(--color-negative-soft)] text-[var(--color-negative-strong)]' : 'bg-[var(--color-section)] text-[var(--color-muted)]'}`}>
                       순자산 {signedKrw(netWorthChange)}
                     </span>
                   </div>
@@ -172,7 +166,7 @@ export default async function NetWorthPage({
                   </div>
                 </section>
               ) : (
-                <div className="rounded-xl border border-dashed border-[var(--color-border)] px-4 py-3 text-xs text-[var(--color-muted)]">
+                <div className="rounded-xl border border-dashed border-[var(--color-border)] px-4 py-3 text-[12.5px] text-[var(--color-muted)]">
                   두 달 이상 기록하면 자산 증가, 부채 상환, 순자산 변화를 나누어 보여드립니다. 이달 재무계획 배분액은 {krw(plannedAllocation)}, 주담대 원금 계획은 {krw(mortgagePrincipal)}입니다.
                 </div>
               )}
@@ -200,7 +194,7 @@ export default async function NetWorthPage({
           initialAmounts={latestAmounts}
           latestMonths={latestMonths}
           history={history}
-          currentMonth={currentMonth()}
+          currentMonth={kstMonth()}
           initialView={params.view === 'settings' || params.view === 'record' ? params.view : 'overview'}
           hasExactSnapshot={exactSnapshots.length > 0 || accountSnapshots.some(snapshot => snapshot.month === month)}
           investmentValue={portfolioValue}

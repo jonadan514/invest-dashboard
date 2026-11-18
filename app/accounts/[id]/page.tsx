@@ -4,6 +4,7 @@ import { getHouseholdContext } from '@/lib/supabase/server'
 import type { Account, AccountMonthlySnapshot } from '@/lib/types'
 import { Stat, StatStrip, toneOf } from '@/components/Stat'
 import { wonShort } from '@/lib/labels'
+import { formatMonth, krw as fmtKrw } from '@/lib/labels'
 
 export const metadata = { title: '계좌 기록' }
 
@@ -47,7 +48,7 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
             <h1 className="page-title">{account.name}</h1>
             <p className="page-subtitle">{account.broker ? `${account.broker} · ` : ''}월말 평가금액 기록</p>
           </div>
-          <Link href={`/budget?month=${currentMonth}`} className="inline-flex min-h-10 w-fit items-center rounded-lg bg-[var(--color-primary)] px-4 text-xs font-semibold text-white hover:bg-[var(--color-primary-strong)]">
+          <Link href={`/budget?month=${currentMonth}`} className="inline-flex min-h-10 w-fit items-center rounded-lg bg-[var(--color-primary)] px-4 text-[12.5px] font-semibold text-white hover:bg-[var(--color-primary-strong)]">
             이번 달 기록하기
           </Link>
         </header>
@@ -65,11 +66,11 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
           {snapshots.length === 0 ? (
             <div className="px-5 py-10 text-center">
               <p className="text-sm text-[var(--color-muted)]">아직 월말 기록이 없습니다.</p>
-              <p className="mt-1 text-xs text-[var(--color-subtle)]">월간 기록에서 증권사 앱의 평가금액을 입력하세요.</p>
+              <p className="mt-1 text-[12.5px] text-[var(--color-subtle)]">월간 기록에서 증권사 앱의 평가금액을 입력하세요.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-[12.5px]">
                 <thead>
                   <tr className="border-b border-[var(--color-border)] text-[var(--color-muted)]">
                     <th className="px-5 py-3 text-left font-medium">기준 월</th>
@@ -108,13 +109,4 @@ function MetricCard({ label, value, detail, signed = false, wide = false }: { la
       wide={wide}
     />
   )
-}
-
-function fmtKrw(value: number) {
-  return `₩${new Intl.NumberFormat('ko-KR').format(Math.round(value))}`
-}
-
-function formatMonth(month: string) {
-  const [year, value] = month.split('-')
-  return `${year}년 ${Number(value)}월`
 }

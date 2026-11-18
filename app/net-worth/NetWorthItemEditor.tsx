@@ -5,8 +5,8 @@ import type { NetWorthItem } from '@/lib/types'
 import { updateNetWorthItem } from './actions'
 import { ASSET_CATEGORIES, LIABILITY_CATEGORIES } from './categories'
 
-const INPUT = 'w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-[13px] outline-none focus:border-[var(--color-primary)]'
-const LABEL = 'text-[12px] font-semibold text-[var(--color-muted)]'
+const INPUT = 'field-input'
+const LABEL = 'text-[12.5px] font-semibold text-[var(--color-muted)]'
 
 /** 항목의 고정 정보(이름·분류·소유, 부채면 대출 조건). 달마다 바뀌는 잔액은 잔액 이력에서 다룬다. */
 export default function NetWorthItemEditor({ item }: { item: NetWorthItem }) {
@@ -47,7 +47,7 @@ export default function NetWorthItemEditor({ item }: { item: NetWorthItem }) {
       </div>
       {liability ? (
         <div className="rounded-lg bg-[var(--color-section)] p-3">
-          <p className="text-[12px] font-bold">대출 조건</p>
+          <p className="text-[12.5px] font-bold">대출 조건</p>
           <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <label className={LABEL}>연 금리(%)
               <input name="interest_rate" type="number" min="0" step="0.001" defaultValue={item.interest_rate ?? ''} placeholder="3.95" className={`mt-1 ${INPUT}`} />
@@ -63,14 +63,14 @@ export default function NetWorthItemEditor({ item }: { item: NetWorthItem }) {
             </label>
           </div>
           {category === 'mortgage' ? (
-            <p className="mt-2 text-[12px] leading-5 text-[var(--color-muted)]">연 금리와 월 상환액(또는 만기일)을 넣으면 매달 잔액이 자동으로 줄고, 월간 기록의 이자·원금도 채워져요. 월 상환액을 비우면 잔액·금리·만기로 계산해요.</p>
+            <p className="mt-2 text-[12.5px] leading-5 text-[var(--color-muted)]">연 금리와 월 상환액(또는 만기일)을 넣으면 매달 잔액이 자동으로 줄고, 월간 기록의 이자·원금도 채워져요. 월 상환액을 비우면 잔액·금리·만기로 계산해요.</p>
           ) : null}
         </div>
       ) : (
         <input type="hidden" name="start_date" value={item.start_date ?? ''} />
       )}
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[12px] text-[var(--color-primary)]" role="status">{message}</p>
+        <p className="text-[12.5px] text-[var(--color-primary)]" role="status">{message}</p>
         <button type="submit" disabled={pending} className="min-h-9 rounded-lg bg-[var(--color-ink)] px-4 text-[12.5px] font-semibold text-white disabled:opacity-50">
           {pending ? '저장 중…' : '정보 저장'}
         </button>

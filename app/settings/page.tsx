@@ -73,11 +73,11 @@ function AutoBackupSection({ backups, error, cronConfigured }: { backups: Stored
       {error ? (
         <p className="mt-4 text-[12.5px] text-[var(--color-negative)]">{error}</p>
       ) : backups.length === 0 ? (
-        <p className="mt-4 py-3 text-center text-xs text-[var(--color-muted)]">아직 저장된 백업이 없습니다.</p>
+        <p className="mt-4 py-3 text-center text-[12.5px] text-[var(--color-muted)]">아직 저장된 백업이 없습니다.</p>
       ) : (
         <ul className="mt-4 divide-y divide-[var(--color-border)] rounded-xl border border-[var(--color-border)] bg-white/55">
           {backups.map((backup, index) => (
-            <li key={backup.name} className="flex items-center justify-between gap-3 px-4 py-2.5 text-xs">
+            <li key={backup.name} className="flex items-center justify-between gap-3 px-4 py-2.5 text-[12.5px]">
               <span className="tabular-nums">
                 {backupLabel(backup.name)}
                 {index === 0 ? <span className="ml-2 rounded-full bg-[var(--color-section)] px-2 py-0.5 text-[11.5px] font-semibold text-[var(--color-muted)]">최신</span> : null}

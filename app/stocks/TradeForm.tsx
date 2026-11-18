@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createTrade, updateTrade } from './actions'
 import { STOCK_CLASSES } from './asset-classes'
 import { DEFAULT_FEE_RATE, estimateFee, estimateTax, feeRateKey, formatRate, taxRule } from '@/lib/calc/trade-costs'
+import { krw } from '@/lib/labels'
 
 export interface TradeAccount { id: string; name: string; owner: string; type: string }
 export interface TradeAsset { id: string; name: string; symbol: string | null; currency: string; asset_class: string }
@@ -35,7 +36,7 @@ const TYPES = [
 
 const CLASSES = STOCK_CLASSES
 
-const INPUT = 'min-h-10 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 text-[14px] focus:border-[var(--color-primary)] focus:outline-none'
+const INPUT = 'field-input'
 
 function today() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date())
@@ -103,7 +104,7 @@ export default function TradeForm({ accounts, assets, costs, initial, onDone }: 
   const settled = type === 'buy' ? gross + fee + tax : gross - fee - tax
   const money = (value: number) => isUsd
     ? `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-    : `${Math.round(value).toLocaleString('ko-KR')}원`
+    : krw(value)
 
   function resetRate() {
     setRateOverride(null)
@@ -243,7 +244,7 @@ export default function TradeForm({ accounts, assets, costs, initial, onDone }: 
         <p className="rounded-lg bg-[var(--color-section)] px-3 py-2 text-[12.5px] tabular-nums text-[var(--color-muted)]">
           {type === 'buy' ? '결제 금액' : '받는 금액'} <b className="text-[var(--color-ink)]">{money(settled)}</b>
           {isTrade ? ` = ${money(gross)} ${type === 'buy' ? '+' : '−'} 수수료 ${money(fee)}${tax > 0 ? ` ${type === 'buy' ? '+' : '−'} 세금 ${money(tax)}` : ''}` : ` = 세전 ${money(gross)} − 세금 ${money(tax)}`}
-          {isUsd && fx >= 100 ? ` · 원화 약 ${Math.round(settled * fx).toLocaleString('ko-KR')}원` : ''}
+          {isUsd && fx >= 100 ? ` · 원화 약 ${krw(settled * fx)}` : ''}
         </p>
       ) : null}
 

@@ -112,9 +112,9 @@ export default function Sidebar() {
         </div>
 
         <details className="mx-1 my-4 shrink-0 border border-white/15 bg-white/[0.045] p-3">
-          <summary className="cursor-pointer text-xs font-semibold text-blue-50/85">월말 기록 가이드</summary>
+          <summary className="cursor-pointer text-[12.5px] font-semibold text-blue-50/85">월말 기록 가이드</summary>
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-bold text-white">월말 기록 순서</p>
+            <p className="text-[12.5px] font-bold text-white">월말 기록 순서</p>
             <span className="rounded-full bg-blue-300/15 px-2 py-0.5 text-[11.5px] font-semibold text-blue-100/75">월 1회</span>
           </div>
           <ol className="mt-3 space-y-2.5 text-[11.5px] text-blue-50/65">
@@ -135,7 +135,7 @@ export default function Sidebar() {
             href="https://alphadesk-eta.vercel.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex min-h-10 items-center gap-3 rounded-lg px-3 text-xs text-white/55 transition-colors hover:bg-white/10 hover:text-white"
+            className="flex min-h-10 items-center gap-3 rounded-lg px-3 text-[12.5px] text-white/55 transition-colors hover:bg-white/10 hover:text-white"
           >
             <ExternalLink className="w-5" size={15} aria-hidden="true" />
             AlphaDesk
@@ -144,7 +144,7 @@ export default function Sidebar() {
           <form action="/api/access/lock" method="post">
             <button
               type="submit"
-              className="mt-1 flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-xs text-white/55 transition-colors hover:bg-white/10 hover:text-white"
+              className="mt-1 flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-[12.5px] text-white/55 transition-colors hover:bg-white/10 hover:text-white"
             >
               <LockKeyhole className="w-5" size={15} aria-hidden="true" />
               잠그기
@@ -246,7 +246,7 @@ function NavItem({
       onBlur={() => setFullPrefetch(false)}
       onClick={onClose}
       title={item.description}
-      className={`relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-[14px] transition-colors ${
+      className={`relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors ${
         active
           ? 'bg-white/[0.11] font-bold text-white shadow-[inset_3px_0_0_var(--color-gold)]'
           : 'font-medium text-white/65 hover:bg-white/[0.06] hover:text-white'

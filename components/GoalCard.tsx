@@ -76,7 +76,7 @@ function Ring({ percent }: { percent: number }) {
       <div className="grid h-[80px] w-[80px] place-items-center rounded-full bg-[var(--color-surface-strong)] text-center">
         <div>
           <p className="text-[22px] font-extrabold leading-none tabular-nums text-[var(--color-ink)]">{Math.floor(value)}%</p>
-          <p className="mt-1 text-[11px] text-[var(--color-subtle)]">달성</p>
+          <p className="mt-1 text-[11.5px] text-[var(--color-subtle)]">달성</p>
         </div>
       </div>
     </div>

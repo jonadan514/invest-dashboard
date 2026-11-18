@@ -21,14 +21,12 @@ import type {
 } from '@/lib/types'
 import { Stat, StatStrip, toneOf } from '@/components/Stat'
 import PrintButton from './PrintButton'
-import { trySyncMortgageSchedule } from '@/lib/mortgage-sync'
 
 export const metadata = { title: '연간 리포트' }
 
 export default async function ReportPage({ searchParams }: { searchParams: Promise<{ year?: string }> }) {
   const { year: requestedYear } = await searchParams
   const { supabase, userId } = await getHouseholdContext()
-  await trySyncMortgageSchedule(supabase, userId)
   const now = new Date()
   const currentMonth = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', timeZone: 'Asia/Seoul' }).format(now)
 
@@ -129,7 +127,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
           {years.length > 1 ? (
             <nav aria-label="연도 선택" className="flex gap-1">
               {years.map(item => (
-                <Link key={item} href={`/report?year=${item}`} aria-current={item === year ? 'page' : undefined} className={`rounded-sm border px-2.5 py-2 text-xs font-semibold ${item === year ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-[var(--color-border)] text-[var(--color-muted)]'}`}>
+                <Link key={item} href={`/report?year=${item}`} aria-current={item === year ? 'page' : undefined} className={`rounded-sm border px-2.5 py-2 text-[12.5px] font-semibold ${item === year ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-[var(--color-border)] text-[var(--color-muted)]'}`}>
                   {item}
                 </Link>
               ))}
@@ -168,7 +166,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
             <section className="app-card p-5 print:break-inside-avoid">
               <h2 className="text-base font-bold text-[var(--color-ink)]">저축과 상환</h2>
               <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">월간 기록 {yearBudgets.length}개월 기준</p>
-              <dl className="mt-4 divide-y divide-[var(--color-border)] text-xs">
+              <dl className="mt-4 divide-y divide-[var(--color-border)] text-[12.5px]">
                 <Row label="배분한 저축액 합계" value={krw(totalSaving)} />
                 <Row label="평균 저축률" value={savingsAverage ? `${Math.round(savingsAverage.rate)}%` : monthlyIncome > 0 ? '—' : '설정에서 월 소득 입력 필요'} />
                 <Row label="주담대 원금 상환(정기+추가)" value={krw(principalRepaid)} />
@@ -179,7 +177,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
             <section className="app-card p-5 print:break-inside-avoid">
               <h2 className="text-base font-bold text-[var(--color-ink)]">연금 납입과 세액공제</h2>
               <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">공제 한도 1인 {compactKrw(TOTAL_DEDUCT_LIMIT)} 기준</p>
-              <dl className="mt-4 divide-y divide-[var(--color-border)] text-xs">
+              <dl className="mt-4 divide-y divide-[var(--color-border)] text-[12.5px]">
                 {pensionByOwner.map(person => (
                   <Row key={person.label} label={`${person.label} 납입`} value={`${krw(person.total)} (${Math.round(person.deductible / TOTAL_DEDUCT_LIMIT * 100)}%)`} />
                 ))}
@@ -189,7 +187,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
 
             <section className="app-card p-5 print:break-inside-avoid">
               <h2 className="text-base font-bold text-[var(--color-ink)]">목표와 자녀</h2>
-              <dl className="mt-4 divide-y divide-[var(--color-border)] text-xs">
+              <dl className="mt-4 divide-y divide-[var(--color-border)] text-[12.5px]">
                 <Row label="올해 달성한 목표" value={achievedGoals.length > 0 ? achievedGoals.map(goal => goal.name).join(', ') : '없음'} />
                 {giftsByChild.length > 0
                   ? giftsByChild.map(([name, amount]) => <Row key={name} label={`${name} 증여 입금`} value={krw(amount)} />)
@@ -201,7 +199,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
           {memos.length > 0 ? (
             <section className="app-card p-5 print:break-inside-avoid">
               <h2 className="text-base font-bold text-[var(--color-ink)]">월별 메모</h2>
-              <ul className="mt-3 space-y-2 text-xs">
+              <ul className="mt-3 space-y-2 text-[12.5px]">
                 {memos.map(budget => (
                   <li key={budget.month} className="grid grid-cols-[72px_minmax(0,1fr)] gap-3">
                     <span className="font-semibold text-[var(--color-muted)]">{Number(budget.month.slice(5))}월</span>
@@ -260,11 +258,11 @@ function MonthlyChanges({ months }: { months: { month: string; netWorth: number;
 const SOURCE_LABEL: Record<ChangeDriver['source'], string> = { account: '계좌', asset: '자산', liability: '부채' }
 
 function DriverList({ drivers }: { drivers: ChangeDriver[] }) {
-  if (drivers.length === 0) return <p className="mt-4 text-xs text-[var(--color-muted)]">비교할 기록이 두 달 이상 필요해요.</p>
+  if (drivers.length === 0) return <p className="mt-4 text-[12.5px] text-[var(--color-muted)]">비교할 기록이 두 달 이상 필요해요.</p>
   const visible = drivers.slice(0, 8)
   const restChange = drivers.slice(8).reduce((sum, driver) => sum + driver.change, 0)
   return (
-    <ul className="mt-4 divide-y divide-[var(--color-border)] text-xs">
+    <ul className="mt-4 divide-y divide-[var(--color-border)] text-[12.5px]">
       {visible.map(driver => (
         <li key={driver.key} className="flex items-center justify-between gap-3 py-2">
           <span className="flex min-w-0 items-center gap-1.5">

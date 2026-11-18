@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { isAuthorizedCron } from '@/lib/backup-schedule'
 import { refreshQuotes } from '@/lib/quote-refresh'
 import { syncCurrentMonthStockValues } from '@/lib/stock-sync'
+import { trySyncMortgageSchedule } from '@/lib/mortgage-sync'
 import { getTrustedHouseholdContext } from '@/lib/supabase/server'
 
 // 매일 미국 장 마감 뒤(06:40 KST) 현재가·환율을 갱신하고, 설정하면 월간 평가액도 맞춘다. 인증은 백업과 같은 CRON_SECRET.
@@ -12,6 +13,8 @@ export async function GET(request: Request) {
   try {
     const { supabase, userId } = await getTrustedHouseholdContext()
     const result = await refreshQuotes(supabase, userId)
+    // 새 달이 되면 기록이 없는 달의 주담대 잔액을 채운다(화면을 열 때마다 하지 않도록 하루 한 번).
+    await trySyncMortgageSchedule(supabase, userId)
     // 환경 변수 STOCK_VALUE_AUTO_SYNC=true 일 때만, 이번 달 월간 기록이 있는 계좌의 평가액을 보유종목 평가액으로 맞춘다.
     const synced = process.env.STOCK_VALUE_AUTO_SYNC === 'true' ? await syncCurrentMonthStockValues(supabase, userId) : null
     return NextResponse.json({ ok: true, ...result, syncedAccounts: synced?.length ?? null }, { headers: { 'Cache-Control': 'no-store' } })

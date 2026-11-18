@@ -16,7 +16,7 @@ export default function ReturnBars({ rows }: { rows: ReturnBar[] }) {
             <div className="flex items-baseline justify-between gap-3 text-[13px]">
               <span className="min-w-0 truncate font-semibold">{row.label} <span className="font-normal text-[var(--color-muted)]">{row.detail}</span></span>
               <span className={`shrink-0 font-bold tabular-nums ${gain ? 'text-[var(--color-positive)]' : 'text-[var(--color-negative)]'}`}>
-                {row.rate === null ? '—' : `${rate > 0 ? '+' : ''}${rate.toFixed(1)}%`} <span className="text-[12px] font-medium">{signedWonShort(row.pnl)}</span>
+                {row.rate === null ? '—' : `${rate > 0 ? '+' : ''}${rate.toFixed(1)}%`} <span className="text-[12.5px] font-medium">{signedWonShort(row.pnl)}</span>
               </span>
             </div>
             <div className="relative mt-1.5 h-2.5 rounded-full bg-[var(--color-section)]" role="img" aria-label={`${row.label} 수익률 ${rate.toFixed(1)}%`}>

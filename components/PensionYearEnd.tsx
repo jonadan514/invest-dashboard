@@ -36,11 +36,11 @@ function staleNote(recordMonth: string | null, today: string) {
 }
 
 /** 홈 상단 알림 띠. 10~12월에 남은 한도가 있을 때만 보인다. */
-export function PensionYearEndBanner({ persons, today, recordMonth }: Props) {
+export function PensionYearEndBanner({ persons, today, recordMonth, embedded = false }: Props & { embedded?: boolean }) {
   const { schedule, remaining, credit } = summarize(persons, today)
   if (!schedule.isYearEndSeason || remaining <= 0) return null
   return (
-    <section aria-label="연금 세액공제 연말 알림" className="app-card relative flex flex-col gap-3 overflow-hidden px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:py-3">
+    <section aria-label="연금 세액공제 연말 알림" className={`${embedded ? '' : 'app-card '}relative flex flex-col gap-3 overflow-hidden px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:py-3`}>
       <span className="absolute inset-y-0 left-0 w-1 bg-[var(--color-primary)]" aria-hidden="true" />
       <div className="min-w-0">
         <p className="text-[11.5px] font-bold text-[var(--color-primary)]">
@@ -89,7 +89,7 @@ export function PensionYearEndPlan({ persons, today, recordMonth }: Props) {
           {rows.map(row => (
             <div key={row.label} className="rounded-lg border border-[var(--color-border)] bg-white/60 p-4">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-[var(--color-ink)]">{row.label}</span>
+                <span className="text-[12.5px] font-bold text-[var(--color-ink)]">{row.label}</span>
                 <span className="text-sm font-bold tabular-nums text-[var(--color-ink)]">{row.room.remaining > 0 ? krw(row.room.remaining) : '한도 채움'}</span>
               </div>
               {row.room.remaining > 0 ? (

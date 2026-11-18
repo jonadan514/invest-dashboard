@@ -26,7 +26,7 @@ export default function GuidePage() {
           <h1 className="page-title">대시보드 사용 가이드</h1>
           <p className="page-subtitle">매일 쓰는 가계부가 아니라, 가족 자산의 위치와 변화를 월 1회 확인하는 도구입니다.</p>
         </div>
-        <Link href="/budget" className="inline-flex min-h-10 w-fit items-center rounded-sm bg-[var(--color-primary)] px-4 text-xs font-semibold text-white hover:bg-[var(--color-primary-strong)]">
+        <Link href="/budget" className="inline-flex min-h-10 w-fit items-center rounded-sm bg-[var(--color-primary)] px-4 text-[12.5px] font-semibold text-white hover:bg-[var(--color-primary-strong)]">
           이번 달 기록하기 →
         </Link>
       </header>
@@ -39,7 +39,7 @@ export default function GuidePage() {
         <ol className="grid grid-cols-1 divide-y divide-[var(--color-border)] md:grid-cols-2 md:divide-y-0">
           {MONTHLY_STEPS.map(([number, title, description], index) => (
             <li key={title} className={`flex gap-3 p-5 ${index % 2 === 0 ? 'md:border-r md:border-[var(--color-border)]' : ''} ${index > 1 ? 'md:border-t md:border-[var(--color-border)]' : ''}`}>
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--color-primary-soft)] text-xs font-extrabold text-[var(--color-primary)]">{number}</span>
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--color-primary-soft)] text-[12.5px] font-extrabold text-[var(--color-primary)]">{number}</span>
               <div>
                 <h3 className="text-sm font-extrabold text-[var(--color-ink)]">{title}</h3>
                 <p className="mt-1 text-[12.5px] leading-5 text-[var(--color-muted)]">{description}</p>
@@ -154,7 +154,7 @@ export default function GuidePage() {
         <dl className="divide-y divide-[var(--color-border)]">
           {TERMS.map(([term, description]) => (
             <div key={term} className="grid gap-1 px-5 py-4 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-4">
-              <dt className="text-xs font-extrabold text-[var(--color-ink)]">{term}</dt>
+              <dt className="text-[12.5px] font-extrabold text-[var(--color-ink)]">{term}</dt>
               <dd className="text-[12.5px] leading-5 text-[var(--color-muted)]">{description}</dd>
             </div>
           ))}
@@ -165,7 +165,7 @@ export default function GuidePage() {
         <h2 className="text-sm font-extrabold text-[var(--color-ink)]">월말 체크리스트</h2>
         <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
           {['기록 월 확인', '공금·성과급 입력', '주담대 이자·원금 입력', '모든 금융계좌 평가금액 입력', '연금 누적 납입액 입력', '계좌 밖 자산·부채 저장', '자녀 입금·평가 확인', '대시보드 완료 상태 확인'].map(item => (
-            <p key={item} className="text-xs text-[var(--color-muted)]">□ {item}</p>
+            <p key={item} className="text-[12.5px] text-[var(--color-muted)]">□ {item}</p>
           ))}
         </div>
       </section>
