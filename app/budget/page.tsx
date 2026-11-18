@@ -3,6 +3,9 @@ import { DEFAULT_FINANCIAL_PLAN, type FinancialPlanSettings } from '@/lib/calc/b
 import { getHouseholdContext } from '@/lib/supabase/server'
 import type { Account, AccountMonthlySnapshot, FinancialPlanSettingsRow, MonthlyBudget } from '@/lib/types'
 import { expectedMortgagePayment } from '@/lib/calc/mortgage-schedule'
+import { buildHoldings, type PriceRow } from '@/lib/calc/holdings'
+import { stockValueByAccount, type AccountStockValue } from '@/lib/calc/stock-valuation'
+import type { Asset } from '@/lib/types'
 import MonthlyForm from './MonthlyForm'
 import PlanSettingsForm from './PlanSettingsForm'
 import { trySyncMortgageSchedule } from '@/lib/mortgage-sync'
@@ -106,6 +109,35 @@ export default async function BudgetPage({
     mortgageDefaults = expectedMortgagePayment(previousSnapshot ? Number(previousSnapshot.amount) : null, mortgageItems[0])
   }
 
+  // 주식 계좌 화면의 보유종목 평가액. 현재가는 '지금' 값이라 이번 달 기록에서만 불러오기를 제공한다.
+  const stockValues: Record<string, AccountStockValue & { priceDate: string | null }> = {}
+  if (month === currentMonth()) {
+    const [{ data: assetRows }, { data: tradeRows }, { data: fxRow }] = await Promise.all([
+      supabase.from('assets').select('*').eq('user_id', userId).throwOnError(),
+      supabase.from('transactions').select('date, created_at, account_id, asset_id, type, quantity, price, amount, fee, tax, fx_rate')
+        .eq('user_id', userId).in('type', ['buy', 'sell']).throwOnError(),
+      supabase.from('fx_rates').select('rate').eq('pair', 'USDKRW').maybeSingle().throwOnError(),
+    ])
+    const assets = (assetRows ?? []) as Asset[]
+    if (assets.length > 0 && (tradeRows ?? []).length > 0) {
+      const { data: priceRows } = await supabase.from('prices').select('asset_id, price, prev_close, currency, as_of')
+        .in('asset_id', assets.map(asset => asset.id)).throwOnError()
+      const usdKrw = fxRow ? Number(fxRow.rate) : null
+      const priceMap = new Map<string, PriceRow>()
+      const priceDates = new Map<string, string>()
+      for (const row of priceRows ?? []) {
+        if (row.currency === 'USD' && usdKrw === null) continue
+        priceMap.set(row.asset_id, { asset_id: row.asset_id, price: Number(row.price), prev_close: row.prev_close, currency: row.currency })
+        priceDates.set(row.asset_id, row.as_of)
+      }
+      const holdings = buildHoldings(tradeRows ?? [], assets, accounts, priceMap, usdKrw ?? 1)
+      for (const [accountId, value] of Object.entries(stockValueByAccount(holdings))) {
+        const dates = holdings.filter(holding => holding.account_id === accountId).map(holding => priceDates.get(holding.asset_id)).filter((date): date is string => Boolean(date))
+        stockValues[accountId] = { ...value, priceDate: dates.length > 0 ? dates.sort()[0] : null }
+      }
+    }
+  }
+
   return (
     <>
       <div className="page-container max-w-[1240px]">
@@ -128,6 +160,7 @@ export default async function BudgetPage({
             initialAccountValues={initialAccountValues}
             hasAccountSnapshot={hasAccountSnapshot}
             mortgageDefaults={mortgageDefaults}
+            stockValues={stockValues}
           />
         </Suspense>
 

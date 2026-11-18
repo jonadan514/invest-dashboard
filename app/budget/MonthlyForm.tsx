@@ -45,6 +45,7 @@ export default function MonthlyForm({
   initialAccountValues,
   hasAccountSnapshot,
   mortgageDefaults = null,
+  stockValues = {},
 }: {
   month: string
   entry: Entry | null
@@ -55,6 +56,8 @@ export default function MonthlyForm({
   hasAccountSnapshot: boolean
   /** 대출 조건으로 계산한 이번 달 이자·정기 원금. 저장된 기록이 없을 때 기본값으로 쓴다. */
   mortgageDefaults?: { interest: number; principal: number } | null
+  /** 계좌별 보유종목 평가액(이번 달 기록에서만 넘어온다). */
+  stockValues?: Record<string, { value: number; holdings: number; missing: number; priceDate: string | null }>
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -234,9 +237,17 @@ export default function MonthlyForm({
                       </div>
                     </div>
                     <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-                      <MoneyInput label="이번 달 배분액" value={values.monthlyAllocation} onChange={value => updateAccount(account.id, 'monthlyAllocation', value)} placeholder="0" />
-                      <MoneyInput label="월말 평가금액" value={values.evaluationAmount} onChange={value => updateAccount(account.id, 'evaluationAmount', value)} placeholder="0" />
-                      {isPension ? <MoneyInput label={`${month.slice(0, 4)}년 누적 납입액`} value={values.ytdContribution} onChange={value => updateAccount(account.id, 'ytdContribution', value)} placeholder="0" /> : null}
+                      <MoneyInput idSuffix={account.id} label="이번 달 배분액" value={values.monthlyAllocation} onChange={value => updateAccount(account.id, 'monthlyAllocation', value)} placeholder="0" />
+                      <div>
+                        <MoneyInput idSuffix={account.id} label="월말 평가금액" value={values.evaluationAmount} onChange={value => updateAccount(account.id, 'evaluationAmount', value)} placeholder="0" />
+                        {stockValues[account.id] ? (
+                          <StockImport
+                            stock={stockValues[account.id]}
+                            onImport={() => updateAccount(account.id, 'evaluationAmount', stockValues[account.id].value)}
+                          />
+                        ) : null}
+                      </div>
+                      {isPension ? <MoneyInput idSuffix={account.id} label={`${month.slice(0, 4)}년 누적 납입액`} value={values.ytdContribution} onChange={value => updateAccount(account.id, 'ytdContribution', value)} placeholder="0" /> : null}
                     </div>
                   </div>
                 )
@@ -276,8 +287,25 @@ function accountTypeLabel(type: Account['type']) {
   return labels[type] ?? type
 }
 
-function MoneyInput({ label, value, onChange, placeholder }: { label: string; value: number; onChange: (value: number) => void; placeholder: string }) {
-  const id = `money-${label.replace(/[^가-힣a-zA-Z0-9]/g, '-')}`
+function StockImport({ stock, onImport }: { stock: { value: number; holdings: number; missing: number; priceDate: string | null }; onImport: () => void }) {
+  const date = stock.priceDate
+    ? new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric', timeZone: 'Asia/Seoul' }).format(new Date(stock.priceDate))
+    : null
+  return (
+    <div className="mt-1.5 rounded-lg bg-[var(--color-primary-soft)] px-3 py-2 text-[12.5px] leading-5">
+      <button type="button" onClick={onImport} disabled={stock.value <= 0} className="inline-flex min-h-8 items-center font-semibold text-[var(--color-primary)] hover:underline disabled:opacity-50">
+        보유종목 평가액 불러오기 · {formatKrw(stock.value)}
+      </button>
+      <p className="text-[var(--color-muted)]">
+        {date ? `${date} 현재가 기준` : '현재가 미입력'} · {stock.holdings}종목{stock.missing > 0 ? ` (현재가 없는 ${stock.missing}종목 제외)` : ''}. 예수금(현금)은 따로 더해 주세요.
+      </p>
+    </div>
+  )
+}
+
+function MoneyInput({ label, value, onChange, placeholder, idSuffix }: { label: string; value: number; onChange: (value: number) => void; placeholder: string; idSuffix?: string }) {
+  // 계좌마다 같은 이름표가 반복되므로 계좌 id를 붙여 입력칸 id가 겹치지 않게 한다.
+  const id = `money-${label.replace(/[^가-힣a-zA-Z0-9]/g, '-')}${idSuffix ? `-${idSuffix}` : ''}`
   return (
     <div>
       <label htmlFor={id} className="mb-1 block text-xs text-[var(--color-muted)]">{label}</label>
