@@ -4,6 +4,7 @@ import { runAction, type ActionResult } from '@/lib/action-result'
 import { revalidatePath } from 'next/cache'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import { DEFAULT_FINANCIAL_PLAN } from '@/lib/calc/budget'
+import { syncMortgageSchedule } from '@/lib/mortgage-sync'
 
 function numberField(formData: FormData, name: string) {
   const value = Number(formData.get(name) ?? 0)
@@ -78,8 +79,10 @@ export async function saveBudgetEntry(formData: FormData): Promise<ActionResult>
       p_accounts: accountRows,
     })
     if (error) throw new Error(error.message)
+    await syncMortgageSchedule(supabase, userId)
     revalidatePath('/budget')
     revalidatePath('/net-worth')
+    revalidatePath('/mortgage')
     revalidatePath('/pension')
     revalidatePath('/')
   })

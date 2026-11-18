@@ -3,6 +3,7 @@
 import { runAction, type ActionResult } from '@/lib/action-result'
 import { revalidatePath } from 'next/cache'
 import { getHouseholdContext } from '@/lib/supabase/server'
+import { syncMortgageSchedule } from '@/lib/mortgage-sync'
 
 const ASSET_CATEGORIES = new Set([
   'cash', 'savings', 'real_estate', 'deposit', 'vehicle', 'other_asset',
@@ -73,7 +74,9 @@ export async function createNetWorthItem(formData: FormData): Promise<ActionResu
       throw new Error(snapshotError.message)
     }
 
+    await syncMortgageSchedule(supabase, userId)
     revalidatePath('/net-worth')
+    revalidatePath('/mortgage')
     revalidatePath('/')
   })
 }
@@ -108,7 +111,9 @@ export async function saveNetWorthSnapshot(formData: FormData): Promise<ActionRe
       if (error) throw new Error(error.message)
     }
 
+    await syncMortgageSchedule(supabase, userId)
     revalidatePath('/net-worth')
+    revalidatePath('/mortgage')
     revalidatePath('/')
   })
 }
@@ -140,7 +145,9 @@ export async function updateNetWorthItem(id: string, formData: FormData): Promis
       .eq('user_id', userId)
     if (error) throw new Error(error.message)
 
+    await syncMortgageSchedule(supabase, userId)
     revalidatePath('/net-worth')
+    revalidatePath('/mortgage')
   })
 }
 
@@ -172,7 +179,9 @@ export async function setNetWorthItemActive(id: string, active: boolean, month: 
       .eq('user_id', userId)
     if (error) throw new Error(error.message)
 
+    await syncMortgageSchedule(supabase, userId)
     revalidatePath('/net-worth')
+    revalidatePath('/mortgage')
     revalidatePath('/')
   })
 }

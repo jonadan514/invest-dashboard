@@ -216,3 +216,35 @@ export interface Transaction {
   assets?: { name: string; symbol: string | null; asset_class: AssetClass }
 }
 
+export interface Asset {
+  id: string
+  symbol: string | null
+  name: string
+  asset_class: AssetClass
+  currency: string
+  market: string | null
+  price_source: 'kis' | 'finnhub' | 'upbit' | 'manual'
+  is_active: boolean
+}
+
+export interface Holding {
+  asset_id: string
+  symbol: string | null
+  name: string
+  asset_class: AssetClass
+  currency: string           // 자산 원화폐 (KRW / USD)
+  account_id: string
+  account_name: string
+  owner: OwnerType
+  quantity: number
+  avg_cost: number           // 이동평균 원가 (원화폐 기준)
+  avg_cost_krw: number       // 거래시점 환율을 반영한 원화 이동평균 원가
+  total_cost: number         // 원화폐 기준 투자원금
+  total_cost_krw: number     // KRW 환산 투자원금
+  current_price: number | null
+  prev_close: number | null
+  market_value_krw: number | null  // KRW 환산 평가금액
+  unrealized_pnl_krw: number | null
+  unrealized_pnl_pct: number | null
+  fx_rate: number            // 적용 환율 (KRW 자산=1)
+}

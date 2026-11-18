@@ -32,6 +32,7 @@ import type {
   NetWorthItem,
   NetWorthSnapshot,
 } from '@/lib/types'
+import { trySyncMortgageSchedule } from '@/lib/mortgage-sync'
 
 interface CompositionItem {
   label: string
@@ -52,6 +53,7 @@ const COMPOSITION_COLORS = ['#3f7fc3', '#1f3858', '#78a8d6', '#9ab9d3', '#8aa59a
 
 export default async function DashboardPage() {
   const { supabase, userId } = await getHouseholdContext()
+  await trySyncMortgageSchedule(supabase, userId)
   const now = new Date()
   const currentYear = Number(new Intl.DateTimeFormat('en', { year: 'numeric', timeZone: 'Asia/Seoul' }).format(now))
   const currentMonth = new Intl.DateTimeFormat('en-CA', {

@@ -44,6 +44,7 @@ export default function MonthlyForm({
   accounts,
   initialAccountValues,
   hasAccountSnapshot,
+  mortgageDefaults = null,
 }: {
   month: string
   entry: Entry | null
@@ -52,6 +53,8 @@ export default function MonthlyForm({
   accounts: Account[]
   initialAccountValues: Record<string, AccountValue>
   hasAccountSnapshot: boolean
+  /** 대출 조건으로 계산한 이번 달 이자·정기 원금. 저장된 기록이 없을 때 기본값으로 쓴다. */
+  mortgageDefaults?: { interest: number; principal: number } | null
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -60,8 +63,8 @@ export default function MonthlyForm({
   const [bonusTotal, setBonusTotal] = useState(entry?.bonus_total ?? 0)
   const [bonusToPlan, setBonusToPlan] = useState(entry?.bonus_to_plan ?? 0)
   const [manualEmergencyFund, setManualEmergencyFund] = useState(entry?.cash_balance ?? settings.currentEmergencyFund)
-  const [mortgageInterest, setMortgageInterest] = useState(entry?.mortgage_interest ?? settings.mortgageInterest)
-  const [mortgagePrincipal, setMortgagePrincipal] = useState(entry?.mortgage_principal ?? settings.mortgagePrincipal)
+  const [mortgageInterest, setMortgageInterest] = useState(entry?.mortgage_interest ?? mortgageDefaults?.interest ?? settings.mortgageInterest)
+  const [mortgagePrincipal, setMortgagePrincipal] = useState(entry?.mortgage_principal ?? mortgageDefaults?.principal ?? settings.mortgagePrincipal)
   const [mortgageExtraPrincipal, setMortgageExtraPrincipal] = useState(entry?.mortgage_extra_principal ?? 0)
   const [memo, setMemo] = useState(entry?.memo ?? '')
   const [accountValues, setAccountValues] = useState(initialAccountValues)
@@ -182,6 +185,11 @@ export default function MonthlyForm({
             <h2 className="mb-1 text-base font-bold text-[var(--color-ink)]">주택담보대출 납부</h2>
             <p className="mb-4 text-[12.5px] leading-5 text-[var(--color-muted)]">이자와 정기 원금은 고정비의 구성 내역입니다. 다시 비용으로 차감하지 않으며, 원금만 밸런스 시트의 대출 잔액을 줄입니다.</p>
             <div className="space-y-4">
+              {!entry && mortgageDefaults ? (
+                <p className="rounded-lg bg-[var(--color-primary-soft)] px-3 py-2 text-[12.5px] leading-5 text-[var(--color-primary)]">
+                  대출 잔액·금리·월 상환액으로 계산한 이번 달 이자와 원금이에요. 실제 납부액이 다르면 고쳐서 저장하세요.
+                </p>
+              ) : null}
               <MoneyInput label="이번 달 이자" value={mortgageInterest} onChange={setMortgageInterest} placeholder="2,500,000" />
               <MoneyInput label="이번 달 정기 원금" value={mortgagePrincipal} onChange={setMortgagePrincipal} placeholder="450,000" />
               <MoneyInput label="추가 원금 상환" value={mortgageExtraPrincipal} onChange={setMortgageExtraPrincipal} placeholder="0" />

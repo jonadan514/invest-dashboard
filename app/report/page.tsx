@@ -21,12 +21,14 @@ import type {
 } from '@/lib/types'
 import { Stat, StatStrip, toneOf } from '@/components/Stat'
 import PrintButton from './PrintButton'
+import { trySyncMortgageSchedule } from '@/lib/mortgage-sync'
 
 export const metadata = { title: '연간 리포트' }
 
 export default async function ReportPage({ searchParams }: { searchParams: Promise<{ year?: string }> }) {
   const { year: requestedYear } = await searchParams
   const { supabase, userId } = await getHouseholdContext()
+  await trySyncMortgageSchedule(supabase, userId)
   const now = new Date()
   const currentMonth = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', timeZone: 'Asia/Seoul' }).format(now)
 
