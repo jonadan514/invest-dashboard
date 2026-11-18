@@ -66,9 +66,11 @@ function LoanSimulator({ loan }: { loan: MortgageLoan }) {
   const [extraMonthly, setExtraMonthly] = useState(0)
 
   const annualRate = Number(rate)
+  // 잔액 기준 달의 다음 달부터 상환한다고 보고, 이자는 달 일수로 계산한다.
+  const startMonth = addMonths(loan.balanceMonth, 1)
   const ready = rate.trim() !== '' && Number.isFinite(annualRate) && annualRate >= 0 && payment > 0
-  const base = ready ? simulateMortgage({ balance: loan.balance, annualRate, monthlyPayment: payment }) : null
-  const plan = ready ? simulateMortgage({ balance: loan.balance, annualRate, monthlyPayment: payment, lumpSum, extraMonthly }) : null
+  const base = ready ? simulateMortgage({ balance: loan.balance, annualRate, monthlyPayment: payment, startMonth }) : null
+  const plan = ready ? simulateMortgage({ balance: loan.balance, annualRate, monthlyPayment: payment, lumpSum, extraMonthly, startMonth }) : null
   const hasExtra = lumpSum > 0 || extraMonthly > 0
 
   return (

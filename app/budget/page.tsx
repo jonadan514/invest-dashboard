@@ -99,14 +99,14 @@ export default async function BudgetPage({
   }))
   const hasAccountSnapshot = accountSnapshots.some(snapshot => snapshot.month === month)
 
-  // 주담대가 하나이고 금리·월 상환액이 있으면, 직전 달 잔액으로 이번 달 이자·정기 원금을 미리 계산해 채운다.
+  // 주담대가 하나이고 금리가 있으면, 직전 달 잔액으로 이번 달 이자(일수 기준)와 정기 원금(월 상환액이 있을 때)을 미리 계산해 채운다.
   const mortgageItems = (mortgageItemData ?? []) as { id: string; interest_rate: number | null; monthly_payment: number | null }[]
-  let mortgageDefaults: { interest: number; principal: number } | null = null
+  let mortgageDefaults: { interest: number; principal: number | null } | null = null
   if (mortgageItems.length === 1) {
     const { data: previousSnapshot } = await supabase.from('net_worth_snapshots').select('amount')
       .eq('user_id', userId).eq('item_id', mortgageItems[0].id).lt('month', month)
       .order('month', { ascending: false }).limit(1).maybeSingle().throwOnError()
-    mortgageDefaults = expectedMortgagePayment(previousSnapshot ? Number(previousSnapshot.amount) : null, mortgageItems[0])
+    mortgageDefaults = expectedMortgagePayment(previousSnapshot ? Number(previousSnapshot.amount) : null, mortgageItems[0], month)
   }
 
   // 주식 계좌 화면의 보유종목 평가액. 현재가는 '지금' 값이라 이번 달 기록에서만 불러오기를 제공한다.
