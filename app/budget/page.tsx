@@ -102,11 +102,19 @@ export default async function BudgetPage({
   // 주담대가 하나이고 금리가 있으면, 직전 달 잔액으로 이번 달 이자(잔액 × 금리 ÷ 12, 원 미만 버림)와 원금(월 상환액 또는 만기로 계산)을 미리 채운다.
   const mortgageItems = (mortgageItemData ?? []) as { id: string; interest_rate: number | null; monthly_payment: number | null; maturity_date: string | null }[]
   let mortgageDefaults: { interest: number; principal: number | null } | null = null
+  let mortgageBalance: { previous: number; previousMonth: string; manualThisMonth: boolean } | null = null
   if (mortgageItems.length === 1) {
-    const { data: previousSnapshot } = await supabase.from('net_worth_snapshots').select('amount')
-      .eq('user_id', userId).eq('item_id', mortgageItems[0].id).lt('month', month)
-      .order('month', { ascending: false }).limit(1).maybeSingle().throwOnError()
+    const [{ data: previousSnapshot }, { data: thisMonthSnapshot }] = await Promise.all([
+      supabase.from('net_worth_snapshots').select('amount, month')
+        .eq('user_id', userId).eq('item_id', mortgageItems[0].id).lt('month', month)
+        .order('month', { ascending: false }).limit(1).maybeSingle().throwOnError(),
+      supabase.from('net_worth_snapshots').select('source')
+        .eq('user_id', userId).eq('item_id', mortgageItems[0].id).eq('month', month).maybeSingle().throwOnError(),
+    ])
     mortgageDefaults = expectedMortgagePayment(previousSnapshot ? Number(previousSnapshot.amount) : null, mortgageItems[0], month)
+    if (previousSnapshot) {
+      mortgageBalance = { previous: Number(previousSnapshot.amount), previousMonth: previousSnapshot.month, manualThisMonth: thisMonthSnapshot?.source === 'manual' }
+    }
   }
 
   // 주식 계좌 화면의 보유종목 평가액. 현재가는 '지금' 값이라 이번 달 기록에서만 불러오기를 제공한다.
@@ -160,6 +168,7 @@ export default async function BudgetPage({
             initialAccountValues={initialAccountValues}
             hasAccountSnapshot={hasAccountSnapshot}
             mortgageDefaults={mortgageDefaults}
+            mortgageBalance={mortgageBalance}
             stockValues={stockValues}
           />
         </Suspense>

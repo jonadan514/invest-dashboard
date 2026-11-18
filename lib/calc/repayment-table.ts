@@ -6,8 +6,10 @@ export interface RepaymentRow {
   month: string
   interest: number
   principal: number
-  /** 그달 납부액 = 이자 + 원금. */
+  /** 그달 납부액 = 이자 + 정기 원금. */
   total: number
+  /** 월간 기록에 적은 추가 원금 상환. */
+  extra?: number
   /** 납부 후 잔액. 잔액 기록이 없는 달은 null. */
   balanceAfter: number | null
   kind: 'past' | 'future'
@@ -27,7 +29,7 @@ export function buildRepaymentTable(input: {
   annualRate: number | null
   monthlyPayment: number | null
   history: { month: string; amount: number }[]
-  recorded?: { month: string; interest: number; principal: number }[]
+  recorded?: { month: string; interest: number; principal: number; extra?: number }[]
   pastMonths?: number
   futureMonths?: number
 }): { past: RepaymentRow[]; future: RepaymentRow[] } {
@@ -48,7 +50,7 @@ export function buildRepaymentTable(input: {
     if (row.month > balanceMonth) continue
     const interest = Math.round(row.interest)
     const principal = Math.round(row.principal)
-    byMonth.set(row.month, { month: row.month, interest, principal, total: interest + principal, balanceAfter: balanceOf.get(row.month) ?? null, kind: 'past', recorded: true })
+    byMonth.set(row.month, { month: row.month, interest, principal, total: interest + principal, extra: Math.round(row.extra ?? 0), balanceAfter: balanceOf.get(row.month) ?? null, kind: 'past', recorded: true })
   }
   const past = [...byMonth.values()].sort((a, b) => b.month.localeCompare(a.month)).slice(0, pastMonths)
 

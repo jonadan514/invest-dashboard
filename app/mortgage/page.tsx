@@ -64,8 +64,8 @@ export default async function MortgagePage({ searchParams }: { searchParams: Pro
     }
     // 월간 기록의 이자·원금은 가구 전체 값이라 대출이 하나일 때만 그 대출의 실제 납부 내역으로 본다.
     const recorded = single
-      ? recentBudgets.filter(row => Number(row.mortgage_interest) > 0 || Number(row.mortgage_principal) > 0)
-        .map(row => ({ month: row.month, interest: Number(row.mortgage_interest), principal: Number(row.mortgage_principal) }))
+      ? recentBudgets.filter(row => Number(row.mortgage_interest) > 0 || Number(row.mortgage_principal) > 0 || Number(row.mortgage_extra_principal) > 0)
+        .map(row => ({ month: row.month, interest: Number(row.mortgage_interest), principal: Number(row.mortgage_principal), extra: Number(row.mortgage_extra_principal) }))
       : []
     const table = buildRepaymentTable({
       balance, balanceMonth: latest.month, annualRate: rate, monthlyPayment: payment,

@@ -45,6 +45,7 @@ export default function MonthlyForm({
   initialAccountValues,
   hasAccountSnapshot,
   mortgageDefaults = null,
+  mortgageBalance = null,
   stockValues = {},
 }: {
   month: string
@@ -56,6 +57,8 @@ export default function MonthlyForm({
   hasAccountSnapshot: boolean
   /** 대출 조건으로 계산한 이번 달 이자·정기 원금. 저장된 기록이 없을 때 기본값으로 쓴다. */
   mortgageDefaults?: { interest: number; principal: number | null } | null
+  /** 직전 달 대출 잔액(주담대가 하나일 때). manualThisMonth면 이 달 잔액을 직접 입력해 둔 상태다. */
+  mortgageBalance?: { previous: number; previousMonth: string; manualThisMonth: boolean } | null
   /** 계좌별 보유종목 평가액(이번 달 기록에서만 넘어온다). */
   stockValues?: Record<string, { value: number; holdings: number; missing: number; priceDate: string | null }>
 }) {
@@ -66,8 +69,8 @@ export default function MonthlyForm({
   const [bonusTotal, setBonusTotal] = useState(entry?.bonus_total ?? 0)
   const [bonusToPlan, setBonusToPlan] = useState(entry?.bonus_to_plan ?? 0)
   const [manualEmergencyFund, setManualEmergencyFund] = useState(entry?.cash_balance ?? settings.currentEmergencyFund)
-  const [mortgageInterest, setMortgageInterest] = useState(entry?.mortgage_interest ?? mortgageDefaults?.interest ?? settings.mortgageInterest)
-  const [mortgagePrincipal, setMortgagePrincipal] = useState(entry?.mortgage_principal ?? mortgageDefaults?.principal ?? settings.mortgagePrincipal)
+  const [mortgageInterest, setMortgageInterest] = useState(Number(entry?.mortgage_interest ?? 0) > 0 ? Number(entry!.mortgage_interest) : mortgageDefaults?.interest ?? entry?.mortgage_interest ?? settings.mortgageInterest)
+  const [mortgagePrincipal, setMortgagePrincipal] = useState(Number(entry?.mortgage_principal ?? 0) > 0 ? Number(entry!.mortgage_principal) : mortgageDefaults?.principal ?? entry?.mortgage_principal ?? settings.mortgagePrincipal)
   const [mortgageExtraPrincipal, setMortgageExtraPrincipal] = useState(entry?.mortgage_extra_principal ?? 0)
   const [memo, setMemo] = useState(entry?.memo ?? '')
   const [accountValues, setAccountValues] = useState(initialAccountValues)
@@ -188,17 +191,35 @@ export default function MonthlyForm({
             <h2 className="mb-1 text-base font-bold text-[var(--color-ink)]">주택담보대출 납부</h2>
             <p className="mb-4 text-[12.5px] leading-5 text-[var(--color-muted)]">이자와 정기 원금은 고정비의 구성 내역입니다. 다시 비용으로 차감하지 않으며, 원금만 밸런스 시트의 대출 잔액을 줄입니다.</p>
             <div className="space-y-4">
-              {!entry && mortgageDefaults ? (
-                <p className="rounded-lg bg-[var(--color-primary-soft)] px-3 py-2 text-[12.5px] leading-5 text-[var(--color-primary)]">
-                  대출 정보로 자동 계산한 이번 달 이자{mortgageDefaults.principal !== null ? '와 원금' : ''}이에요. 이자는 직전 달 잔액 × 연 금리 ÷ 12(원 미만 버림){mortgageDefaults.principal !== null ? ', 원금은 월 상환액에서 이자를 뺀 값' : ''}이에요. 실제 납부액이 다르면 고쳐서 저장하세요.
-                </p>
+              {mortgageDefaults ? (
+                <div className="rounded-lg bg-[var(--color-primary-soft)] px-3 py-2 text-[12.5px] leading-5 text-[var(--color-primary)]">
+                  <p>
+                    대출 정보로 계산한 이번 달 납부: 이자 <strong className="tabular-nums">{formatKrw(mortgageDefaults.interest)}</strong>
+                    {mortgageDefaults.principal !== null ? <> · 원금 <strong className="tabular-nums">{formatKrw(mortgageDefaults.principal)}</strong></> : null}
+                  </p>
+                  {mortgageInterest !== mortgageDefaults.interest || (mortgageDefaults.principal !== null && mortgagePrincipal !== mortgageDefaults.principal) ? (
+                    <button type="button" onClick={() => { setMortgageInterest(mortgageDefaults.interest); if (mortgageDefaults.principal !== null) setMortgagePrincipal(mortgageDefaults.principal) }} className="mt-1 min-h-8 font-semibold underline">
+                      계산값으로 채우기
+                    </button>
+                  ) : <p className="text-[12px] opacity-80">아래 칸에 채워져 있어요. 실제 납부액이 다르면 고쳐서 저장하세요.</p>}
+                </div>
               ) : null}
               <MoneyInput label="이번 달 이자" value={mortgageInterest} onChange={setMortgageInterest} placeholder="2,500,000" />
               <MoneyInput label="이번 달 정기 원금" value={mortgagePrincipal} onChange={setMortgagePrincipal} placeholder="450,000" />
               <MoneyInput label="추가 원금 상환" value={mortgageExtraPrincipal} onChange={setMortgageExtraPrincipal} placeholder="0" />
-              <div className="rounded-xl bg-[var(--color-section)] px-3 py-2.5 text-xs text-[var(--color-muted)]">
-                부채 감소 예정 <strong className="float-right text-[var(--color-ink)]">{formatKrw(mortgagePrincipal + mortgageExtraPrincipal)}</strong>
+              <div className="space-y-1 rounded-xl bg-[var(--color-section)] px-3 py-2.5 text-xs text-[var(--color-muted)]">
+                <p className="flex justify-between gap-2"><span>납부액(이자+정기 원금)</span><strong className="tabular-nums text-[var(--color-ink)]">{formatKrw(mortgageInterest + mortgagePrincipal)}</strong></p>
+                <p className="flex justify-between gap-2"><span>대출 잔액 감소</span><strong className="tabular-nums text-[var(--color-ink)]">{formatKrw(mortgagePrincipal + mortgageExtraPrincipal)}</strong></p>
+                {mortgageBalance ? (
+                  <p className="flex justify-between gap-2 border-t border-[var(--color-border)] pt-1"><span>납부 후 잔액</span><strong className="tabular-nums text-[var(--color-ink)]">{formatKrw(Math.max(mortgageBalance.previous - mortgagePrincipal - mortgageExtraPrincipal, 0))}</strong></p>
+                ) : null}
               </div>
+              {mortgageExtraPrincipal > 0 && !mortgageBalance?.manualThisMonth ? (
+                <p className="text-[12px] leading-5 text-[var(--color-positive-strong)]">저장하면 추가 원금 {formatKrw(mortgageExtraPrincipal)}이 대출 잔액에서 바로 빠지고, 다음 달부터 줄어든 잔액으로 이자를 계산해요.</p>
+              ) : null}
+              {mortgageBalance?.manualThisMonth ? (
+                <p className="text-[12px] leading-5 text-[var(--color-accent)]">이 달 대출 잔액을 잔액 이력에 직접 입력해 두어서, 여기 적은 원금은 잔액에 반영되지 않아요. 은행 잔액을 그대로 쓰려면 그대로 두고, 원금으로 깎으려면 밸런스 시트 잔액 이력에서 이 달 기록을 지우세요.</p>
+              ) : null}
             </div>
           </section>
         </div>
