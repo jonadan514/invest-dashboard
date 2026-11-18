@@ -20,6 +20,8 @@ function formatInput(value: number) {
   return value === 0 ? '' : new Intl.NumberFormat('ko-KR').format(value)
 }
 
+const NAV_BUTTON = 'grid size-10 place-items-center rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-muted)] shadow-sm transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] active:scale-90 active:bg-[var(--color-primary-soft)] disabled:cursor-not-allowed disabled:opacity-40'
+
 type Entry = {
   joint_savings: number
   bonus_total: number
@@ -86,6 +88,9 @@ export default function MonthlyForm({
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  // 달 이동은 서버에서 새 달을 불러오는 동안 시간이 걸려, 그동안 버튼을 잠그고 이동할 달을 먼저 보여 준다.
+  const [navigating, startNavigation] = useTransition()
+  const [targetMonth, setTargetMonth] = useState(month)
 
   const emergencyAccounts = accounts.filter(account => account.is_emergency_fund)
   const emergencyFund = emergencyAccounts.length > 0
@@ -103,9 +108,11 @@ export default function MonthlyForm({
   const hasMortgage = Boolean(mortgageDefaults) || mortgageInterest > 0 || mortgagePrincipal > 0
 
   function changeMonth(nextMonth: string) {
+    if (navigating || nextMonth === month) return
     const params = new URLSearchParams(searchParams.toString())
     params.set('month', nextMonth)
-    router.push(`${pathname}?${params.toString()}`)
+    setTargetMonth(nextMonth)
+    startNavigation(() => router.push(`${pathname}?${params.toString()}`))
   }
 
   function markConfirmed(accountId: string) {
@@ -160,15 +167,20 @@ export default function MonthlyForm({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <button type="button" disabled={!neighbors.previous} onClick={() => neighbors.previous && changeMonth(neighbors.previous)} aria-label="이전 달" className="grid size-10 place-items-center rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-muted)] disabled:opacity-40">◀</button>
-        <select value={month} onChange={event => changeMonth(event.target.value)} aria-label="기록 월 선택" className="min-h-10 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-bold text-[var(--color-ink)] shadow-sm outline-none">
+        <button type="button" disabled={!neighbors.previous || navigating} onClick={() => neighbors.previous && changeMonth(neighbors.previous)} aria-label="이전 달" className={NAV_BUTTON}>◀</button>
+        <select value={navigating ? targetMonth : month} disabled={navigating} onChange={event => changeMonth(event.target.value)} aria-label="기록 월 선택" className="min-h-10 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-bold text-[var(--color-ink)] shadow-sm outline-none disabled:opacity-60">
           {months.map(value => {
             const [year, monthNumber] = value.split('-')
             return <option key={value} value={value}>{year}년 {Number(monthNumber)}월{recorded.has(value) ? ' ✓' : ''}</option>
           })}
         </select>
-        <button type="button" disabled={!neighbors.next} onClick={() => neighbors.next && changeMonth(neighbors.next)} aria-label="다음 달" className="grid size-10 place-items-center rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-muted)] disabled:opacity-40">▶</button>
-        <span className={`rounded-full px-2.5 py-1 text-[12px] font-semibold ${isSaved ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'}`}>{isSaved ? '● 저장된 기록' : '아직 저장 안 함'}</span>
+        <button type="button" disabled={!neighbors.next || navigating} onClick={() => neighbors.next && changeMonth(neighbors.next)} aria-label="다음 달" className={NAV_BUTTON}>▶</button>
+        {navigating ? (
+          <span role="status" className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--color-primary)]">
+            <span aria-hidden="true" className="size-3.5 animate-spin rounded-full border-2 border-[var(--color-primary)] border-t-transparent" />
+            {Number(targetMonth.slice(5))}월 불러오는 중…
+          </span>
+        ) : <span className={`rounded-full px-2.5 py-1 text-[12px] font-semibold ${isSaved ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'}`}>{isSaved ? '● 저장된 기록' : '아직 저장 안 함'}</span>}
       </div>
 
       <div className="mb-4 flex flex-wrap gap-1.5" aria-label="이번 달 진행 상황">
@@ -198,7 +210,7 @@ export default function MonthlyForm({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className={`space-y-4 transition-opacity ${navigating ? 'pointer-events-none opacity-50' : ''}`} aria-busy={navigating}>
         <section className="app-card p-5" aria-label="이달 자금">
           <h2 className="mb-4 text-base font-bold text-[var(--color-ink)]"><StepNo n={1} />이달 자금</h2>
           <div className="space-y-4">
@@ -258,7 +270,7 @@ export default function MonthlyForm({
                       {carried ? (
                         <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[12px] text-[var(--color-accent)]">
                           지난 기록 값을 불러왔어요
-                          <button type="button" onClick={() => markConfirmed(account.id)} className="min-h-8 font-semibold underline">같음</button>
+                          <button type="button" onClick={() => markConfirmed(account.id)} className="inline-flex min-h-8 items-center rounded-lg border border-[var(--color-accent)] bg-white px-3 text-[12px] font-bold text-[var(--color-accent)] shadow-sm hover:bg-[var(--color-accent-soft)] active:scale-95">✓ 같음</button>
                         </p>
                       ) : change !== null && change !== 0 ? (
                         <p className={`mt-1 text-[12px] font-semibold tabular-nums ${change > 0 ? 'text-[var(--color-positive)]' : 'text-[var(--color-negative)]'}`}>지난 기록 대비 {change > 0 ? '+' : '−'}{formatKrw(Math.abs(change))}</p>
@@ -376,7 +388,7 @@ function MoneyInput({ label, value, onChange, placeholder, idSuffix }: { label: 
     <div>
       <label htmlFor={id} className="mb-1 block text-xs text-[var(--color-muted)]">{label}</label>
       <div className="flex items-center gap-2">
-        <input id={id} type="text" inputMode="numeric" value={formatInput(value)} onChange={event => onChange(parseNumber(event.target.value))} placeholder={placeholder} className="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2.5 text-right text-sm font-medium tabular-nums shadow-inner outline-none focus:border-[var(--color-primary)]" />
+        <input id={id} type="text" inputMode="numeric" value={formatInput(value)} onChange={event => onChange(parseNumber(event.target.value))} placeholder={placeholder} className="w-full min-w-0 max-w-[11.5rem] rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-right text-[14px] font-semibold tabular-nums outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-soft)]" />
         <span className="shrink-0 text-xs text-[var(--color-muted)]">원</span>
       </div>
     </div>
