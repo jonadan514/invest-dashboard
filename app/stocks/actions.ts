@@ -6,6 +6,7 @@ import { buildPriceUpdates } from '@/lib/stock-prices'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import { buildNewAsset, buildTransactionInsert, buildTransactionUpdate } from '@/lib/transaction-edit'
 import { assertAssetDeletable, buildAssetUpdate } from '@/lib/asset-edit'
+import { refreshQuotes, type QuoteRefreshResult } from '@/lib/quote-refresh'
 
 type HouseholdClient = Awaited<ReturnType<typeof getHouseholdContext>>['supabase']
 
@@ -165,5 +166,16 @@ export async function deleteAsset(id: string): Promise<ActionResult> {
     const { error } = await supabase.from('assets').delete().eq('id', id).eq('user_id', userId)
     if (error) throw new Error(error.message)
     revalidateStocks()
+  })
+}
+
+/** 야후 파이낸스에서 현재가·환율을 지금 불러온다. */
+export async function refreshPrices(): Promise<ActionResult<QuoteRefreshResult>> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    const result = await refreshQuotes(supabase, userId)
+    revalidateStocks()
+    revalidatePath('/budget')
+    return result
   })
 }

@@ -10,6 +10,7 @@ import { getHouseholdContext } from '@/lib/supabase/server'
 import type { Account, AccountMonthlySnapshot, Asset, Holding } from '@/lib/types'
 import PriceForm from './PriceForm'
 import TradeActions from './TradeActions'
+import RefreshPricesButton from './RefreshPricesButton'
 import AssetManager, { type ManagedAsset } from './AssetManager'
 import TradeForm, { type TradeCostContext, type TradeInitial } from './TradeForm'
 import { inferFeeRates } from '@/lib/calc/trade-costs'
@@ -99,6 +100,10 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
   const accountMap = new Map(accounts.map(account => [account.id, account]))
   const latestEvaluations = latestSnapshotsAtMonth((snapshotRows ?? []) as AccountMonthlySnapshot[], currentMonth)
   const tradeAccounts = accounts.map(account => ({ id: account.id, name: account.name, owner: account.owner, type: account.type }))
+  const latestPriceAt = (priceRows ?? []).reduce<string | null>((latest, row) => !latest || row.as_of > latest ? row.as_of : latest, null)
+  const lastPriceUpdate = latestPriceAt
+    ? new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Seoul' }).format(new Date(latestPriceAt))
+    : null
   const tradeCountByAsset = new Map<string, number>()
   for (const trade of trades) tradeCountByAsset.set(trade.asset_id, (tradeCountByAsset.get(trade.asset_id) ?? 0) + 1)
   const managedAssets: ManagedAsset[] = assets.map(asset => ({
@@ -161,6 +166,8 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
                 <Stat label="평가손익" value={pricedCost > 0 ? signedWonShort(unrealized) : '—'} exact={krw(unrealized)} tone={toneOf(unrealized)} detail={unrealizedRate === null ? '현재가 입력 필요' : `수익률 ${unrealizedRate > 0 ? '+' : ''}${unrealizedRate.toFixed(1)}%`} />
                 <Stat label={`${year}년 실현손익·배당`} value={signedWonShort(realizedTotal + dividendsThisYear)} exact={krw(realizedTotal + dividendsThisYear)} tone={toneOf(realizedTotal + dividendsThisYear)} detail={`매도 ${signedWonShort(realizedTotal)} · 배당 ${wonShort(dividendsThisYear)}`} />
               </StatStrip>
+
+              <RefreshPricesButton lastUpdated={lastPriceUpdate} />
 
               {missingPrices > 0 || (usdKrw === null && holdings.some(holding => holding.currency === 'USD')) ? (
                 <p className="rounded-xl bg-[var(--color-accent-soft)] px-4 py-3 text-[13px] text-[var(--color-accent)]">
@@ -259,7 +266,8 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
           {tab === 'prices' ? (
             <section className="app-card p-5" aria-label="현재가 입력">
               <h2 className="text-[15px] font-bold">현재가 입력</h2>
-              <p className="mb-4 mt-1 text-[12.5px] text-[var(--color-muted)]">증권 앱에서 본 현재가를 적어 주세요. 월말에 한 번 갱신하면 월간 기록과 같은 기준으로 비교할 수 있어요.</p>
+              <p className="mb-3 mt-1 text-[12.5px] text-[var(--color-muted)]">종목 코드가 있는 종목은 매일 아침 야후 파이낸스에서 자동으로 갱신돼요. 못 불러온 종목만 증권 앱에서 본 현재가를 적어 주세요.</p>
+              <div className="mb-4"><RefreshPricesButton lastUpdated={lastPriceUpdate} /></div>
               <PriceForm
                 usdKrw={usdKrw}
                 usdAsOf={fxRow?.as_of ?? null}
