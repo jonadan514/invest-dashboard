@@ -50,7 +50,7 @@ export function PensionYearEndBanner({ persons, today, recordMonth }: Props) {
           12월 31일까지 부부 합계 {compactKrw(remaining)}을 더 넣으면 세금을 약 {compactKrw(credit)} 더 돌려받아요
         </p>
         <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">
-          남은 {schedule.weeksLeft}주 동안 주당 약 {compactKrw(remaining / schedule.weeksLeft)} · {staleNote(recordMonth, today)}
+          {staleNote(recordMonth, today)}
         </p>
       </div>
       <Link href="/pension" className="shrink-0 rounded-sm border border-[var(--color-border)] bg-white px-3 py-2 text-[12.5px] font-semibold text-[var(--color-primary)] hover:border-[var(--color-primary)]">
@@ -101,7 +101,6 @@ export function PensionYearEndPlan({ persons, today, recordMonth }: Props) {
                         ? `연금저축은 ${compactKrw(row.room.pensionSavingsRoom)}까지만 인정돼요. 나머지 ${compactKrw(row.room.remaining - row.room.pensionSavingsRoom)}은 IRP로 넣어야 해요.`
                         : '연금저축 한도(600만)는 다 찼어요. IRP로 넣어야 인정돼요.'}
                   </li>
-                  {schedule.isYearEndSeason ? <li>남은 {schedule.weeksLeft}주 동안 주당 약 <strong className="tabular-nums text-[var(--color-ink)]">{compactKrw(row.room.remaining / schedule.weeksLeft)}</strong></li> : null}
                   <li>추가 세액공제 약 {compactKrw(row.room.extraCredit)}</li>
                 </ul>
               ) : null}

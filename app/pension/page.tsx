@@ -193,11 +193,14 @@ export default async function PensionPage() {
   )
 }
 
+// 연금저축과 IRP를 막대에서 구분하는 색.
+const PENSION_COLOR = '#3f7fc3'
+const IRP_COLOR = 'var(--color-gold)'
+
 function PersonCard({ person }: { person: PersonStats }) {
   const breakdown = pensionBreakdown(person.pensionContribution, person.irpContribution)
   const percent = Math.min(breakdown.total / TOTAL_DEDUCT_LIMIT * 100, 100)
   const isSpouse = person.owner === 'spouse'
-  const color = isSpouse ? 'var(--color-spouse)' : 'var(--color-primary)'
   const hasMonthly = person.monthlyPension + person.monthlyIrp > 0
   const projected = pensionBreakdown(person.projectedPension, person.projectedIrp)
   return (
@@ -216,11 +219,14 @@ function PersonCard({ person }: { person: PersonStats }) {
         <strong className="text-base tabular-nums text-[var(--color-ink)]">{fmtKrw(breakdown.total)}</strong>
         <span className="text-[var(--color-muted)]">목표 {fmtKrw(TOTAL_DEDUCT_LIMIT)}</span>
       </div>
-      <ProgressBar value={percent} color={color} />
+      <div className="mt-2.5 flex h-2.5 overflow-hidden rounded-full bg-[var(--color-border)]/75" role="img" aria-label={`연금저축 ${compactKrw(breakdown.pensionCounted)}, IRP ${compactKrw(breakdown.irpCounted)}`}>
+        <span style={{ width: `${breakdown.pensionCounted / TOTAL_DEDUCT_LIMIT * 100}%`, backgroundColor: PENSION_COLOR }} />
+        <span style={{ width: `${breakdown.irpCounted / TOTAL_DEDUCT_LIMIT * 100}%`, backgroundColor: IRP_COLOR }} />
+      </div>
 
       <div className="mt-4 space-y-3 rounded-lg bg-[var(--color-canvas)]/75 p-3">
-        <LimitRow label="연금저축" counted={breakdown.pensionCounted} limit={breakdown.pensionLimit} done={breakdown.pensionDone} color={color} />
-        <LimitRow label="IRP" counted={breakdown.irpCounted} limit={breakdown.irpLimit} done={breakdown.irpDone} color={color} />
+        <LimitRow label="연금저축" counted={breakdown.pensionCounted} limit={breakdown.pensionLimit} done={breakdown.pensionDone} color={PENSION_COLOR} />
+        <LimitRow label="IRP" counted={breakdown.irpCounted} limit={breakdown.irpLimit} done={breakdown.irpDone} color={IRP_COLOR} />
         {breakdown.pensionOver > 0 ? <p className="text-[11.5px] text-[var(--color-accent)]">연금저축이 600만을 {compactKrw(breakdown.pensionOver)} 넘었어요. 넘은 금액은 세액공제가 안 돼요.</p> : null}
         {!breakdown.pensionDone ? <p className="text-[11.5px] text-[var(--color-subtle)]">연금저축이 600만에 못 미치면 IRP로 최대 900만까지 채울 수 있어요.</p> : null}
       </div>
@@ -245,12 +251,12 @@ function LimitRow({ label, counted, limit, done, color }: { label: string; count
   return (
     <div>
       <div className="flex items-baseline justify-between gap-2 text-[12.5px]">
-        <span className="font-semibold text-[var(--color-ink)]">{label}</span>
+        <span className="flex items-center gap-1.5 font-semibold text-[var(--color-ink)]"><span aria-hidden="true" className="size-2.5 rounded-sm" style={{ backgroundColor: color }} />{label}</span>
         {done
           ? <span className="rounded-full bg-[var(--color-positive-soft)] px-2 py-0.5 text-[11.5px] font-bold text-[var(--color-positive-strong)]">✓ {label} 한도 완료</span>
           : <span className="tabular-nums text-[var(--color-muted)]">{compactKrw(counted)} / {compactKrw(limit)}</span>}
       </div>
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--color-border)]/75"><div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: done ? 'var(--color-positive-bright)' : color }} /></div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--color-border)]/75"><div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: color }} /></div>
     </div>
   )
 }
@@ -298,10 +304,6 @@ function buildYearlyData(accounts: Account[], snapshots: AccountMonthlySnapshot[
   }).filter(point => point.total > 0)
 }
 
-
-function ProgressBar({ value, color }: { value: number; color: string }) {
-  return <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-[var(--color-border)]/75"><div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(value, 100))}%`, backgroundColor: color }} /></div>
-}
 
 function fmtKrw(value: number) {
   return `₩${new Intl.NumberFormat('ko-KR').format(Math.round(value))}`
