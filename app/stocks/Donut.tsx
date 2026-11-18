@@ -14,7 +14,7 @@ export default function Donut({ title, slices, center, format, href }: {
   const circumference = 2 * Math.PI * radius
   const offsets = slices.map((_, index) => slices.slice(0, index).reduce((sum, item) => sum + circumference * item.share / 100, 0))
   return (
-    <div>
+    <div className="w-full max-w-[34rem]">
       <h3 className="text-[13px] font-bold">{title}</h3>
       <div className="mt-3 flex flex-col items-center gap-4 sm:flex-row sm:items-center">
         <svg viewBox="0 0 100 100" className="h-36 w-36 shrink-0 -rotate-90" role="img" aria-label={`${title}: ${slices.map(slice => `${slice.label} ${slice.share.toFixed(0)}%`).join(', ')}`}>

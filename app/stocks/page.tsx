@@ -256,7 +256,7 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
                 <section className="app-card p-5" aria-label="비중">
                   <h2 className="text-[15px] font-bold">비중</h2>
                   <p className="mb-4 mt-1 text-[12.5px] text-[var(--color-muted)]">현재가가 있는 종목의 평가금액 기준이에요. 오른쪽 숫자는 투자원금 대비 수익률이에요.</p>
-                  <div className={`grid gap-6 ${!selectedAccount && accountSlices.length > 1 ? 'lg:grid-cols-2' : ''}`}>
+                  <div className={`grid justify-items-start gap-x-10 gap-y-6 ${!selectedAccount && accountSlices.length > 1 ? 'lg:grid-cols-2' : ''}`}>
                     {!selectedAccount && accountSlices.length > 1 ? (
                       <Donut title="계좌별" slices={accountSlices} center={`${accountSlices.length}개 계좌`} format={wonShort} href={slice => href({ account: slice.key })} />
                     ) : null}
