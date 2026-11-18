@@ -71,7 +71,7 @@ export default async function BudgetPage({
     supabase.from('financial_plan_settings').select('*').eq('user_id', userId).maybeSingle().throwOnError(),
     supabase.from('accounts').select('*').eq('user_id', userId).eq('is_active', true).order('sort_order').order('created_at').throwOnError(),
     supabase.from('account_monthly_snapshots').select('*').eq('user_id', userId).lte('month', month).order('month').throwOnError(),
-    supabase.from('net_worth_items').select('id, interest_rate, monthly_payment').eq('user_id', userId).eq('category', 'mortgage').eq('is_active', true).throwOnError(),
+    supabase.from('net_worth_items').select('id, interest_rate, monthly_payment, maturity_date').eq('user_id', userId).eq('category', 'mortgage').eq('is_active', true).throwOnError(),
   ])
 
   const entry = (entryData ?? null) as MonthlyBudget | null
@@ -99,8 +99,8 @@ export default async function BudgetPage({
   }))
   const hasAccountSnapshot = accountSnapshots.some(snapshot => snapshot.month === month)
 
-  // 주담대가 하나이고 금리가 있으면, 직전 달 잔액으로 이번 달 이자(일수 기준)와 정기 원금(월 상환액이 있을 때)을 미리 계산해 채운다.
-  const mortgageItems = (mortgageItemData ?? []) as { id: string; interest_rate: number | null; monthly_payment: number | null }[]
+  // 주담대가 하나이고 금리가 있으면, 직전 달 잔액으로 이번 달 이자(잔액 × 금리 ÷ 12, 원 미만 버림)와 원금(월 상환액 또는 만기로 계산)을 미리 채운다.
+  const mortgageItems = (mortgageItemData ?? []) as { id: string; interest_rate: number | null; monthly_payment: number | null; maturity_date: string | null }[]
   let mortgageDefaults: { interest: number; principal: number | null } | null = null
   if (mortgageItems.length === 1) {
     const { data: previousSnapshot } = await supabase.from('net_worth_snapshots').select('amount')
