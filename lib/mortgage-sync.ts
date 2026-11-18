@@ -16,7 +16,7 @@ export function currentKstMonth(now = new Date()) {
  */
 export async function syncMortgageSchedule(supabase: Client, userId: string, throughMonth = currentKstMonth()) {
   const { data: items, error: itemError } = await supabase.from('net_worth_items')
-    .select('id, interest_rate, monthly_payment, inactive_from_month')
+    .select('id, interest_rate, monthly_payment, maturity_date, inactive_from_month')
     .eq('user_id', userId).eq('category', 'mortgage').eq('is_active', true)
   if (itemError) throw new Error(itemError.message)
   const mortgages = (items ?? []) as MortgageItemTerms[]

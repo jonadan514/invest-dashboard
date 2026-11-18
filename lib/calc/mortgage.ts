@@ -1,6 +1,3 @@
-import { addMonths } from './home-insights.ts'
-import { dailyInterest } from './loan-interest.ts'
-
 export interface MortgageInput {
   balance: number
   /** 연 금리(%) */
@@ -11,8 +8,6 @@ export interface MortgageInput {
   lumpSum?: number
   /** 매월 추가로 더 갚는 금액. */
   extraMonthly?: number
-  /** 첫 상환 달('YYYY-MM'). 주면 이자를 달 일수로 계산한다(잔액 × 연금리 × 일수/365). */
-  startMonth?: string
 }
 
 export interface MortgageResult {
@@ -36,11 +31,9 @@ export function simulateMortgage(input: MortgageInput): MortgageResult {
 
   let totalInterest = 0
   for (let month = 1; month <= MAX_MONTHS; month++) {
-    // startMonth이 있으면 이자는 그달 일수로, 정기 원금은 기준 이자(잔액 × 연금리/12)를 뺀 값으로 정한다.
-    const standard = balance * monthlyRate
-    const interest = input.startMonth ? dailyInterest(balance, input.annualRate, addMonths(input.startMonth, month - 1)) : standard
+    const interest = balance * monthlyRate
     totalInterest += interest
-    balance -= payment - standard
+    balance -= payment - interest
     if (balance <= 0.5) return { months: month, totalInterest: Math.round(totalInterest), firstMonthInterest }
   }
   return { months: null, totalInterest: null, firstMonthInterest }

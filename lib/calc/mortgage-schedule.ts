@@ -1,12 +1,14 @@
 import { addMonths } from './home-insights.ts'
-import { dailyInterest, standardMonthlyInterest } from './loan-interest.ts'
+import { levelPayment, monthlyInterest, monthsBetween } from './loan-interest.ts'
 
 export interface MortgageItemTerms {
   id: string
   /** 연 금리(%). 없으면 스케줄을 만들 수 없다. */
   interest_rate: number | null
-  /** 매달 내는 원리금 합계. */
+  /** 매달 내는 원리금 합계. 없으면 만기로 계산한다. */
   monthly_payment: number | null
+  /** 약정 만기일('YYYY-MM-DD'). 월 상환액이 없을 때 남은 회차를 구하는 데 쓴다. */
+  maturity_date?: string | null
   inactive_from_month: string | null
 }
 
@@ -25,16 +27,26 @@ export interface ScheduledMonth {
   basis: 'budget' | 'schedule'
 }
 
-/**
- * 한 달 상환: 정기 원금은 월 상환액에서 기준 이자(잔액 × 연금리/12)를 뺀 값(잔액을 넘지 않음).
- * month를 주면 이자를 이자 기간(전달) 일수로 계산한다(잔액 × 연금리 × 일수/365). 일수가 다르면 이자가 달라져
- * 원금 + 이자(실제 납부액)도 조금씩 달라진다. month가 없으면 기준 이자를 그대로 쓴다.
- */
-export function amortizeMonth(balance: number, annualRatePercent: number, monthlyPayment: number, month?: string) {
-  const standard = standardMonthlyInterest(balance, annualRatePercent)
-  const interest = month ? dailyInterest(balance, annualRatePercent, month) : standard
-  const principal = Math.max(Math.min(Math.round(monthlyPayment - standard), Math.max(balance, 0)), 0)
+/** 원리금균등 한 달: 이자는 잔액 × 연금리 ÷ 12(원 미만 버림), 원금은 월 상환액에서 이자를 뺀 값(잔액을 넘지 않음). */
+export function amortizeMonth(balance: number, annualRatePercent: number, monthlyPayment: number) {
+  const interest = monthlyInterest(balance, annualRatePercent)
+  const principal = Math.max(Math.min(Math.round(monthlyPayment - interest), Math.max(balance, 0)), 0)
   return { interest, principal }
+}
+
+/**
+ * 월 상환액. 직접 입력한 값이 있으면 그 값을, 없으면 balanceMonth 잔액과 만기까지 남은 회차로 계산한다.
+ * balanceMonth는 그 잔액이 '납부 후' 잔액인 달이다(다음 달부터 남은 회차를 센다).
+ */
+export function resolveMonthlyPayment(
+  item: Pick<MortgageItemTerms, 'interest_rate' | 'monthly_payment' | 'maturity_date'>,
+  balance: number,
+  balanceMonth: string,
+) {
+  if (item.monthly_payment != null && Number(item.monthly_payment) > 0) return { amount: Number(item.monthly_payment), source: 'item' as const }
+  if (item.interest_rate == null || !item.maturity_date) return null
+  const amount = levelPayment(balance, Number(item.interest_rate), monthsBetween(balanceMonth, item.maturity_date.slice(0, 7)))
+  return amount === null ? null : { amount, source: 'maturity' as const }
 }
 
 /**
@@ -55,7 +67,7 @@ export function buildMortgageSchedule(input: {
   if (manual.size === 0) return []
   const start = [...manual.keys()].sort()[0]
   const rate = input.item.interest_rate != null ? Number(input.item.interest_rate) : null
-  const payment = input.item.monthly_payment != null ? Number(input.item.monthly_payment) : null
+  const payment = resolveMonthlyPayment(input.item, manual.get(start)!, start)?.amount ?? null
   const canSchedule = rate != null && rate >= 0 && payment != null && payment > 0
 
   const result: ScheduledMonth[] = []
@@ -70,12 +82,12 @@ export function buildMortgageSchedule(input: {
     if (balance <= 0) continue
     const fromBudget = input.budgetPrincipal?.get(month)
     if (fromBudget !== undefined) {
-      const interest = rate != null ? dailyInterest(balance, rate, month) : 0
+      const interest = rate != null ? monthlyInterest(balance, rate) : 0
       const principal = Math.min(Math.max(fromBudget, 0), balance)
       balance -= principal
       result.push({ month, balance, interest, principal, basis: 'budget' })
     } else if (canSchedule) {
-      const { interest, principal } = amortizeMonth(balance, rate!, payment!, month)
+      const { interest, principal } = amortizeMonth(balance, rate!, payment!)
       balance -= principal
       result.push({ month, balance, interest, principal, basis: 'schedule' })
     }
@@ -84,16 +96,17 @@ export function buildMortgageSchedule(input: {
 }
 
 /**
- * 선택한 달 직전 잔액으로 그달 이자(일수 기준)와 정기 원금 예상치를 구한다(월간 기록 자동 채우기용).
- * 월 상환액이 없으면 이자만 채우고 원금은 null이다.
+ * 선택한 달 직전 잔액으로 그달 이자와 원금 예상치를 구한다(월간 기록 자동 채우기용).
+ * 월 상환액은 직접 입력한 값, 없으면 만기로 계산한 값을 쓴다. 둘 다 없으면 이자만 채우고 원금은 null이다.
  */
 export function expectedMortgagePayment(
   previousBalance: number | null,
-  item: Pick<MortgageItemTerms, 'interest_rate' | 'monthly_payment'> | null,
+  item: Pick<MortgageItemTerms, 'interest_rate' | 'monthly_payment' | 'maturity_date'> | null,
   month: string,
 ): { interest: number; principal: number | null } | null {
   if (!item || previousBalance == null || previousBalance <= 0 || item.interest_rate == null) return null
   const rate = Number(item.interest_rate)
-  if (!item.monthly_payment) return { interest: dailyInterest(previousBalance, rate, month), principal: null }
-  return amortizeMonth(previousBalance, rate, Number(item.monthly_payment), month)
+  const payment = resolveMonthlyPayment(item, previousBalance, addMonths(month, -1))
+  if (!payment) return { interest: monthlyInterest(previousBalance, rate), principal: null }
+  return amortizeMonth(previousBalance, rate, payment.amount)
 }
