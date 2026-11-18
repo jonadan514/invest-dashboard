@@ -3,7 +3,8 @@ import { isAccountActiveAtMonth, latestSnapshotsAtMonth, latestYearContributions
 import { getHouseholdContext } from '@/lib/supabase/server'
 import type { Account, AccountMonthlySnapshot } from '@/lib/types'
 
-import { calcDeductible, PENSION_CREDIT_RATE, TOTAL_DEDUCT_LIMIT } from '@/lib/calc/pension'
+import { calcDeductible, pensionBreakdown, projectYearEnd, PENSION_CREDIT_RATE, TOTAL_DEDUCT_LIMIT } from '@/lib/calc/pension'
+import MonthlyContributionEditor from './MonthlyContributionEditor'
 import { PensionYearEndPlan } from '@/components/PensionYearEnd'
 import { Stat, StatStrip } from '@/components/Stat'
 import { wonShort } from '@/lib/labels'
@@ -24,6 +25,12 @@ interface PersonStats {
   irpContribution: number
   totalContribution: number
   evaluationAmount: number
+  /** 연금저축·IRP 계좌의 매달 정기 납입액 합계. */
+  monthlyPension: number
+  monthlyIrp: number
+  /** 12월까지 정기 납입을 이어 갔을 때 연말 예상 누적액. */
+  projectedPension: number
+  projectedIrp: number
 }
 
 export default async function PensionPage() {
@@ -82,7 +89,21 @@ export default async function PensionPage() {
     const evaluationAmount = ownerAccounts
       .filter(account => isAccountActiveAtMonth(account, currentMonth))
       .reduce((sum, account) => sum + Number(latestEvaluations.get(account.id)?.evaluation_amount ?? 0), 0)
-    return { owner, label, pensionContribution, irpContribution, totalContribution: pensionContribution + irpContribution, evaluationAmount }
+    const monthlyOf = (type: 'pension' | 'irp') => ownerAccounts
+      .filter(account => account.type === type && isAccountActiveAtMonth(account, currentMonth))
+      .reduce((sum, account) => sum + Number(account.monthly_payment ?? 0), 0)
+    const monthlyPension = monthlyOf('pension')
+    const monthlyIrp = monthlyOf('irp')
+    const recordMonthOf = (type: 'pension' | 'irp') => ownerAccounts
+      .filter(account => account.type === type)
+      .map(account => currentContributions.get(account.id)?.month ?? null)
+      .reduce<string | null>((latest, month) => month && (!latest || month > latest) ? month : latest, null)
+    return {
+      owner, label, pensionContribution, irpContribution, totalContribution: pensionContribution + irpContribution, evaluationAmount,
+      monthlyPension, monthlyIrp,
+      projectedPension: projectYearEnd(pensionContribution, monthlyPension, recordMonthOf('pension'), currentMonth),
+      projectedIrp: projectYearEnd(irpContribution, monthlyIrp, recordMonthOf('irp'), currentMonth),
+    }
   }
 
   const persons = [buildPerson('me', '나'), buildPerson('spouse', '아내')]
@@ -156,6 +177,7 @@ export default async function PensionPage() {
                     <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">
                       {account.type === 'irp' ? 'IRP' : '연금저축'}{active ? '' : ' · 비활성 계좌'}{latest ? ` · ${formatMonth(latest.month)} 평가` : ' · 평가 기록 없음'}
                     </p>
+                    {active ? <MonthlyContributionEditor accountId={account.id} amount={account.monthly_payment != null ? Number(account.monthly_payment) : null} /> : null}
                   </div>
                   <ValueCell label="현재 평가금액" value={active ? Number(latest?.evaluation_amount ?? 0) : 0} />
                   <ValueCell label={`${currentYear}년 누적 납입`} value={Number(contribution?.ytd_contribution ?? 0)} />
@@ -172,10 +194,12 @@ export default async function PensionPage() {
 }
 
 function PersonCard({ person }: { person: PersonStats }) {
-  const deductible = calcDeductible(person.pensionContribution, person.irpContribution)
-  const percent = Math.min(deductible.total / TOTAL_DEDUCT_LIMIT * 100, 100)
+  const breakdown = pensionBreakdown(person.pensionContribution, person.irpContribution)
+  const percent = Math.min(breakdown.total / TOTAL_DEDUCT_LIMIT * 100, 100)
   const isSpouse = person.owner === 'spouse'
   const color = isSpouse ? 'var(--color-spouse)' : 'var(--color-primary)'
+  const hasMonthly = person.monthlyPension + person.monthlyIrp > 0
+  const projected = pensionBreakdown(person.projectedPension, person.projectedIrp)
   return (
     <article className="app-card p-5">
       <div className="flex items-start justify-between gap-3">
@@ -183,25 +207,52 @@ function PersonCard({ person }: { person: PersonStats }) {
           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${isSpouse ? 'bg-[var(--color-spouse-soft)] text-[var(--color-spouse)]' : 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]'}`}>{person.label}</span>
           <h2 className="mt-3 text-base font-bold text-[var(--color-ink)]">연금 납입 달성률</h2>
         </div>
-        <strong className="text-2xl tabular-nums text-[var(--color-ink)]">{Math.round(percent)}%</strong>
+        <div className="text-right">
+          <strong className="text-2xl tabular-nums text-[var(--color-ink)]">{Math.round(percent)}%</strong>
+          {breakdown.totalDone ? <p className="text-[11.5px] font-bold text-[var(--color-positive-strong)]">✓ 세액공제 한도 완료</p> : null}
+        </div>
       </div>
       <div className="mt-4 flex items-end justify-between gap-3 text-xs">
-        <strong className="text-base tabular-nums text-[var(--color-ink)]">{fmtKrw(person.totalContribution)}</strong>
+        <strong className="text-base tabular-nums text-[var(--color-ink)]">{fmtKrw(breakdown.total)}</strong>
         <span className="text-[var(--color-muted)]">목표 {fmtKrw(TOTAL_DEDUCT_LIMIT)}</span>
       </div>
       <ProgressBar value={percent} color={color} />
-      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-        <MiniStat label="연금저축" value={person.pensionContribution} />
-        <MiniStat label="IRP" value={person.irpContribution} />
-        <MiniStat label="평가금액" value={person.evaluationAmount} />
+
+      <div className="mt-4 space-y-3 rounded-lg bg-[var(--color-canvas)]/75 p-3">
+        <LimitRow label="연금저축" counted={breakdown.pensionCounted} limit={breakdown.pensionLimit} done={breakdown.pensionDone} color={color} />
+        <LimitRow label="IRP" counted={breakdown.irpCounted} limit={breakdown.irpLimit} done={breakdown.irpDone} color={color} />
+        {breakdown.pensionOver > 0 ? <p className="text-[11.5px] text-[var(--color-accent)]">연금저축이 600만을 {compactKrw(breakdown.pensionOver)} 넘었어요. 넘은 금액은 세액공제가 안 돼요.</p> : null}
+        {!breakdown.pensionDone ? <p className="text-[11.5px] text-[var(--color-subtle)]">연금저축이 600만에 못 미치면 IRP로 최대 900만까지 채울 수 있어요.</p> : null}
       </div>
-      <p className="mt-4 text-[12.5px] text-[var(--color-muted)]">목표까지 {fmtKrw(Math.max(TOTAL_DEDUCT_LIMIT - deductible.total, 0))} · 예상 절세 {fmtKrw(Math.round(deductible.total * PENSION_CREDIT_RATE))}</p>
+
+      {hasMonthly && !breakdown.totalDone ? (
+        <p className="mt-3 rounded-lg bg-[var(--color-positive-soft)] px-3 py-2 text-[12.5px] leading-5 text-[var(--color-positive-strong)]">
+          매달 {compactKrw(person.monthlyPension + person.monthlyIrp)} 정기 납입을 12월까지 이어 가면 연말 {compactKrw(projected.total)} ({Math.round(Math.min(projected.total / TOTAL_DEDUCT_LIMIT * 100, 100))}%)
+          {projected.totalDone ? ' · 한도 완료 예상' : ` · ${compactKrw(TOTAL_DEDUCT_LIMIT - projected.total)} 더 필요`}
+        </p>
+      ) : null}
+
+      <div className="mt-3 flex items-center justify-between text-[12.5px] text-[var(--color-muted)]">
+        <span>평가금액 {compactKrw(person.evaluationAmount)}</span>
+        <span>예상 절세 {fmtKrw(Math.round(breakdown.total * PENSION_CREDIT_RATE))}</span>
+      </div>
     </article>
   )
 }
 
-function MiniStat({ label, value }: { label: string; value: number }) {
-  return <div className="rounded-lg bg-[var(--color-canvas)]/75 px-3 py-2.5"><p className="text-[11.5px] text-[var(--color-muted)]">{label}</p><p className="mt-1 truncate text-xs font-semibold tabular-nums text-[var(--color-ink)]">{compactKrw(value)}</p></div>
+function LimitRow({ label, counted, limit, done, color }: { label: string; counted: number; limit: number; done: boolean; color: string }) {
+  const percent = limit > 0 ? Math.min(counted / limit * 100, 100) : 100
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-2 text-[12.5px]">
+        <span className="font-semibold text-[var(--color-ink)]">{label}</span>
+        {done
+          ? <span className="rounded-full bg-[var(--color-positive-soft)] px-2 py-0.5 text-[11.5px] font-bold text-[var(--color-positive-strong)]">✓ {label} 한도 완료</span>
+          : <span className="tabular-nums text-[var(--color-muted)]">{compactKrw(counted)} / {compactKrw(limit)}</span>}
+      </div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--color-border)]/75"><div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: done ? 'var(--color-positive-bright)' : color }} /></div>
+    </div>
+  )
 }
 
 function ValueCell({ label, value }: { label: string; value: number }) {

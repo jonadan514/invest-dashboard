@@ -51,3 +51,40 @@ export function yearEndSchedule(today: string): YearEndSchedule {
   const daysLeft = Math.round((end - start) / 86_400_000) + 1
   return { daysLeft, weeksLeft: Math.max(1, Math.ceil(daysLeft / 7)), isYearEndSeason: month >= 10 }
 }
+
+export interface PensionBreakdown {
+  /** 세액공제로 인정되는 연금저축 납입액(최대 600만). */
+  pensionCounted: number
+  pensionLimit: number
+  pensionDone: boolean
+  /** 세액공제로 인정되는 IRP 납입액. */
+  irpCounted: number
+  /** IRP로 채울 수 있는 한도 = 900만 − 인정된 연금저축. 연금저축을 다 채우면 300만. */
+  irpLimit: number
+  irpDone: boolean
+  total: number
+  totalDone: boolean
+  /** 연금저축 600만을 넘어 공제받지 못하는 금액. */
+  pensionOver: number
+}
+
+/** 납입 달성률을 연금저축(600만)과 IRP(나머지 한도)로 나눈다. 전체는 900만 기준. */
+export function pensionBreakdown(pension: number, irp: number): PensionBreakdown {
+  const pensionCounted = Math.min(Math.max(pension, 0), PENSION_DEDUCT_LIMIT)
+  const irpLimit = TOTAL_DEDUCT_LIMIT - pensionCounted
+  const irpCounted = Math.min(Math.max(irp, 0), irpLimit)
+  const total = pensionCounted + irpCounted
+  return {
+    pensionCounted, pensionLimit: PENSION_DEDUCT_LIMIT, pensionDone: pensionCounted >= PENSION_DEDUCT_LIMIT,
+    irpCounted, irpLimit, irpDone: irpCounted >= irpLimit && irpLimit > 0,
+    total, totalDone: total >= TOTAL_DEDUCT_LIMIT,
+    pensionOver: Math.max(pension - PENSION_DEDUCT_LIMIT, 0),
+  }
+}
+
+/** recordMonth까지 기록된 누적 납입액에 12월까지 매달 정기 납입액을 더한 연말 예상액. */
+export function projectYearEnd(contribution: number, monthly: number, recordMonth: string | null, currentMonth: string) {
+  const from = recordMonth && recordMonth.slice(0, 4) === currentMonth.slice(0, 4) ? Number(recordMonth.slice(5, 7)) : Number(currentMonth.slice(5, 7)) - 1
+  const monthsLeft = Math.max(12 - from, 0)
+  return contribution + Math.max(monthly, 0) * monthsLeft
+}

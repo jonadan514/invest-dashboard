@@ -83,7 +83,9 @@ export default async function BudgetPage({
   const settings = toSettings(settingsRow)
   const accounts = (accountData ?? []) as Account[]
   const accountSnapshots = (accountSnapshotData ?? []) as AccountMonthlySnapshot[]
-  const accountStates = Object.fromEntries(accounts.map(account => [account.id, accountRecordState(accountSnapshots, account.id, month)]))
+  // 연금저축·IRP에 매달 정기 납입액이 있으면 올해 누적 납입액을 자동으로 늘린다.
+  const accountStates = Object.fromEntries(accounts.map(account => [account.id, accountRecordState(accountSnapshots, account.id, month,
+    account.type === 'pension' || account.type === 'irp' ? (account.monthly_payment != null ? Number(account.monthly_payment) : null) : null)]))
   const recordedMonths = [...new Set([...history.map(record => record.month), ...accountSnapshots.map(snapshot => snapshot.month)])]
   const accountTrend = buildAccountTotalTrend(accounts, accountSnapshots)
   const accountTotalByMonth = new Map(accountTrend.map((point, index) => [point.month, { total: point.amount, change: index > 0 ? point.amount - accountTrend[index - 1].amount : null }]))
