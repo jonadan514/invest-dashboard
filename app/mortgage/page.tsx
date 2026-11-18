@@ -4,6 +4,7 @@ import { estimateAnnualRate } from '@/lib/calc/mortgage'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import type { FinancialPlanSettingsRow, MonthlyBudget, NetWorthItem, NetWorthSnapshot } from '@/lib/types'
 import LoanRepayment, { type LoanOverview } from './RepaymentTable'
+import PrepaymentCalculator from './PrepaymentCalculator'
 import { resolveMonthlyPayment } from '@/lib/calc/mortgage-schedule'
 import { buildRepaymentTable } from '@/lib/calc/repayment-table'
 import { monthsBetween } from '@/lib/calc/loan-interest'
@@ -11,7 +12,8 @@ import { trySyncMortgageSchedule } from '@/lib/mortgage-sync'
 
 export const metadata = { title: '대출 상환' }
 
-export default async function MortgagePage() {
+export default async function MortgagePage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const tab = (await searchParams).tab === 'prepay' ? 'prepay' : 'status'
   const { supabase, userId } = await getHouseholdContext()
   await trySyncMortgageSchedule(supabase, userId)
   const currentMonth = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date())
@@ -69,7 +71,7 @@ export default async function MortgagePage() {
       balance, balanceMonth: latest.month, annualRate: rate, monthlyPayment: payment,
       history: itemSnapshots.map(snapshot => ({ month: snapshot.month, amount: Number(snapshot.amount) })), recorded,
     })
-    return [{ overview, ...table }]
+    return [{ overview, startDate: item.start_date, ...table }]
   })
 
   return (
@@ -98,8 +100,20 @@ export default async function MortgagePage() {
               </p>
             )
           })()}
+          <nav aria-label="대출 상환 메뉴" className="mb-4 flex w-fit rounded-xl bg-white p-1 shadow-[var(--shadow-card)]">
+            {([['status', '상환 현황', '/mortgage'], ['prepay', '한 번에 더 갚기', '/mortgage?tab=prepay']] as const).map(([value, label, href]) => (
+              <Link key={value} href={href} aria-current={tab === value ? 'page' : undefined} className={`inline-flex min-h-9 items-center rounded-lg px-4 text-[13px] font-semibold ${tab === value ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--color-muted)] hover:text-[var(--color-ink)]'}`}>{label}</Link>
+            ))}
+          </nav>
           <div className="space-y-8">
-            {loans.map(loan => <LoanRepayment key={loan.overview.id} loan={loan.overview} past={loan.past} future={loan.future} />)}
+            {loans.map(loan => tab === 'prepay' ? (
+              <PrepaymentCalculator key={loan.overview.id} loan={{
+                id: loan.overview.id, name: loan.overview.name, balance: loan.overview.balance, balanceMonth: loan.overview.balanceMonth,
+                annualRate: loan.overview.annualRate, monthlyPayment: loan.overview.monthlyPayment, startDate: loan.startDate,
+              }} />
+            ) : (
+              <LoanRepayment key={loan.overview.id} loan={loan.overview} past={loan.past} future={loan.future} />
+            ))}
           </div>
         </>
       )}
