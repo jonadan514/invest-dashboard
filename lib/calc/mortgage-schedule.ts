@@ -1,4 +1,5 @@
 import { addMonths } from './home-insights.ts'
+import { dailyInterest, standardMonthlyInterest } from './loan-interest.ts'
 
 export interface MortgageItemTerms {
   id: string
@@ -24,10 +25,15 @@ export interface ScheduledMonth {
   basis: 'budget' | 'schedule'
 }
 
-/** 원리금균등 한 달: 이자는 잔액 × 연금리/12, 원금은 월 납입액에서 이자를 뺀 값(잔액을 넘지 않음). */
-export function amortizeMonth(balance: number, annualRatePercent: number, monthlyPayment: number) {
-  const interest = Math.round(Math.max(balance, 0) * Math.max(annualRatePercent, 0) / 100 / 12)
-  const principal = Math.max(Math.min(Math.round(monthlyPayment - interest), Math.max(balance, 0)), 0)
+/**
+ * 한 달 상환: 정기 원금은 월 상환액에서 기준 이자(잔액 × 연금리/12)를 뺀 값(잔액을 넘지 않음).
+ * month를 주면 이자를 그달 일수로 계산한다(잔액 × 연금리 × 일수/365). 일수가 다르면 이자가 달라져
+ * 원금 + 이자(실제 납부액)도 조금씩 달라진다. month가 없으면 기준 이자를 그대로 쓴다.
+ */
+export function amortizeMonth(balance: number, annualRatePercent: number, monthlyPayment: number, month?: string) {
+  const standard = standardMonthlyInterest(balance, annualRatePercent)
+  const interest = month ? dailyInterest(balance, annualRatePercent, month) : standard
+  const principal = Math.max(Math.min(Math.round(monthlyPayment - standard), Math.max(balance, 0)), 0)
   return { interest, principal }
 }
 
@@ -64,12 +70,12 @@ export function buildMortgageSchedule(input: {
     if (balance <= 0) continue
     const fromBudget = input.budgetPrincipal?.get(month)
     if (fromBudget !== undefined) {
-      const interest = rate != null ? Math.round(balance * rate / 100 / 12) : 0
+      const interest = rate != null ? dailyInterest(balance, rate, month) : 0
       const principal = Math.min(Math.max(fromBudget, 0), balance)
       balance -= principal
       result.push({ month, balance, interest, principal, basis: 'budget' })
     } else if (canSchedule) {
-      const { interest, principal } = amortizeMonth(balance, rate!, payment!)
+      const { interest, principal } = amortizeMonth(balance, rate!, payment!, month)
       balance -= principal
       result.push({ month, balance, interest, principal, basis: 'schedule' })
     }
@@ -77,11 +83,17 @@ export function buildMortgageSchedule(input: {
   return result
 }
 
-/** 선택한 달 직전 잔액으로 그달 이자·정기 원금 예상치를 구한다(월간 기록 자동 채우기용). */
+/**
+ * 선택한 달 직전 잔액으로 그달 이자(일수 기준)와 정기 원금 예상치를 구한다(월간 기록 자동 채우기용).
+ * 월 상환액이 없으면 이자만 채우고 원금은 null이다.
+ */
 export function expectedMortgagePayment(
   previousBalance: number | null,
   item: Pick<MortgageItemTerms, 'interest_rate' | 'monthly_payment'> | null,
-) {
-  if (!item || previousBalance == null || previousBalance <= 0 || item.interest_rate == null || !item.monthly_payment) return null
-  return amortizeMonth(previousBalance, Number(item.interest_rate), Number(item.monthly_payment))
+  month: string,
+): { interest: number; principal: number | null } | null {
+  if (!item || previousBalance == null || previousBalance <= 0 || item.interest_rate == null) return null
+  const rate = Number(item.interest_rate)
+  if (!item.monthly_payment) return { interest: dailyInterest(previousBalance, rate, month), principal: null }
+  return amortizeMonth(previousBalance, rate, Number(item.monthly_payment), month)
 }

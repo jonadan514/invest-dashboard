@@ -77,7 +77,7 @@ export default async function MortgagePage() {
             return (
               <p className={`mb-4 rounded-xl px-4 py-3 text-[13px] leading-6 ${autoReady ? 'bg-[var(--color-positive-soft)] text-[var(--color-positive-strong)]' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'}`}>
                 {autoReady
-                  ? '자동 상환 켜짐 · 월간 기록이 없는 달도 원리금균등으로 잔액이 매달 줄어요. 직접 입력한 잔액이 있으면 그 값을 기준으로 다시 계산해요.'
+                  ? '자동 상환 켜짐 · 월간 기록이 없는 달도 잔액이 매달 줄어요. 이자는 그달 일수만큼 계산해서 달마다 조금씩 달라요. 직접 입력한 잔액이 있으면 그 값을 기준으로 다시 계산해요.'
                   : '밸런스 시트의 주택담보대출 항목에 금리와 월 상환액(원리금)을 입력하면, 월간 기록이 없는 달도 잔액이 자동으로 줄어요.'}
               </p>
             )
