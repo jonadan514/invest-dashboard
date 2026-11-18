@@ -2,8 +2,10 @@ import { Suspense } from 'react'
 import { DEFAULT_FINANCIAL_PLAN, type FinancialPlanSettings } from '@/lib/calc/budget'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import type { Account, AccountMonthlySnapshot, FinancialPlanSettingsRow, MonthlyBudget } from '@/lib/types'
+import { expectedMortgagePayment } from '@/lib/calc/mortgage-schedule'
 import MonthlyForm from './MonthlyForm'
 import PlanSettingsForm from './PlanSettingsForm'
+import { trySyncMortgageSchedule } from '@/lib/mortgage-sync'
 
 export const metadata = { title: '월간 기록' }
 
@@ -51,6 +53,7 @@ export default async function BudgetPage({
   const { month: requestedMonth } = await searchParams
   const month = requestedMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth) ? requestedMonth : currentMonth()
   const { supabase, userId } = await getHouseholdContext()
+  await trySyncMortgageSchedule(supabase, userId)
 
   const [
     { data: entryData },
@@ -58,12 +61,14 @@ export default async function BudgetPage({
     { data: settingsData },
     { data: accountData },
     { data: accountSnapshotData },
+    { data: mortgageItemData },
   ] = await Promise.all([
     supabase.from('monthly_budgets').select('*').eq('user_id', userId).eq('month', month).maybeSingle().throwOnError(),
     supabase.from('monthly_budgets').select('*').eq('user_id', userId).order('month', { ascending: false }).limit(24).throwOnError(),
     supabase.from('financial_plan_settings').select('*').eq('user_id', userId).maybeSingle().throwOnError(),
     supabase.from('accounts').select('*').eq('user_id', userId).eq('is_active', true).order('sort_order').order('created_at').throwOnError(),
     supabase.from('account_monthly_snapshots').select('*').eq('user_id', userId).lte('month', month).order('month').throwOnError(),
+    supabase.from('net_worth_items').select('id, interest_rate, monthly_payment').eq('user_id', userId).eq('category', 'mortgage').eq('is_active', true).throwOnError(),
   ])
 
   const entry = (entryData ?? null) as MonthlyBudget | null
@@ -91,6 +96,16 @@ export default async function BudgetPage({
   }))
   const hasAccountSnapshot = accountSnapshots.some(snapshot => snapshot.month === month)
 
+  // 주담대가 하나이고 금리·월 상환액이 있으면, 직전 달 잔액으로 이번 달 이자·정기 원금을 미리 계산해 채운다.
+  const mortgageItems = (mortgageItemData ?? []) as { id: string; interest_rate: number | null; monthly_payment: number | null }[]
+  let mortgageDefaults: { interest: number; principal: number } | null = null
+  if (mortgageItems.length === 1) {
+    const { data: previousSnapshot } = await supabase.from('net_worth_snapshots').select('amount')
+      .eq('user_id', userId).eq('item_id', mortgageItems[0].id).lt('month', month)
+      .order('month', { ascending: false }).limit(1).maybeSingle().throwOnError()
+    mortgageDefaults = expectedMortgagePayment(previousSnapshot ? Number(previousSnapshot.amount) : null, mortgageItems[0])
+  }
+
   return (
     <>
       <div className="page-container max-w-[1240px]">
@@ -112,6 +127,7 @@ export default async function BudgetPage({
             accounts={accounts}
             initialAccountValues={initialAccountValues}
             hasAccountSnapshot={hasAccountSnapshot}
+            mortgageDefaults={mortgageDefaults}
           />
         </Suspense>
 
