@@ -1,6 +1,7 @@
 'use client'
 import { useRef, useTransition } from 'react'
 import { createAccount } from './actions'
+import { unwrap } from '@/lib/action-result'
 
 const INPUT = 'w-full min-w-0 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm focus:border-[var(--color-primary)] focus:outline-none'
 
@@ -11,7 +12,7 @@ export default function AccountForm({ compact = false }: { compact?: boolean }) 
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
       try {
-        await createAccount(formData)
+        unwrap(await createAccount(formData))
         formRef.current?.reset()
       } catch (e) {
         alert('오류: ' + (e as Error).message)

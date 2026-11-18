@@ -11,6 +11,7 @@ import {
   saveHouseholdSettings,
   setGoalAchieved,
 } from './actions'
+import { unwrap } from '@/lib/action-result'
 
 interface Props {
   initialSettings: { monthlyIncome: number }
@@ -38,7 +39,7 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
 
     startTransition(async () => {
       try {
-        await migrateLegacySettings({ monthlyIncome, goals })
+        unwrap(await migrateLegacySettings({ monthlyIncome, goals }))
         localStorage.setItem('supabase_settings_migrated', '1')
         router.refresh()
       } catch {
@@ -51,7 +52,7 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
     setMessage(null)
     startTransition(async () => {
       try {
-        await saveHouseholdSettings({ monthlyIncome })
+        unwrap(await saveHouseholdSettings({ monthlyIncome }))
         setMessage('가계 설정을 Supabase에 저장했습니다.')
         router.refresh()
       } catch (error) {
@@ -116,7 +117,7 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
           <div><h2 className="text-sm font-semibold">목표 마일스톤</h2><p className="mt-1 text-[11.5px] text-[var(--color-muted)]">첫 번째 미달성 목표가 대시보드에 표시됩니다.</p></div>
           <button type="button" onClick={() => { setEditingGoal(null); setShowGoalForm(current => !current) }} className="rounded-lg bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white">＋ 목표</button>
         </div>
-        {showGoalForm ? <GoalForm initial={editingGoal} nextOrder={initialGoals.length} pending={pending} onSave={input => goalAction(() => saveHouseholdGoal(input), '목표를 저장했습니다.')} onCancel={() => { setShowGoalForm(false); setEditingGoal(null) }} /> : null}
+        {showGoalForm ? <GoalForm initial={editingGoal} nextOrder={initialGoals.length} pending={pending} onSave={input => goalAction(async () => unwrap(await saveHouseholdGoal(input)), '목표를 저장했습니다.')} onCancel={() => { setShowGoalForm(false); setEditingGoal(null) }} /> : null}
         <div className="mt-4 space-y-2">
           {initialGoals.length === 0 ? <p className="py-4 text-center text-xs text-[var(--color-muted)]">등록된 목표가 없습니다.</p> : null}
           {initialGoals.map(goal => (
@@ -125,8 +126,8 @@ export default function SettingsClient({ initialSettings, initialGoals, canImpor
                 <div><p className="text-xs font-semibold">{goal.name} {goal.achieved_at ? '✓' : ''}</p><p className="mt-1 text-[11.5px] text-[var(--color-muted)]">{goal.statement} · 목표 {krw(Number(goal.target))}</p></div>
                 <div className="flex shrink-0 gap-1.5 text-[12.5px] font-semibold">
                   <button type="button" className="min-h-8 rounded-md border border-[var(--color-border)] bg-white px-2.5" onClick={() => { setEditingGoal(goal); setShowGoalForm(true) }}>수정</button>
-                  <button type="button" className="min-h-8 rounded-md border border-[var(--color-border)] bg-white px-2.5 text-[var(--color-primary)]" onClick={() => goalAction(() => setGoalAchieved(goal.id, !goal.achieved_at), goal.achieved_at ? '달성을 취소했습니다.' : '목표를 달성 처리했습니다.')}>{goal.achieved_at ? '되돌리기' : '달성'}</button>
-                  <button type="button" className="min-h-8 rounded-md border border-[var(--color-border)] bg-white px-2.5 text-[var(--color-negative)]" onClick={() => { if (confirm('이 목표를 삭제할까요?')) goalAction(() => deleteHouseholdGoal(goal.id), '목표를 삭제했습니다.') }}>삭제</button>
+                  <button type="button" className="min-h-8 rounded-md border border-[var(--color-border)] bg-white px-2.5 text-[var(--color-primary)]" onClick={() => goalAction(async () => unwrap(await setGoalAchieved(goal.id, !goal.achieved_at)), goal.achieved_at ? '달성을 취소했습니다.' : '목표를 달성 처리했습니다.')}>{goal.achieved_at ? '되돌리기' : '달성'}</button>
+                  <button type="button" className="min-h-8 rounded-md border border-[var(--color-border)] bg-white px-2.5 text-[var(--color-negative)]" onClick={() => { if (confirm('이 목표를 삭제할까요?')) goalAction(async () => unwrap(await deleteHouseholdGoal(goal.id)), '목표를 삭제했습니다.') }}>삭제</button>
                 </div>
               </div>
             </div>

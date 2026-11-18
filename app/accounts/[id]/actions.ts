@@ -2,10 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { getHouseholdContext } from '@/lib/supabase/server'
+import { runAction } from '@/lib/run-action'
 
 const ISO_DATE = /^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/
 
-export async function saveAccountBalance(accountId: string, formData: FormData) {
+async function saveAccountBalanceImpl(accountId: string, formData: FormData) {
   const { supabase, userId } = await getHouseholdContext()
 
   const { data: account, error: accountError } = await supabase
@@ -41,4 +42,9 @@ export async function saveAccountBalance(accountId: string, formData: FormData) 
   revalidatePath(`/accounts/${accountId}`)
   revalidatePath('/accounts')
   revalidatePath('/')
+}
+
+// 화면에서 부르는 서버 액션. 오류 안내문을 결과로 돌려준다(lib/run-action.ts).
+export async function saveAccountBalance(...args: Parameters<typeof saveAccountBalanceImpl>) {
+  return runAction(() => saveAccountBalanceImpl(...args))
 }

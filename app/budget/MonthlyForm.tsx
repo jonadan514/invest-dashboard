@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import type { FinancialPlanSettings } from '@/lib/calc/budget'
 import type { Account } from '@/lib/types'
 import { saveBudgetEntry } from './actions'
+import { unwrap } from '@/lib/action-result'
 
 function formatKrw(value: number) {
   return `₩${new Intl.NumberFormat('ko-KR').format(Math.round(value))}`
@@ -117,7 +118,7 @@ export default function MonthlyForm({
 
     startTransition(async () => {
       try {
-        await saveBudgetEntry(formData)
+        unwrap(await saveBudgetEntry(formData))
         setSaved(true)
         setTimeout(() => setSaved(false), 2500)
       } catch (saveError) {

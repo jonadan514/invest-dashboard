@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { storeBackup } from '@/lib/backup'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import type { HouseholdGoal } from '@/lib/types'
+import { runAction } from '@/lib/run-action'
 
 function nonNegative(value: unknown, label: string) {
   const number = Number(value ?? 0)
@@ -11,7 +12,7 @@ function nonNegative(value: unknown, label: string) {
   return number
 }
 
-export async function saveHouseholdSettings(input: { monthlyIncome: number }) {
+async function saveHouseholdSettingsImpl(input: { monthlyIncome: number }) {
   const { supabase, userId } = await getHouseholdContext()
   const { error } = await supabase.from('household_settings').upsert({
     user_id: userId,
@@ -23,7 +24,7 @@ export async function saveHouseholdSettings(input: { monthlyIncome: number }) {
   revalidatePath('/')
 }
 
-export async function saveHouseholdGoal(input: {
+async function saveHouseholdGoalImpl(input: {
   id?: string
   name: string
   statement: string
@@ -59,7 +60,7 @@ export async function saveHouseholdGoal(input: {
   revalidatePath('/')
 }
 
-export async function setGoalAchieved(id: string, achieved: boolean) {
+async function setGoalAchievedImpl(id: string, achieved: boolean) {
   const { supabase, userId } = await getHouseholdContext()
   const { error } = await supabase.from('household_goals')
     .update({ achieved_at: achieved ? new Date().toISOString() : null, updated_at: new Date().toISOString() })
@@ -69,7 +70,7 @@ export async function setGoalAchieved(id: string, achieved: boolean) {
   revalidatePath('/')
 }
 
-export async function deleteHouseholdGoal(id: string) {
+async function deleteHouseholdGoalImpl(id: string) {
   const { supabase, userId } = await getHouseholdContext()
   const { error } = await supabase.from('household_goals').delete().eq('id', id).eq('user_id', userId)
   if (error) throw new Error(error.message)
@@ -77,7 +78,7 @@ export async function deleteHouseholdGoal(id: string) {
   revalidatePath('/')
 }
 
-export async function migrateLegacySettings(input: {
+async function migrateLegacySettingsImpl(input: {
   monthlyIncome: number
   goals: Array<Record<string, unknown>>
 }) {
@@ -115,9 +116,34 @@ export async function migrateLegacySettings(input: {
   revalidatePath('/')
 }
 
-export async function createBackupNow() {
+async function createBackupNowImpl() {
   const { supabase, userId } = await getHouseholdContext()
   const result = await storeBackup(supabase, userId)
   revalidatePath('/settings')
   return { name: result.name, deleted: result.deleted.length }
+}
+
+// 화면에서 부르는 서버 액션. 오류 안내문을 결과로 돌려준다(lib/run-action.ts).
+export async function saveHouseholdSettings(...args: Parameters<typeof saveHouseholdSettingsImpl>) {
+  return runAction(() => saveHouseholdSettingsImpl(...args))
+}
+
+export async function saveHouseholdGoal(...args: Parameters<typeof saveHouseholdGoalImpl>) {
+  return runAction(() => saveHouseholdGoalImpl(...args))
+}
+
+export async function setGoalAchieved(...args: Parameters<typeof setGoalAchievedImpl>) {
+  return runAction(() => setGoalAchievedImpl(...args))
+}
+
+export async function deleteHouseholdGoal(...args: Parameters<typeof deleteHouseholdGoalImpl>) {
+  return runAction(() => deleteHouseholdGoalImpl(...args))
+}
+
+export async function migrateLegacySettings(...args: Parameters<typeof migrateLegacySettingsImpl>) {
+  return runAction(() => migrateLegacySettingsImpl(...args))
+}
+
+export async function createBackupNow(...args: Parameters<typeof createBackupNowImpl>) {
+  return runAction(() => createBackupNowImpl(...args))
 }

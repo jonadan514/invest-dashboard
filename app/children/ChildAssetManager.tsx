@@ -5,6 +5,7 @@ import { useRef, useState, useTransition } from 'react'
 import type { ChildAccount, ChildAccountMonthlySnapshot, ChildProfile, ChildGiftDeposit } from '@/lib/types'
 import { createChildAccount, deleteChildAccountSnapshot, saveChildAccountSnapshot } from './actions'
 import { krw } from '@/lib/labels'
+import { unwrap } from '@/lib/action-result'
 
 const INPUT = 'w-full min-w-0 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]'
 
@@ -45,7 +46,7 @@ export default function ChildAssetManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        await createChildAccount(formData)
+        unwrap(await createChildAccount(formData))
         accountFormRef.current?.reset()
         setShowAccountForm(false)
         setMessage('자녀 계좌를 추가했습니다.')
@@ -59,7 +60,7 @@ export default function ChildAssetManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        await saveChildAccountSnapshot(formData)
+        unwrap(await saveChildAccountSnapshot(formData))
         const month = String(formData.get('month') ?? currentMonth)
         const accountId = String(formData.get('account_id') ?? '')
         snapshotFormRef.current?.reset()
@@ -82,7 +83,7 @@ export default function ChildAssetManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        await deleteChildAccountSnapshot(id)
+        unwrap(await deleteChildAccountSnapshot(id))
         setMessage('평가 기록을 삭제했습니다.')
       } catch (error) {
         setMessage(error instanceof Error ? error.message : '평가 기록을 삭제하지 못했습니다.')

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import type { ChildAccountAssetType, ChildGiftDonor, ChildGiftRelationship, ChildGiftTransferType } from '@/lib/types'
+import { runAction } from '@/lib/run-action'
 
 const DONOR_RELATIONSHIP: Record<ChildGiftDonor, ChildGiftRelationship> = {
   parents: 'direct_ascendant',
@@ -55,7 +56,7 @@ function todayInKorea() {
   }).format(new Date())
 }
 
-export async function createChild(formData: FormData) {
+async function createChildImpl(formData: FormData) {
   const { supabase, userId } = await getHouseholdContext()
   const birthDate = validDate(formData, 'birth_date')
   const today = todayInKorea()
@@ -73,7 +74,7 @@ export async function createChild(formData: FormData) {
   revalidatePath('/children')
 }
 
-export async function createChildGift(formData: FormData) {
+async function createChildGiftImpl(formData: FormData) {
   const { supabase, userId } = await getHouseholdContext()
   const childId = String(formData.get('child_id') ?? '')
   const donor = String(formData.get('donor') ?? '') as ChildGiftDonor
@@ -133,7 +134,7 @@ export async function createChildGift(formData: FormData) {
   revalidatePath('/children')
 }
 
-export async function createChildAccount(formData: FormData) {
+async function createChildAccountImpl(formData: FormData) {
   const { supabase, userId } = await getHouseholdContext()
   const childId = String(formData.get('child_id') ?? '')
   const assetType = String(formData.get('asset_type') ?? '') as ChildAccountAssetType
@@ -165,7 +166,7 @@ export async function createChildAccount(formData: FormData) {
   revalidatePath('/children')
 }
 
-export async function saveChildAccountSnapshot(formData: FormData) {
+async function saveChildAccountSnapshotImpl(formData: FormData) {
   const { supabase, userId } = await getHouseholdContext()
   const accountId = String(formData.get('account_id') ?? '')
   const monthInput = String(formData.get('month') ?? '')
@@ -199,7 +200,7 @@ export async function saveChildAccountSnapshot(formData: FormData) {
   revalidatePath('/children')
 }
 
-export async function deleteChildAccountSnapshot(id: string) {
+async function deleteChildAccountSnapshotImpl(id: string) {
   if (!UUID_PATTERN.test(id)) throw new Error('올바른 평가 기록이 아닙니다.')
   const { supabase, userId } = await getHouseholdContext()
   const { error } = await supabase
@@ -212,7 +213,7 @@ export async function deleteChildAccountSnapshot(id: string) {
   revalidatePath('/children')
 }
 
-export async function deleteChildGift(id: string) {
+async function deleteChildGiftImpl(id: string) {
   if (!UUID_PATTERN.test(id)) throw new Error('올바른 납입 기록이 아닙니다.')
   const { supabase, userId } = await getHouseholdContext()
   const { error } = await supabase
@@ -223,4 +224,29 @@ export async function deleteChildGift(id: string) {
   if (error) throw new Error(error.message)
 
   revalidatePath('/children')
+}
+
+// 화면에서 부르는 서버 액션. 오류 안내문을 결과로 돌려준다(lib/run-action.ts).
+export async function createChild(...args: Parameters<typeof createChildImpl>) {
+  return runAction(() => createChildImpl(...args))
+}
+
+export async function createChildGift(...args: Parameters<typeof createChildGiftImpl>) {
+  return runAction(() => createChildGiftImpl(...args))
+}
+
+export async function createChildAccount(...args: Parameters<typeof createChildAccountImpl>) {
+  return runAction(() => createChildAccountImpl(...args))
+}
+
+export async function saveChildAccountSnapshot(...args: Parameters<typeof saveChildAccountSnapshotImpl>) {
+  return runAction(() => saveChildAccountSnapshotImpl(...args))
+}
+
+export async function deleteChildAccountSnapshot(...args: Parameters<typeof deleteChildAccountSnapshotImpl>) {
+  return runAction(() => deleteChildAccountSnapshotImpl(...args))
+}
+
+export async function deleteChildGift(...args: Parameters<typeof deleteChildGiftImpl>) {
+  return runAction(() => deleteChildGiftImpl(...args))
 }

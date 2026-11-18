@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBackupNow } from './actions'
+import { unwrap } from '@/lib/action-result'
 
 export default function BackupNowButton() {
   const router = useRouter()
@@ -13,7 +14,7 @@ export default function BackupNowButton() {
     setMessage(null)
     startTransition(async () => {
       try {
-        await createBackupNow()
+        unwrap(await createBackupNow())
         setMessage('백업을 저장했습니다.')
         router.refresh()
       } catch (error) {

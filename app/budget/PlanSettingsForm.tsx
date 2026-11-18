@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import type { FinancialPlanSettings } from '@/lib/calc/budget'
 import { saveFinancialPlanSettings } from './actions'
+import { unwrap } from '@/lib/action-result'
 
 function formatInput(value: number) {
   return new Intl.NumberFormat('ko-KR').format(value)
@@ -42,7 +43,7 @@ export default function PlanSettingsForm({ settings }: { settings: FinancialPlan
 
     startTransition(async () => {
       try {
-        await saveFinancialPlanSettings(formData)
+        unwrap(await saveFinancialPlanSettings(formData))
         setSaved(true)
       } catch (saveError) {
         setError(saveError instanceof Error ? saveError.message : '설정을 저장하지 못했습니다.')

@@ -1,8 +1,9 @@
 'use server'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { runAction } from '@/lib/run-action'
 
-export async function createAccount(formData: FormData) {
+async function createAccountImpl(formData: FormData) {
   const { supabase, userId } = await getHouseholdContext()
   const type = formData.get('type') as string
   if (!['cash', 'mmf', 'general', 'pension', 'irp', 'isa', 'crypto'].includes(type)) {
@@ -26,7 +27,7 @@ export async function createAccount(formData: FormData) {
   revalidatePath('/')
 }
 
-export async function deleteAccount(id: string) {
+async function deleteAccountImpl(id: string) {
   const { supabase, userId } = await getHouseholdContext()
   const { error } = await supabase.from('accounts').delete().eq('id', id).eq('user_id', userId)
   if (error) throw new Error(error.message)
@@ -37,7 +38,7 @@ export async function deleteAccount(id: string) {
   revalidatePath('/')
 }
 
-export async function toggleActive(id: string, _current?: boolean, effectiveMonth?: string) {
+async function toggleActiveImpl(id: string, _current?: boolean, effectiveMonth?: string) {
   const { supabase, userId } = await getHouseholdContext()
   const month = effectiveMonth ?? new Intl.DateTimeFormat('en-CA', {
     year: 'numeric', month: '2-digit', timeZone: 'Asia/Seoul',
@@ -55,4 +56,17 @@ export async function toggleActive(id: string, _current?: boolean, effectiveMont
   revalidatePath('/budget')
   revalidatePath('/pension')
   revalidatePath('/')
+}
+
+// 화면에서 부르는 서버 액션. 오류 안내문을 결과로 돌려준다(lib/run-action.ts).
+export async function createAccount(...args: Parameters<typeof createAccountImpl>) {
+  return runAction(() => createAccountImpl(...args))
+}
+
+export async function deleteAccount(...args: Parameters<typeof deleteAccountImpl>) {
+  return runAction(() => deleteAccountImpl(...args))
+}
+
+export async function toggleActive(...args: Parameters<typeof toggleActiveImpl>) {
+  return runAction(() => toggleActiveImpl(...args))
 }

@@ -7,7 +7,10 @@ export default function DeleteButton({ id, name }: { id: string; name: string })
 
   function handleClick() {
     if (!confirm(`"${name}" 계좌를 삭제할까요?\n월별 평가 기록도 함께 삭제됩니다.`)) return
-    startTransition(() => deleteAccount(id))
+    startTransition(async () => {
+      const result = await deleteAccount(id)
+      if (!result.ok) alert(result.error)
+    })
   }
 
   return (

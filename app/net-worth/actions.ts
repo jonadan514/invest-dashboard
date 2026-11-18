@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import { syncMortgageSchedule } from '@/lib/mortgage-sync'
+import { runAction } from '@/lib/run-action'
 
 const ASSET_CATEGORIES = new Set([
   'cash', 'savings', 'real_estate', 'deposit', 'vehicle', 'other_asset',
@@ -25,7 +26,7 @@ function optionalNumber(formData: FormData, name: string) {
   return value
 }
 
-export async function createNetWorthItem(formData: FormData) {
+async function createNetWorthItemImpl(formData: FormData) {
   const { supabase, userId } = await getHouseholdContext()
   const kind = String(formData.get('kind') ?? '')
   const category = String(formData.get('category') ?? '')
@@ -78,7 +79,7 @@ export async function createNetWorthItem(formData: FormData) {
   revalidatePath('/')
 }
 
-export async function saveNetWorthSnapshot(formData: FormData) {
+async function saveNetWorthSnapshotImpl(formData: FormData) {
   const { supabase, userId } = await getHouseholdContext()
   const month = String(formData.get('month') ?? '')
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('올바른 기준 월을 선택해 주세요.')
@@ -113,7 +114,7 @@ export async function saveNetWorthSnapshot(formData: FormData) {
   revalidatePath('/')
 }
 
-export async function updateNetWorthItem(id: string, formData: FormData) {
+async function updateNetWorthItemImpl(id: string, formData: FormData) {
   const { supabase, userId } = await getHouseholdContext()
   const interestRate = optionalNumber(formData, 'interest_rate')
   const monthlyPayment = optionalNumber(formData, 'monthly_payment')
@@ -144,7 +145,7 @@ export async function updateNetWorthItem(id: string, formData: FormData) {
   revalidatePath('/mortgage')
 }
 
-export async function setNetWorthItemActive(id: string, active: boolean, month: string) {
+async function setNetWorthItemActiveImpl(id: string, active: boolean, month: string) {
   const { supabase, userId } = await getHouseholdContext()
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('올바른 기준 월을 선택해 주세요.')
 
@@ -175,4 +176,21 @@ export async function setNetWorthItemActive(id: string, active: boolean, month: 
   revalidatePath('/net-worth')
   revalidatePath('/mortgage')
   revalidatePath('/')
+}
+
+// 화면에서 부르는 서버 액션. 오류 안내문을 결과로 돌려준다(lib/run-action.ts).
+export async function createNetWorthItem(...args: Parameters<typeof createNetWorthItemImpl>) {
+  return runAction(() => createNetWorthItemImpl(...args))
+}
+
+export async function saveNetWorthSnapshot(...args: Parameters<typeof saveNetWorthSnapshotImpl>) {
+  return runAction(() => saveNetWorthSnapshotImpl(...args))
+}
+
+export async function updateNetWorthItem(...args: Parameters<typeof updateNetWorthItemImpl>) {
+  return runAction(() => updateNetWorthItemImpl(...args))
+}
+
+export async function setNetWorthItemActive(...args: Parameters<typeof setNetWorthItemActiveImpl>) {
+  return runAction(() => setNetWorthItemActiveImpl(...args))
 }

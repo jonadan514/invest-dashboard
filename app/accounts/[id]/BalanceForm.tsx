@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { saveAccountBalance } from './actions'
+import { unwrap } from '@/lib/action-result'
 
 interface Props {
   accountId: string
@@ -18,7 +19,7 @@ export default function BalanceForm({ accountId, accountType, defaultDate }: Pro
     setResult(null)
     startTransition(async () => {
       try {
-        await saveAccountBalance(accountId, formData)
+        unwrap(await saveAccountBalance(accountId, formData))
         formRef.current?.reset()
         setResult({ kind: 'success', message: '잔액을 기록했습니다' })
       } catch (error) {

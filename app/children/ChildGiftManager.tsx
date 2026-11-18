@@ -7,6 +7,7 @@ import type { ChildAccount, ChildGiftDeposit, ChildGiftDonor, ChildGiftTransferT
 import { createChild, createChildGift, deleteChildGift } from './actions'
 import { Stat, StatStrip } from '@/components/Stat'
 import { krw, wonShort } from '@/lib/labels'
+import { unwrap } from '@/lib/action-result'
 
 const INPUT = 'w-full min-w-0 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]'
 const DONOR_LABEL: Record<ChildGiftDonor, string> = {
@@ -59,7 +60,7 @@ export default function ChildGiftManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        await createChild(formData)
+        unwrap(await createChild(formData))
         childFormRef.current?.reset()
         setShowChildForm(false)
         setMessage('자녀를 등록했습니다.')
@@ -73,7 +74,7 @@ export default function ChildGiftManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        await createChildGift(formData)
+        unwrap(await createChildGift(formData))
         giftFormRef.current?.reset()
         setSelectedDonor('me')
         setSelectedTransferType('gift')
@@ -89,7 +90,7 @@ export default function ChildGiftManager({
     setMessage(null)
     startTransition(async () => {
       try {
-        await deleteChildGift(id)
+        unwrap(await deleteChildGift(id))
         setMessage('납입 기록을 삭제했습니다.')
       } catch (error) {
         setMessage(error instanceof Error ? error.message : '납입 기록을 삭제하지 못했습니다.')

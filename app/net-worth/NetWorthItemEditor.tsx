@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import type { NetWorthItem } from '@/lib/types'
 import { updateNetWorthItem } from './actions'
+import { unwrap } from '@/lib/action-result'
 
 const INPUT = 'w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs outline-none focus:border-[var(--color-primary)]'
 
@@ -14,7 +15,7 @@ export default function NetWorthItemEditor({ item }: { item: NetWorthItem }) {
     setMessage(null)
     startTransition(async () => {
       try {
-        await updateNetWorthItem(item.id, formData)
+        unwrap(await updateNetWorthItem(item.id, formData))
         setMessage('수정했습니다.')
       } catch (error) {
         setMessage(error instanceof Error ? error.message : '수정하지 못했습니다.')

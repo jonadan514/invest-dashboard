@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import { DEFAULT_FINANCIAL_PLAN } from '@/lib/calc/budget'
 import { syncMortgageSchedule } from '@/lib/mortgage-sync'
+import { runAction } from '@/lib/run-action'
 
 function numberField(formData: FormData, name: string) {
   const value = Number(formData.get(name) ?? 0)
@@ -11,7 +12,7 @@ function numberField(formData: FormData, name: string) {
   return value
 }
 
-export async function saveBudgetEntry(formData: FormData) {
+async function saveBudgetEntryImpl(formData: FormData) {
   const { supabase, userId } = await getHouseholdContext()
   const month = String(formData.get('month') ?? '')
   const jointSavings = numberField(formData, 'joint_savings')
@@ -85,7 +86,7 @@ export async function saveBudgetEntry(formData: FormData) {
   revalidatePath('/')
 }
 
-export async function saveFinancialPlanSettings(formData: FormData) {
+async function saveFinancialPlanSettingsImpl(formData: FormData) {
   const { supabase, userId } = await getHouseholdContext()
   const stage1Target = numberField(formData, 'stage1_target')
   const stage2Target = numberField(formData, 'stage2_target')
@@ -123,4 +124,13 @@ export async function saveFinancialPlanSettings(formData: FormData) {
 
   if (error) throw new Error(error.message)
   revalidatePath('/budget')
+}
+
+// 화면에서 부르는 서버 액션. 오류 안내문을 결과로 돌려준다(lib/run-action.ts).
+export async function saveBudgetEntry(...args: Parameters<typeof saveBudgetEntryImpl>) {
+  return runAction(() => saveBudgetEntryImpl(...args))
+}
+
+export async function saveFinancialPlanSettings(...args: Parameters<typeof saveFinancialPlanSettingsImpl>) {
+  return runAction(() => saveFinancialPlanSettingsImpl(...args))
 }
