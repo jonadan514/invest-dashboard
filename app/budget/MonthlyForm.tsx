@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import type { FinancialPlanSettings } from '@/lib/calc/budget'
 import type { Account } from '@/lib/types'
+import { neighborMonths, ownerLabel, stageLabel, type AccountRecordState } from '@/lib/calc/monthly-record'
 import { saveBudgetEntry } from './actions'
 
 function formatKrw(value: number) {
@@ -40,9 +41,10 @@ export default function MonthlyForm({
   month,
   entry,
   months,
+  recordedMonths,
   settings,
   accounts,
-  initialAccountValues,
+  accountStates,
   hasAccountSnapshot,
   mortgageDefaults = null,
   mortgageBalance = null,
@@ -51,11 +53,13 @@ export default function MonthlyForm({
   month: string
   entry: Entry | null
   months: string[]
+  /** 기록이 저장된 달. 달 목록에 표시한다. */
+  recordedMonths: string[]
   settings: FinancialPlanSettings
   accounts: Account[]
-  initialAccountValues: Record<string, AccountValue>
+  accountStates: Record<string, AccountRecordState>
   hasAccountSnapshot: boolean
-  /** 대출 조건으로 계산한 이번 달 이자·정기 원금. 저장된 기록이 없을 때 기본값으로 쓴다. */
+  /** 대출 조건으로 계산한 이번 달 이자·정기 원금. */
   mortgageDefaults?: { interest: number; principal: number | null } | null
   /** 직전 달 대출 잔액(주담대가 하나일 때). manualThisMonth면 이 달 잔액을 직접 입력해 둔 상태다. */
   mortgageBalance?: { previous: number; previousMonth: string; manualThisMonth: boolean } | null
@@ -73,7 +77,12 @@ export default function MonthlyForm({
   const [mortgagePrincipal, setMortgagePrincipal] = useState(Number(entry?.mortgage_principal ?? 0) > 0 ? Number(entry!.mortgage_principal) : mortgageDefaults?.principal ?? entry?.mortgage_principal ?? settings.mortgagePrincipal)
   const [mortgageExtraPrincipal, setMortgageExtraPrincipal] = useState(entry?.mortgage_extra_principal ?? 0)
   const [memo, setMemo] = useState(entry?.memo ?? '')
-  const [accountValues, setAccountValues] = useState(initialAccountValues)
+  const [accountValues, setAccountValues] = useState<Record<string, AccountValue>>(() => Object.fromEntries(accounts.map(account => {
+    const state = accountStates[account.id]
+    return [account.id, { evaluationAmount: state?.evaluationAmount ?? 0, monthlyAllocation: state?.monthlyAllocation ?? 0, ytdContribution: state?.ytdContribution ?? 0 }]
+  })))
+  // 지난달 값을 불러온 계좌 중 사용자가 고치거나 '같음'으로 확인한 계좌.
+  const [confirmed, setConfirmed] = useState<Set<string>>(new Set())
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -87,6 +96,11 @@ export default function MonthlyForm({
   const allocatedTotal = accounts.reduce((sum, account) => sum + (accountValues[account.id]?.monthlyAllocation ?? 0), 0)
   const unallocated = totalAllocatable - allocatedTotal
   const coverage = settings.monthlyFixedCost > 0 ? emergencyFund / settings.monthlyFixedCost : 0
+  const neighbors = neighborMonths(months, month)
+  const recorded = new Set(recordedMonths)
+  const isSaved = Boolean(entry) || hasAccountSnapshot
+  const pendingAccounts = accounts.filter(account => accountStates[account.id]?.carried && !confirmed.has(account.id))
+  const hasMortgage = Boolean(mortgageDefaults) || mortgageInterest > 0 || mortgagePrincipal > 0
 
   function changeMonth(nextMonth: string) {
     const params = new URLSearchParams(searchParams.toString())
@@ -94,7 +108,12 @@ export default function MonthlyForm({
     router.push(`${pathname}?${params.toString()}`)
   }
 
+  function markConfirmed(accountId: string) {
+    setConfirmed(current => new Set(current).add(accountId))
+  }
+
   function updateAccount(accountId: string, key: keyof AccountValue, value: number) {
+    if (key === 'evaluationAmount') markConfirmed(accountId)
     setAccountValues(current => ({
       ...current,
       [accountId]: { ...current[accountId], [key]: value },
@@ -104,6 +123,7 @@ export default function MonthlyForm({
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     setError(null)
+    if (pendingAccounts.length > 0 && !window.confirm(`지난달 값을 그대로 쓰는 계좌가 ${pendingAccounts.length}개 있어요(${pendingAccounts.slice(0, 3).map(account => account.name).join(', ')}${pendingAccounts.length > 3 ? ' 외' : ''}). 이대로 저장할까요?`)) return
     const formData = new FormData()
     formData.set('month', month)
     formData.set('joint_savings', String(jointContribution))
@@ -129,6 +149,7 @@ export default function MonthlyForm({
           return
         }
         setSaved(true)
+        setConfirmed(new Set(accounts.map(account => account.id)))
         setTimeout(() => setSaved(false), 2500)
       } catch (saveError) {
         setError(saveError instanceof Error ? saveError.message : '저장하지 못했습니다.')
@@ -138,14 +159,22 @@ export default function MonthlyForm({
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <select value={month} onChange={event => changeMonth(event.target.value)} aria-label="기록 월 선택" className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm font-bold text-[var(--color-ink)] shadow-sm outline-none">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <button type="button" disabled={!neighbors.previous} onClick={() => neighbors.previous && changeMonth(neighbors.previous)} aria-label="이전 달" className="grid size-10 place-items-center rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-muted)] disabled:opacity-40">◀</button>
+        <select value={month} onChange={event => changeMonth(event.target.value)} aria-label="기록 월 선택" className="min-h-10 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-bold text-[var(--color-ink)] shadow-sm outline-none">
           {months.map(value => {
             const [year, monthNumber] = value.split('-')
-            return <option key={value} value={value}>{year}년 {Number(monthNumber)}월</option>
+            return <option key={value} value={value}>{year}년 {Number(monthNumber)}월{recorded.has(value) ? ' ✓' : ''}</option>
           })}
         </select>
-        {entry || hasAccountSnapshot ? <span className="text-xs text-[var(--color-primary)]">● 저장된 기록</span> : null}
+        <button type="button" disabled={!neighbors.next} onClick={() => neighbors.next && changeMonth(neighbors.next)} aria-label="다음 달" className="grid size-10 place-items-center rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-muted)] disabled:opacity-40">▶</button>
+        <span className={`rounded-full px-2.5 py-1 text-[12px] font-semibold ${isSaved ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'}`}>{isSaved ? '● 저장된 기록' : '아직 저장 안 함'}</span>
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-1.5" aria-label="이번 달 진행 상황">
+        <Progress done={jointContribution > 0} label="이달 자금" />
+        {hasMortgage ? <Progress done={mortgageInterest + mortgagePrincipal > 0} label="주담대 납부" /> : null}
+        {accounts.length > 0 ? <Progress done={pendingAccounts.length === 0} label={`계좌 ${accounts.length - pendingAccounts.length}/${accounts.length} 확인`} /> : null}
       </div>
 
       <div className="metric-strip mb-4 grid grid-cols-2 sm:grid-cols-3">
@@ -153,8 +182,8 @@ export default function MonthlyForm({
           <p className="text-xs text-[var(--color-muted)]">현재 비상금</p>
           <p className="mt-1 whitespace-nowrap text-lg font-bold tracking-[-0.03em] text-[var(--color-ink)] sm:text-2xl">{formatKrw(emergencyFund)}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <GoalBadge label="3천만 달성" achieved={emergencyFund >= settings.stage1Target} />
-            <GoalBadge label="5천만 달성" achieved={emergencyFund >= settings.stage2Target} />
+            <GoalBadge label={stageLabel(settings.stage1Target)} achieved={emergencyFund >= settings.stage1Target} />
+            <GoalBadge label={stageLabel(settings.stage2Target)} achieved={emergencyFund >= settings.stage2Target} />
           </div>
         </div>
         <div className="metric-cell p-4">
@@ -169,11 +198,10 @@ export default function MonthlyForm({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <section className="app-card p-5">
-            <h2 className="mb-4 text-base font-bold text-[var(--color-ink)]">이달 자금</h2>
-            <div className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <section className="app-card p-5" aria-label="이달 자금">
+          <h2 className="mb-4 text-base font-bold text-[var(--color-ink)]"><StepNo n={1} />이달 자금</h2>
+          <div className="space-y-4">
               <MoneyInput label="매월 공금 납입금" value={jointContribution} onChange={setJointContribution} placeholder="7,000,000" />
               <p className="-mt-2 text-[12.5px] text-[var(--color-subtle)]">고정비를 제외한 정기 잉여금은 {formatKrw(regularSurplus)}입니다.</p>
               <MoneyInput label="성과급·일시 수입" value={bonusTotal} onChange={value => { setBonusTotal(value); setBonusToPlan(current => Math.min(current, value)) }} placeholder="0" />
@@ -185,10 +213,73 @@ export default function MonthlyForm({
                 </div>
               ) : null}
             </div>
-          </section>
+        </section>
 
-          <section className="app-card p-5">
-            <h2 className="mb-1 text-base font-bold text-[var(--color-ink)]">주택담보대출 납부</h2>
+        <section className="app-card overflow-hidden" aria-label="계좌 월말 잔액">
+          <div className="flex flex-col justify-between gap-2 border-b border-[var(--color-border)] bg-[var(--color-section)] px-5 py-4 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="text-base font-bold text-[var(--color-ink)]"><StepNo n={2} />계좌 월말 잔액</h2>
+              <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">월말 앱 잔액을 평가금액에 적어요. 기록이 없는 달은 지난 기록 값을 불러오니, 바뀌지 않았으면 ‘같음’을 눌러 확인하세요.</p>
+            </div>
+            <div className="shrink-0 text-right text-[12.5px]">
+              <p className="text-[var(--color-muted)]">배분 {formatKrw(allocatedTotal)} / 가능 {formatKrw(totalAllocatable)}</p>
+              <p className={unallocated < 0 ? 'font-semibold text-[var(--color-negative)]' : 'font-semibold text-[var(--color-primary)]'}>{unallocated < 0 ? `초과 ${formatKrw(-unallocated)} (저장은 돼요)` : `미배분 ${formatKrw(unallocated)}`}</p>
+            </div>
+          </div>
+
+          {accounts.length === 0 ? (
+            <div className="px-5 py-8 text-center text-xs text-[var(--color-subtle)]">
+              <Link href="/net-worth?view=settings" className="font-semibold text-[var(--color-primary)] hover:underline">밸런스 시트에서 금융계좌를 먼저 추가하세요.</Link>
+            </div>
+          ) : (
+            <ul className="divide-y divide-[var(--color-border)]">
+              {accounts.map(account => {
+                const values = accountValues[account.id] ?? { evaluationAmount: 0, monthlyAllocation: 0, ytdContribution: 0 }
+                const state = accountStates[account.id]
+                const isPension = account.type === 'pension' || account.type === 'irp'
+                const carried = Boolean(state?.carried) && !confirmed.has(account.id)
+                const change = state?.previous ? values.evaluationAmount - state.previous.evaluation : null
+                return (
+                  <li key={account.id} className={`grid grid-cols-1 gap-3 px-5 py-4 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.8fr)_minmax(0,1.3fr)_minmax(0,1fr)] md:items-start ${carried ? 'bg-[var(--color-accent-soft)]/40' : ''}`}>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-[var(--color-ink)]">{account.name}</p>
+                      <p className="mt-0.5 text-[12px] text-[var(--color-muted)]">{ownerLabel(account.owner)} · {accountTypeLabel(account.type)}{account.broker ? ` · ${account.broker}` : ''}</p>
+                      <div className="mt-1 flex gap-1">
+                        {account.is_emergency_fund ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">비상금</span> : null}
+                        {isPension ? <span className="rounded-full bg-[var(--color-spouse-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-spouse)]">연금</span> : null}
+                      </div>
+                    </div>
+                    <div className="text-[12.5px]">
+                      <p className="text-xs text-[var(--color-muted)]">지난 기록{state?.previous ? ` · ${Number(state.previous.month.slice(5))}월` : ''}</p>
+                      <p className="mt-1 font-semibold tabular-nums">{state?.previous ? formatKrw(state.previous.evaluation) : '—'}</p>
+                    </div>
+                    <div>
+                      <MoneyInput idSuffix={account.id} label="이번 달 평가금액" value={values.evaluationAmount} onChange={value => updateAccount(account.id, 'evaluationAmount', value)} placeholder="0" />
+                      {carried ? (
+                        <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[12px] text-[var(--color-accent)]">
+                          지난 기록 값을 불러왔어요
+                          <button type="button" onClick={() => markConfirmed(account.id)} className="min-h-8 font-semibold underline">같음</button>
+                        </p>
+                      ) : change !== null && change !== 0 ? (
+                        <p className={`mt-1 text-[12px] font-semibold tabular-nums ${change > 0 ? 'text-[var(--color-positive)]' : 'text-[var(--color-negative)]'}`}>지난 기록 대비 {change > 0 ? '+' : '−'}{formatKrw(Math.abs(change))}</p>
+                      ) : null}
+                      {stockValues[account.id] ? (
+                        <StockImport stock={stockValues[account.id]} onImport={() => updateAccount(account.id, 'evaluationAmount', stockValues[account.id].value)} />
+                      ) : null}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-1">
+                      <MoneyInput idSuffix={account.id} label="이번 달 배분액" value={values.monthlyAllocation} onChange={value => updateAccount(account.id, 'monthlyAllocation', value)} placeholder="0" />
+                      {isPension ? <MoneyInput idSuffix={account.id} label={`${month.slice(0, 4)}년 누적 납입액`} value={values.ytdContribution} onChange={value => updateAccount(account.id, 'ytdContribution', value)} placeholder="0" /> : null}
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </section>
+
+        <section className="app-card p-5" aria-label="주택담보대출 납부">
+          <h2 className="mb-1 text-base font-bold text-[var(--color-ink)]"><StepNo n={3} />주택담보대출 납부</h2>
             <p className="mb-4 text-[12.5px] leading-5 text-[var(--color-muted)]">이자와 정기 원금은 고정비의 구성 내역입니다. 다시 비용으로 차감하지 않으며, 원금만 밸런스 시트의 대출 잔액을 줄입니다.</p>
             <div className="space-y-4">
               {mortgageDefaults ? (
@@ -221,71 +312,17 @@ export default function MonthlyForm({
                 <p className="text-[12px] leading-5 text-[var(--color-accent)]">이 달 대출 잔액을 잔액 이력에 직접 입력해 두어서, 여기 적은 원금은 잔액에 반영되지 않아요. 은행 잔액을 그대로 쓰려면 그대로 두고, 원금으로 깎으려면 밸런스 시트 잔액 이력에서 이 달 기록을 지우세요.</p>
               ) : null}
             </div>
-          </section>
-        </div>
-
-        <section className="app-card mt-4 overflow-hidden">
-          <div className="flex flex-col justify-between gap-2 border-b border-[var(--color-border)] bg-[var(--color-section)] px-5 py-4 sm:flex-row sm:items-center">
-            <div>
-              <h2 className="text-base font-bold text-[var(--color-ink)]">계좌별 배분과 월말 잔액</h2>
-              <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">실제 보낸 금액은 배분액에, 월말 앱 잔액은 평가금액에 입력합니다. 평가금액만 총자산에 반영됩니다.</p>
-            </div>
-            <div className="text-right text-[12.5px]">
-              <p className="text-[var(--color-muted)]">배분 {formatKrw(allocatedTotal)} / 가능 {formatKrw(totalAllocatable)}</p>
-              <p className={unallocated < 0 ? 'font-semibold text-red-600' : 'font-semibold text-[var(--color-primary)]'}>{unallocated < 0 ? `초과 ${formatKrw(-unallocated)}` : `미배분 ${formatKrw(unallocated)}`}</p>
-            </div>
-          </div>
-
-          {accounts.length === 0 ? (
-            <div className="px-5 py-8 text-center text-xs text-[var(--color-subtle)]">
-              <Link href="/net-worth" className="font-semibold text-[var(--color-primary)] hover:underline">밸런스 시트에서 금융계좌를 먼저 추가하세요.</Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-px bg-[var(--color-border)] sm:grid-cols-2">
-              {accounts.map(account => {
-                const values = accountValues[account.id] ?? { evaluationAmount: 0, monthlyAllocation: 0, ytdContribution: 0 }
-                const isPension = account.type === 'pension' || account.type === 'irp'
-                return (
-                  <div key={account.id} className="bg-white p-5">
-                    <div className="mb-4 flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-[var(--color-ink)]">{account.name}</p>
-                        <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{account.owner === 'spouse' ? '아내' : '나'} · {accountTypeLabel(account.type)}{account.broker ? ` · ${account.broker}` : ''}</p>
-                      </div>
-                      <div className="flex shrink-0 gap-1">
-                        {account.is_emergency_fund ? <span className="rounded-full bg-amber-100 px-2 py-1 text-[11.5px] font-semibold text-amber-700">비상금</span> : null}
-                        {isPension ? <span className="rounded-full bg-[var(--color-spouse-soft)] px-2 py-1 text-[11.5px] font-semibold text-[var(--color-spouse)]">연금</span> : null}
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-                      <MoneyInput idSuffix={account.id} label="이번 달 배분액" value={values.monthlyAllocation} onChange={value => updateAccount(account.id, 'monthlyAllocation', value)} placeholder="0" />
-                      <div>
-                        <MoneyInput idSuffix={account.id} label="월말 평가금액" value={values.evaluationAmount} onChange={value => updateAccount(account.id, 'evaluationAmount', value)} placeholder="0" />
-                        {stockValues[account.id] ? (
-                          <StockImport
-                            stock={stockValues[account.id]}
-                            onImport={() => updateAccount(account.id, 'evaluationAmount', stockValues[account.id].value)}
-                          />
-                        ) : null}
-                      </div>
-                      {isPension ? <MoneyInput idSuffix={account.id} label={`${month.slice(0, 4)}년 누적 납입액`} value={values.ytdContribution} onChange={value => updateAccount(account.id, 'ytdContribution', value)} placeholder="0" /> : null}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
         </section>
 
-        <section className="app-card mt-4 p-5">
-          <label htmlFor="budget-memo" className="mb-1 block text-xs text-[var(--color-muted)]">월별 메모</label>
+        <section className="app-card p-5">
+          <label htmlFor="budget-memo" className="mb-1 block text-xs font-semibold text-[var(--color-ink)]"><StepNo n={4} />메모</label>
           <textarea id="budget-memo" value={memo} onChange={event => setMemo(event.target.value)} placeholder="이번 달 특이사항" rows={2} className="w-full resize-none rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs text-[var(--color-ink)] outline-none focus:border-[var(--color-primary)]" />
         </section>
 
-        <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-primary-soft)] p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="sticky bottom-3 z-10 flex flex-col gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-primary-soft)] p-4 shadow-[var(--shadow-card)] sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-semibold text-[var(--color-ink)]">이달 정보를 한 번에 저장합니다</p>
-            <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">자금 흐름, 계좌 월말 금액, 연금 누적액, 주담대 원금 감소가 함께 반영됩니다.</p>
+            <p className="text-xs font-semibold text-[var(--color-ink)]">{Number(month.slice(0, 4))}년 {Number(month.slice(5))}월 기록을 한 번에 저장해요</p>
+            <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{pendingAccounts.length > 0 ? `확인 안 한 계좌 ${pendingAccounts.length}개는 지난 기록 값으로 저장돼요.` : '자금 흐름, 계좌 월말 금액, 연금 누적액, 주담대 원금 감소가 함께 반영돼요.'}</p>
             {error ? <p className="mt-2 text-xs text-[var(--color-negative)]" role="alert">{error}</p> : null}
           </div>
           <button type="submit" disabled={pending} className="min-h-11 shrink-0 rounded-xl bg-[var(--color-primary)] px-6 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-primary-strong)] disabled:opacity-40">
@@ -295,6 +332,14 @@ export default function MonthlyForm({
       </form>
     </div>
   )
+}
+
+function StepNo({ n }: { n: number }) {
+  return <span className="mr-2 inline-grid size-5 place-items-center rounded-full bg-[var(--color-primary)] align-[1px] text-[11px] font-bold text-white">{n}</span>
+}
+
+function Progress({ done, label }: { done: boolean; label: string }) {
+  return <span className={`rounded-full px-2.5 py-1 text-[12px] font-semibold ${done ? 'bg-[var(--color-positive-soft)] text-[var(--color-positive-strong)]' : 'bg-[var(--color-section)] text-[var(--color-muted)]'}`}>{done ? '✓ ' : '○ '}{label}</span>
 }
 
 function GoalBadge({ label, achieved }: { label: string; achieved: boolean }) {

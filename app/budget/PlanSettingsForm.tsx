@@ -64,7 +64,7 @@ export default function PlanSettingsForm({ settings }: { settings: FinancialPlan
       >
         <div>
           <h2 className="text-base font-bold text-[var(--color-ink)]">월간 기록 기본값</h2>
-          <p className="mt-1 text-[12.5px] font-medium text-[var(--color-muted)]">고정비·공금·주담대·비상금 목표 · Supabase 저장</p>
+          <p className="mt-1 text-[12.5px] font-medium text-[var(--color-muted)]">고정비·공금·비상금 목표 · 주담대 납부는 대출 정보로 자동 계산</p>
         </div>
         <span className="text-xs text-[var(--color-muted)]">{open ? '접기' : '수정'}</span>
       </button>
@@ -76,8 +76,6 @@ export default function PlanSettingsForm({ settings }: { settings: FinancialPlan
               <h3 className="mb-3 text-xs font-semibold text-[var(--color-ink)]">가계 기준</h3>
               <div className="space-y-3">
                 <AmountField label="매월 고정비" value={values.monthlyFixedCost} onChange={value => set('monthlyFixedCost', value)} />
-                <AmountField label="주담대 이자" value={values.mortgageInterest} onChange={value => set('mortgageInterest', value)} />
-                <AmountField label="주담대 원금" value={values.mortgagePrincipal} onChange={value => set('mortgagePrincipal', value)} />
                 <p className="rounded-xl bg-[var(--color-section)] px-3 py-2 text-[12.5px] leading-5 text-[var(--color-muted)]">
                   주담대 원금·이자는 고정비 구성과 향후 자산·부채·순자산 계산을 위한 참고값입니다. 배분 계산에서는 매월 고정비 총액만 한 번 차감합니다.
                 </p>
