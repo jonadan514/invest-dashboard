@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { addMonths } from '@/lib/calc/home-insights'
 import { simulateMortgage, type MortgageResult } from '@/lib/calc/mortgage'
+import { buildRepaymentTable } from '@/lib/calc/repayment-table'
+import RepaymentTable from './RepaymentTable'
 import { compactKrw, formatMonth, krw } from '@/lib/labels'
 
 export interface MortgageLoan {
@@ -15,6 +17,8 @@ export interface MortgageLoan {
   monthlyPayment: number | null
   paymentSource: 'item' | 'budget' | 'plan' | 'none'
   maturityDate: string | null
+  /** 최근 잔액 기록(오래된 순). 지난 달 상환 내역 계산에 쓴다. */
+  history: { month: string; amount: number }[]
 }
 
 const RATE_NOTE: Record<MortgageLoan['rateSource'], string> = {
@@ -72,8 +76,11 @@ function LoanSimulator({ loan }: { loan: MortgageLoan }) {
   const base = ready ? simulateMortgage({ balance: loan.balance, annualRate, monthlyPayment: payment, startMonth }) : null
   const plan = ready ? simulateMortgage({ balance: loan.balance, annualRate, monthlyPayment: payment, lumpSum, extraMonthly, startMonth }) : null
   const hasExtra = lumpSum > 0 || extraMonthly > 0
+  const rateValid = rate.trim() !== '' && Number.isFinite(annualRate) && annualRate >= 0
+  const repayments = buildRepaymentTable({ balance: loan.balance, balanceMonth: loan.balanceMonth, annualRate: rateValid ? annualRate : null, monthlyPayment: payment > 0 ? payment : null, history: loan.history })
 
   return (
+    <div className="space-y-4">
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
       <section className="app-card p-5" aria-label="대출 정보와 추가 상환 입력">
         <p className="text-[11.5px] font-bold text-[var(--color-primary)]">{formatMonth(loan.balanceMonth)} 잔액</p>
@@ -120,6 +127,8 @@ function LoanSimulator({ loan }: { loan: MortgageLoan }) {
           원리금균등 상환을 가정한 참고용 계산입니다. 금리 변동, 중도상환수수료, 원금균등·거치 방식은 반영하지 않으니 실제 상환 전에는 은행 조회 결과를 확인하세요.
         </p>
       </section>
+    </div>
+    <RepaymentTable rows={repayments} hasRate={rateValid} hasPayment={payment > 0} />
     </div>
   )
 }
