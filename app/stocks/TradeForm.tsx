@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createTrade, updateTrade } from './actions'
+import { STOCK_CLASSES } from './asset-classes'
 import { DEFAULT_FEE_RATE, estimateFee, estimateTax, feeRateKey, formatRate, taxRule } from '@/lib/calc/trade-costs'
 
 export interface TradeAccount { id: string; name: string; owner: string; type: string }
@@ -32,13 +33,7 @@ const TYPES = [
   { value: 'dividend', label: '배당' },
 ] as const
 
-const CLASSES = [
-  { value: 'kr_stock', label: '국내주식', currency: 'KRW' },
-  { value: 'etf_kr', label: '국내ETF', currency: 'KRW' },
-  { value: 'us_stock', label: '미국주식', currency: 'USD' },
-  { value: 'etf_us', label: '미국ETF', currency: 'USD' },
-  { value: 'other', label: '기타', currency: 'KRW' },
-] as const
+const CLASSES = STOCK_CLASSES
 
 const INPUT = 'min-h-10 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 text-[14px] focus:border-[var(--color-primary)] focus:outline-none'
 
@@ -176,7 +171,13 @@ export default function TradeForm({ accounts, assets, costs, initial, onDone }: 
             </select>
           </Field>
         )}
-        {initial ? null : (
+        {initial ? (
+          <Field label="종목" hint="같은 통화 종목으로만 옮길 수 있어요.">
+            <select name="new_asset_id" value={assetId} onChange={event => { setAssetId(event.target.value); resetRate() }} className={INPUT}>
+              {assets.filter(asset => asset.id === initial.asset_id || asset.currency === currency).map(asset => <option key={asset.id} value={asset.id}>{asset.name}{asset.symbol ? ` (${asset.symbol})` : ''}</option>)}
+            </select>
+          </Field>
+        ) : (
           <Field label="종목">
             <select name="asset_id" value={assetId} onChange={event => { setAssetId(event.target.value); resetRate() }} className={INPUT}>
               {assets.map(asset => <option key={asset.id} value={asset.id}>{asset.name}{asset.symbol ? ` (${asset.symbol})` : ''}</option>)}

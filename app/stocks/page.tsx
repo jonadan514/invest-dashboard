@@ -10,12 +10,13 @@ import { getHouseholdContext } from '@/lib/supabase/server'
 import type { Account, AccountMonthlySnapshot, Asset, Holding } from '@/lib/types'
 import PriceForm from './PriceForm'
 import TradeActions from './TradeActions'
+import AssetManager, { type ManagedAsset } from './AssetManager'
 import TradeForm, { type TradeCostContext, type TradeInitial } from './TradeForm'
 import { inferFeeRates } from '@/lib/calc/trade-costs'
 
 export const metadata = { title: '주식 계좌' }
 
-type Tab = 'holdings' | 'trades' | 'prices'
+type Tab = 'holdings' | 'trades' | 'prices' | 'assets'
 
 interface TradeRow {
   id: string
@@ -37,7 +38,7 @@ const TYPE_LABEL: Record<TradeRow['type'], string> = { buy: '매수', sell: '매
 
 export default async function StocksPage({ searchParams }: { searchParams: Promise<{ tab?: string; account?: string }> }) {
   const params = await searchParams
-  const tab: Tab = params.tab === 'trades' || params.tab === 'prices' ? params.tab : 'holdings'
+  const tab: Tab = params.tab === 'trades' || params.tab === 'prices' || params.tab === 'assets' ? params.tab : 'holdings'
   const { supabase, userId } = await getHouseholdContext()
   const now = new Date()
   const currentMonth = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', timeZone: 'Asia/Seoul' }).format(now)
@@ -98,6 +99,12 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
   const accountMap = new Map(accounts.map(account => [account.id, account]))
   const latestEvaluations = latestSnapshotsAtMonth((snapshotRows ?? []) as AccountMonthlySnapshot[], currentMonth)
   const tradeAccounts = accounts.map(account => ({ id: account.id, name: account.name, owner: account.owner, type: account.type }))
+  const tradeCountByAsset = new Map<string, number>()
+  for (const trade of trades) tradeCountByAsset.set(trade.asset_id, (tradeCountByAsset.get(trade.asset_id) ?? 0) + 1)
+  const managedAssets: ManagedAsset[] = assets.map(asset => ({
+    id: asset.id, name: asset.name, symbol: asset.symbol, asset_class: asset.asset_class, currency: asset.currency,
+    trades: tradeCountByAsset.get(asset.id) ?? 0, held: heldByAsset.get(asset.id)?.quantity ?? 0,
+  }))
   const tradeCosts: TradeCostContext = { feeRates: inferFeeRates(trades), usdKrw }
   const tradeAssets = assets.map(asset => ({ id: asset.id, name: asset.name, symbol: asset.symbol, currency: asset.currency, asset_class: asset.asset_class }))
   const href = (next: Partial<{ tab: Tab; account: string | null }>) => {
@@ -130,13 +137,13 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
         <>
           <nav aria-label="주식 계좌 메뉴" className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex rounded-xl bg-white p-1 shadow-[var(--shadow-card)]">
-              {([['holdings', '보유 현황'], ['trades', '거래 기록'], ['prices', '현재가 입력']] as const).map(([value, label]) => (
+              {([['holdings', '보유 현황'], ['trades', '거래 기록'], ['prices', '현재가 입력'], ['assets', '종목 관리']] as const).map(([value, label]) => (
                 <Link key={value} href={href({ tab: value })} aria-current={tab === value ? 'page' : undefined} className={`inline-flex min-h-9 items-center rounded-lg px-4 text-[13px] font-semibold ${tab === value ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--color-muted)] hover:text-[var(--color-ink)]'}`}>
                   {label}
                 </Link>
               ))}
             </div>
-            {tab !== 'prices' ? (
+            {tab !== 'prices' && tab !== 'assets' ? (
               <div className="flex flex-wrap gap-1.5" aria-label="계좌 선택">
                 <Link href={href({ account: null })} className={chipClass(!selectedAccount)}>전체</Link>
                 {accounts.map(account => (
@@ -258,6 +265,15 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
                 usdAsOf={fxRow?.as_of ?? null}
                 rows={priceInputRows}
               />
+            </section>
+          ) : null}
+          {tab === 'assets' ? (
+            <section className="app-card overflow-hidden" aria-label="종목 관리">
+              <div className="border-b border-[var(--color-border)] px-5 py-4">
+                <h2 className="text-[15px] font-bold">종목 관리 <span className="ml-1 text-[13px] font-semibold text-[var(--color-muted)]">{managedAssets.length}개</span></h2>
+                <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">종목 이름·코드·구분을 고치고, 거래가 없는 종목은 지울 수 있어요. 거래를 다른 종목으로 옮기려면 거래 기록에서 그 거래를 수정하세요.</p>
+              </div>
+              <AssetManager assets={managedAssets} />
             </section>
           ) : null}
         </>
