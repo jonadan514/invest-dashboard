@@ -3,10 +3,10 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { deleteTrade } from './actions'
-import TradeForm, { type TradeAccount, type TradeAsset, type TradeInitial } from './TradeForm'
+import TradeForm, { type TradeAccount, type TradeAsset, type TradeCostContext, type TradeInitial } from './TradeForm'
 
 /** 거래 한 줄의 수정·삭제. 수정을 누르면 그 자리에 수정 폼이 열린다. */
-export default function TradeActions({ trade, accounts, assets }: { trade: TradeInitial; accounts: TradeAccount[]; assets: TradeAsset[] }) {
+export default function TradeActions({ trade, accounts, assets, costs }: { trade: TradeInitial; accounts: TradeAccount[]; assets: TradeAsset[]; costs: TradeCostContext }) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -35,7 +35,7 @@ export default function TradeActions({ trade, accounts, assets }: { trade: Trade
       </div>
       {editing ? (
         <div className="col-span-full mt-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-section)] p-3">
-          <TradeForm accounts={accounts} assets={assets} initial={trade} onDone={() => setEditing(false)} />
+          <TradeForm accounts={accounts} assets={assets} costs={costs} initial={trade} onDone={() => setEditing(false)} />
         </div>
       ) : null}
     </>
