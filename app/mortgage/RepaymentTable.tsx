@@ -33,7 +33,7 @@ export default function LoanRepayment({ loan, past, future }: { loan: LoanOvervi
             <p className="text-[11.5px] font-bold text-[var(--color-primary)]">{loan.name} · {formatMonth(loan.balanceMonth)} 납부 후 잔액</p>
             <p className="mt-1 text-[26px] font-bold tabular-nums leading-none">{krw(loan.balance)}</p>
           </div>
-          <Link href="/net-worth" className="inline-flex min-h-8 items-center text-[12.5px] font-semibold text-[var(--color-primary)] hover:underline">대출 정보 고치기 →</Link>
+          <Link href="/net-worth?view=settings" className="inline-flex min-h-8 items-center text-[12.5px] font-semibold text-[var(--color-primary)] hover:underline">대출 정보 고치기 →</Link>
         </div>
         <dl className="mt-4 grid grid-cols-2 gap-px border-t border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-4">
           <Item label="연 금리" value={loan.annualRate === null ? '입력 필요' : `${loan.annualRate}%`} note={loan.rateSource === 'estimated' ? '월간 기록으로 추정' : undefined} />

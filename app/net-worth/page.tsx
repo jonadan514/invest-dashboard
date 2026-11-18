@@ -68,9 +68,10 @@ function buildTrend(items: NetWorthItem[], snapshots: NetWorthSnapshot[], accoun
 export default async function NetWorthPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>
+  searchParams: Promise<{ month?: string; view?: string }>
 }) {
-  const requested = (await searchParams).month
+  const params = await searchParams
+  const requested = params.month
   const month = requested && /^\d{4}-(0[1-9]|1[0-2])$/.test(requested) ? requested : currentMonth()
   const { supabase, userId } = await getHouseholdContext()
   await trySyncMortgageSchedule(supabase, userId)
@@ -82,6 +83,7 @@ export default async function NetWorthPage({
     { data: budgetRow },
     { data: accountRows },
     { data: accountSnapshotRows },
+    { data: historyRows },
   ] = await Promise.all([
     supabase.from('net_worth_items').select('*').eq('user_id', userId).order('kind').order('sort_order').order('created_at').throwOnError(),
     supabase.from('net_worth_snapshots').select('*').eq('user_id', userId).lte('month', month).order('month').throwOnError(),
@@ -89,6 +91,8 @@ export default async function NetWorthPage({
     supabase.from('monthly_budgets').select('*').eq('user_id', userId).eq('month', month).maybeSingle().throwOnError(),
     supabase.from('accounts').select('*').eq('user_id', userId).in('type', ['cash', 'mmf', 'general', 'pension', 'irp', 'isa', 'crypto']).order('sort_order').throwOnError(),
     supabase.from('account_monthly_snapshots').select('*').eq('user_id', userId).lte('month', month).order('month').throwOnError(),
+    // 항목 관리의 잔액 이력은 기준 월과 상관없이 전체를 보여 준다.
+    supabase.from('net_worth_snapshots').select('item_id, month, amount, source').eq('user_id', userId).order('month', { ascending: false }).throwOnError(),
   ])
 
   const items = (itemRows ?? []) as NetWorthItem[]
@@ -104,7 +108,13 @@ export default async function NetWorthPage({
   const inactiveItems = items.filter(item => !item.is_active)
   const exactSnapshots = snapshots.filter(snapshot => snapshot.month === month)
   const latestAmounts: Record<string, number> = {}
-  for (const snapshot of snapshots) latestAmounts[snapshot.item_id] = Number(snapshot.amount)
+  const latestMonths: Record<string, string> = {}
+  for (const snapshot of snapshots) {
+    latestAmounts[snapshot.item_id] = Number(snapshot.amount)
+    latestMonths[snapshot.item_id] = snapshot.month
+  }
+  const history: Record<string, { month: string; amount: number; source: string }[]> = {}
+  for (const row of historyRows ?? []) (history[row.item_id] ??= []).push({ month: row.month, amount: Number(row.amount), source: row.source })
 
   const trend = buildTrend(items, snapshots, accountTotals, month)
   const exactCurrent = trend.find(point => point.month === month) ?? null
@@ -188,6 +198,10 @@ export default async function NetWorthPage({
             month: snapshot.month,
           }]))}
           initialAmounts={latestAmounts}
+          latestMonths={latestMonths}
+          history={history}
+          currentMonth={currentMonth()}
+          initialView={params.view === 'settings' || params.view === 'record' ? params.view : 'overview'}
           hasExactSnapshot={exactSnapshots.length > 0 || accountSnapshots.some(snapshot => snapshot.month === month)}
           investmentValue={portfolioValue}
           investmentRecordedMonth={latestAccountTotal?.month ?? null}
