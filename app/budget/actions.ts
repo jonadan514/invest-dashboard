@@ -3,7 +3,6 @@
 import { runAction, type ActionResult } from '@/lib/action-result'
 import { revalidatePath } from 'next/cache'
 import { getHouseholdContext } from '@/lib/supabase/server'
-import { DEFAULT_FINANCIAL_PLAN } from '@/lib/calc/budget'
 import { syncMortgageSchedule } from '@/lib/mortgage-sync'
 
 function numberField(formData: FormData, name: string) {
@@ -27,26 +26,13 @@ export async function saveBudgetEntry(formData: FormData): Promise<ActionResult>
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('월 형식이 올바르지 않습니다.')
     if (bonusToPlan > bonusTotal) throw new Error('배분할 성과급은 전체 성과급보다 클 수 없습니다.')
 
-    const [{ data: accounts, error: accountError }, { data: plan, error: planError }] = await Promise.all([
-      supabase
+    // 배분액이 배분 가능액을 넘어도 저장은 막지 않는다(화면에서 경고만 한다).
+    const { data: accounts, error: accountError } = await supabase
       .from('accounts')
       .select('id, type, is_emergency_fund')
       .eq('user_id', userId)
-      .eq('is_active', true),
-      supabase.from('financial_plan_settings').select('monthly_fixed_cost').eq('user_id', userId).maybeSingle(),
-    ])
+      .eq('is_active', true)
     if (accountError) throw new Error(accountError.message)
-    if (planError) throw new Error(planError.message)
-
-    const monthlyFixedCost = Number(plan?.monthly_fixed_cost ?? DEFAULT_FINANCIAL_PLAN.monthlyFixedCost)
-    const totalAllocatable = Math.max(jointSavings - monthlyFixedCost, 0) + bonusToPlan
-    const allocationTotal = (accounts ?? []).reduce(
-      (sum, account) => sum + numberField(formData, `account_${account.id}_allocation`),
-      0,
-    )
-    if (allocationTotal > totalAllocatable) {
-      throw new Error('계좌 배분액 합계가 이달 배분 가능액을 초과합니다.')
-    }
 
     const accountRows = (accounts ?? []).map(account => ({
       account_id: account.id,

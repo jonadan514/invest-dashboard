@@ -9,6 +9,8 @@ import type { Asset } from '@/lib/types'
 import MonthlyForm from './MonthlyForm'
 import PlanSettingsForm from './PlanSettingsForm'
 import { trySyncMortgageSchedule } from '@/lib/mortgage-sync'
+import { accountRecordState, stageLabel } from '@/lib/calc/monthly-record'
+import { buildAccountTotalTrend } from '@/lib/calc/account-snapshots'
 
 export const metadata = { title: '월간 기록' }
 
@@ -70,7 +72,8 @@ export default async function BudgetPage({
     supabase.from('monthly_budgets').select('*').eq('user_id', userId).order('month', { ascending: false }).limit(24).throwOnError(),
     supabase.from('financial_plan_settings').select('*').eq('user_id', userId).maybeSingle().throwOnError(),
     supabase.from('accounts').select('*').eq('user_id', userId).eq('is_active', true).order('sort_order').order('created_at').throwOnError(),
-    supabase.from('account_monthly_snapshots').select('*').eq('user_id', userId).lte('month', month).order('month').throwOnError(),
+    // 지난 기록 비교와 월별 기록 표의 계좌 합계에 쓰도록 전체를 가져온다.
+    supabase.from('account_monthly_snapshots').select('*').eq('user_id', userId).order('month').throwOnError(),
     supabase.from('net_worth_items').select('id, interest_rate, monthly_payment, maturity_date').eq('user_id', userId).eq('category', 'mortgage').eq('is_active', true).throwOnError(),
   ])
 
@@ -80,23 +83,10 @@ export default async function BudgetPage({
   const settings = toSettings(settingsRow)
   const accounts = (accountData ?? []) as Account[]
   const accountSnapshots = (accountSnapshotData ?? []) as AccountMonthlySnapshot[]
-  const latestByAccount = new Map<string, AccountMonthlySnapshot>()
-  const exactByAccount = new Map<string, AccountMonthlySnapshot>()
-  for (const snapshot of accountSnapshots) latestByAccount.set(snapshot.account_id, snapshot)
-  for (const snapshot of accountSnapshots) {
-    if (snapshot.month === month) exactByAccount.set(snapshot.account_id, snapshot)
-  }
-  const initialAccountValues = Object.fromEntries(accounts.map(account => {
-    const snapshot = latestByAccount.get(account.id)
-    const exact = exactByAccount.get(account.id)
-    return [account.id, {
-      evaluationAmount: Number(snapshot?.evaluation_amount ?? 0),
-      monthlyAllocation: Number(exact?.monthly_allocation ?? 0),
-      ytdContribution: snapshot?.month.startsWith(`${month.slice(0, 4)}-`)
-        ? Number(snapshot.ytd_contribution)
-        : 0,
-    }]
-  }))
+  const accountStates = Object.fromEntries(accounts.map(account => [account.id, accountRecordState(accountSnapshots, account.id, month)]))
+  const recordedMonths = [...new Set([...history.map(record => record.month), ...accountSnapshots.map(snapshot => snapshot.month)])]
+  const accountTrend = buildAccountTotalTrend(accounts, accountSnapshots)
+  const accountTotalByMonth = new Map(accountTrend.map((point, index) => [point.month, { total: point.amount, change: index > 0 ? point.amount - accountTrend[index - 1].amount : null }]))
   const hasAccountSnapshot = accountSnapshots.some(snapshot => snapshot.month === month)
 
   // 주담대가 하나이고 금리가 있으면, 직전 달 잔액으로 이번 달 이자(잔액 × 금리 ÷ 12, 원 미만 버림)와 원금(월 상환액 또는 만기로 계산)을 미리 채운다.
@@ -155,7 +145,6 @@ export default async function BudgetPage({
           <p className="page-subtitle">매월 자금 흐름과 계좌 평가금액을 한 번에 기록합니다.</p>
         </div>
 
-        <PlanSettingsForm settings={settings} />
 
         <Suspense fallback={<div className="h-64 animate-pulse rounded-2xl bg-[#ffffff]" />}>
           <MonthlyForm
@@ -165,7 +154,8 @@ export default async function BudgetPage({
             months={generateMonths()}
             settings={settings}
             accounts={accounts}
-            initialAccountValues={initialAccountValues}
+            accountStates={accountStates}
+            recordedMonths={recordedMonths}
             hasAccountSnapshot={hasAccountSnapshot}
             mortgageDefaults={mortgageDefaults}
             mortgageBalance={mortgageBalance}
@@ -182,7 +172,7 @@ export default async function BudgetPage({
               {history.map(record => {
                 const emergencyFund = Number(record.cash_balance)
                 const principal = Number(record.mortgage_principal) + Number(record.mortgage_extra_principal)
-                const stage = emergencyFund >= settings.stage2Target ? '5천만 달성' : emergencyFund >= settings.stage1Target ? '3천만 달성' : '달성 전'
+                const stage = emergencyFund >= settings.stage2Target ? stageLabel(settings.stage2Target) : emergencyFund >= settings.stage1Target ? stageLabel(settings.stage1Target) : '달성 전'
                 return (
                   <li key={record.id} className={`px-4 py-3.5 ${record.month === month ? 'bg-[var(--color-primary-soft)]' : ''}`}>
                     <div className="flex items-center justify-between gap-3">
@@ -196,6 +186,7 @@ export default async function BudgetPage({
                       <div className="flex justify-between gap-2"><dt className="text-[var(--color-muted)]">공금</dt><dd className="tabular-nums">{formatKrw(record.joint_savings)}</dd></div>
                       <div className="flex justify-between gap-2"><dt className="text-[var(--color-muted)]">성과급</dt><dd className="tabular-nums">{record.bonus_to_plan > 0 ? formatKrw(record.bonus_to_plan) : '-'}</dd></div>
                       <div className="flex justify-between gap-2"><dt className="text-[var(--color-muted)]">원금 상환</dt><dd className="tabular-nums">{principal > 0 ? formatKrw(principal) : '-'}</dd></div>
+                      {accountTotalByMonth.has(record.month) ? <div className="col-span-2 flex justify-between gap-2"><dt className="text-[var(--color-muted)]">계좌 평가 합계</dt><dd className="tabular-nums">{formatKrw(accountTotalByMonth.get(record.month)!.total)}<Change value={accountTotalByMonth.get(record.month)!.change} /></dd></div> : null}
                     </dl>
                     {record.memo ? <p className="mt-1.5 text-[12.5px] leading-5 text-[var(--color-muted)]">{record.memo}</p> : null}
                   </li>
@@ -211,6 +202,7 @@ export default async function BudgetPage({
                     <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">공금</th>
                     <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">성과급 포함</th>
                     <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">주담대 원금</th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">계좌 평가 합계</th>
                     <th className="whitespace-nowrap px-3 py-2.5 text-center font-medium">비상금 목표</th>
                     <th className="px-3 py-2.5 text-left font-medium">메모</th>
                   </tr>
@@ -231,9 +223,12 @@ export default async function BudgetPage({
                           {record.bonus_to_plan > 0 ? formatKrw(record.bonus_to_plan) : '-'}
                         </td>
                         <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-ink)]">{Number(record.mortgage_principal) + Number(record.mortgage_extra_principal) > 0 ? formatKrw(Number(record.mortgage_principal) + Number(record.mortgage_extra_principal)) : '-'}</td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right text-[var(--color-ink)]">
+                          {accountTotalByMonth.has(record.month) ? <>{formatKrw(accountTotalByMonth.get(record.month)!.total)}<Change value={accountTotalByMonth.get(record.month)!.change} /></> : '-'}
+                        </td>
                         <td className="px-3 py-3 text-center">
                           <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-medium ${emergencyFund >= settings.stage2Target ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : emergencyFund >= settings.stage1Target ? 'bg-amber-100 text-amber-700' : 'bg-[var(--color-section)] text-[var(--color-muted)]'}`}>
-                            {emergencyFund >= settings.stage2Target ? '5천만 달성' : emergencyFund >= settings.stage1Target ? '3천만 달성' : '달성 전'}
+                            {emergencyFund >= settings.stage2Target ? stageLabel(settings.stage2Target) : emergencyFund >= settings.stage1Target ? stageLabel(settings.stage1Target) : '달성 전'}
                           </span>
                         </td>
                         <td className="max-w-[160px] truncate px-3 py-3 text-[var(--color-muted)]" title={record.memo || undefined}>{record.memo || '-'}</td>
@@ -245,7 +240,15 @@ export default async function BudgetPage({
             </div>
           </div>
         ) : null}
+        <div className="mt-5">
+          <PlanSettingsForm settings={settings} />
+        </div>
       </div>
     </>
   )
+}
+
+function Change({ value }: { value: number | null }) {
+  if (value === null || value === 0) return null
+  return <span className={`ml-1.5 text-[11.5px] font-semibold ${value > 0 ? 'text-[var(--color-positive)]' : 'text-[var(--color-negative)]'}`}>{value > 0 ? '+' : '−'}{formatKrw(Math.abs(value))}</span>
 }
