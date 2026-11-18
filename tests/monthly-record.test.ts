@@ -25,3 +25,14 @@ test('이전·다음 달, 목표 문구, 소유 표시', () => {
   assert.equal(stageLabel(100_000_000), '1억 달성')
   assert.deepEqual(['me', 'spouse', 'household'].map(ownerLabel), ['나', '아내', '공동'])
 })
+
+test('정기 납입액이 있으면 누적 납입액에 직전 기록 이후 달 수만큼 더한다', () => {
+  const pension = (month: string, ytd: number) => ({ account_id: 'p', month, evaluation_amount: 1_000_000, monthly_allocation: 0, ytd_contribution: ytd })
+  const next = accountRecordState([pension('2026-10', 5_000_000)], 'p', '2026-11', 500_000)
+  assert.equal(next.ytdContribution, 5_500_000)
+  assert.equal(next.autoContribution, true)
+  assert.equal(accountRecordState([pension('2026-09', 4_500_000)], 'p', '2026-11', 500_000).ytdContribution, 5_500_000, '두 달 비면 두 달치')
+  assert.equal(accountRecordState([pension('2025-12', 6_000_000)], 'p', '2026-01', 500_000).ytdContribution, 500_000, '해가 바뀌면 이번 달치만')
+  assert.equal(accountRecordState([pension('2026-11', 5_200_000)], 'p', '2026-11', 500_000).ytdContribution, 5_200_000, '이미 기록한 달은 그대로')
+  assert.equal(accountRecordState([pension('2026-10', 5_000_000)], 'p', '2026-11').autoContribution, undefined)
+})

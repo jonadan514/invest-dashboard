@@ -281,7 +281,12 @@ export default function MonthlyForm({
                     </div>
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-1">
                       <MoneyInput idSuffix={account.id} label="이번 달 배분액" value={values.monthlyAllocation} onChange={value => updateAccount(account.id, 'monthlyAllocation', value)} placeholder="0" />
-                      {isPension ? <MoneyInput idSuffix={account.id} label={`${month.slice(0, 4)}년 누적 납입액`} value={values.ytdContribution} onChange={value => updateAccount(account.id, 'ytdContribution', value)} placeholder="0" /> : null}
+                      {isPension ? (
+                        <div>
+                          <MoneyInput idSuffix={account.id} label={`${month.slice(0, 4)}년 누적 납입액`} value={values.ytdContribution} onChange={value => updateAccount(account.id, 'ytdContribution', value)} placeholder="0" />
+                          {state?.autoContribution && account.monthly_payment ? <p className="mt-1 text-[11.5px] text-[var(--color-positive-strong)]">정기 납입 {formatKrw(Number(account.monthly_payment))} 자동 반영</p> : null}
+                        </div>
+                      ) : null}
                     </div>
                   </li>
                 )
