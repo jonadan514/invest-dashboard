@@ -82,3 +82,43 @@ test('평가액 자동 반영: 기록 있고 현재가 완비된 계좌만 갱�
   assert.deepEqual(done, ['a'])
   assert.deepEqual(updates, ['1'])
 })
+
+import { allocate } from '../lib/calc/holdings-view.ts'
+import { tradeLedger } from '../lib/calc/stock-detail.ts'
+import { buildStockAlerts } from '../lib/calc/stock-alerts.ts'
+
+test('비중: 묶음별 평가금액·비중·수익률, 현재가 없는 종목 제외', () => {
+  const r = allocate(rows, h => h.asset_class, h => h.asset_class)
+  assert.equal(r[0].key, 'etf_kr')
+  assert.equal(Math.round(r.reduce((s, x) => s + x.share, 0)), 100)
+  assert.equal(r.find(x => x.key === 'kr_stock')!.count, 1)
+  assert.equal(r.find(x => x.key === 'kr_stock')!.rate, 50)
+})
+
+test('거래 원장: 거래 뒤 보유 수량을 최신순으로', () => {
+  const l = tradeLedger([
+    { id: '1', date: '2026-01-01', account_id: 'a', type: 'buy', quantity: 10, amount: 0 },
+    { id: '2', date: '2026-02-01', account_id: 'a', type: 'sell', quantity: 4, amount: 0 },
+    { id: '3', date: '2026-03-01', account_id: 'a', type: 'dividend', quantity: null, amount: 100 },
+  ])
+  assert.deepEqual(l.map(x => [x.id, x.runningQuantity]), [['3', null], ['2', 6], ['1', 10]])
+})
+
+test('알림: 환율·미입력·오래된 시세·급등락·기록 차이', () => {
+  const now = new Date('2026-11-18T00:00:00Z')
+  const usd = { ...holding('애플', 'us_stock', 100, 120), currency: 'USD', asset_id: 'aapl', current_price: 1, prev_close: 0.9 } as Holding
+  const none = holding('없음', 'kr_stock', 100, null)
+  const a = holding('삼성', 'kr_stock', 100, 100)
+  const alerts = buildStockAlerts({
+    holdings: [usd, none, { ...a, current_price: 100, prev_close: 90 } as Holding],
+    priceAsOf: new Map([['삼성', '2026-11-10T00:00:00Z']]),
+    usdKrw: null, now,
+  })
+  const ids = alerts.map(x => x.id)
+  assert.ok(ids.includes('fx-missing') && ids.includes('price-missing') && ids.includes('price-stale'))
+  assert.ok(ids.some(id => id.startsWith('move-')))
+  assert.equal(alerts[0].level, 'warn')
+  const gap = buildStockAlerts({ holdings: [a], priceAsOf: new Map(), usdKrw: 1, now, recorded: new Map([['a', { name: '계좌', amount: 200 }]]) })
+  assert.ok(gap.some(x => x.id === 'gap-a'))
+  assert.deepEqual(buildStockAlerts({ holdings: [], priceAsOf: new Map(), usdKrw: 1, now }), [])
+})

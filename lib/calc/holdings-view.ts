@@ -75,3 +75,34 @@ export function summarizeReturns(holdings: Holding[], groupOf: (holding: Holding
     worst: ranked.length > 1 ? ranked[ranked.length - 1] : null,
   }
 }
+
+export interface AllocationSlice {
+  key: string
+  label: string
+  value: number
+  /** 전체 대비 비중(0~100). */
+  share: number
+  cost: number
+  pnl: number
+  rate: number | null
+  count: number
+}
+
+/** 현재가가 있는 종목의 평가금액을 묶음(계좌·구분 등)별 비중으로 나눈다. */
+export function allocate(holdings: Holding[], keyOf: (holding: Holding) => string, labelOf: (holding: Holding) => string): AllocationSlice[] {
+  const map = new Map<string, AllocationSlice>()
+  for (const holding of holdings) {
+    if (holding.market_value_krw === null) continue
+    const key = keyOf(holding)
+    const slice = map.get(key) ?? { key, label: labelOf(holding), value: 0, share: 0, cost: 0, pnl: 0, rate: null, count: 0 }
+    slice.value += holding.market_value_krw
+    slice.cost += holding.total_cost_krw
+    slice.count += 1
+    map.set(key, slice)
+  }
+  const total = [...map.values()].reduce((sum, slice) => sum + slice.value, 0)
+  return [...map.values()].map(slice => {
+    const pnl = slice.value - slice.cost
+    return { ...slice, share: total > 0 ? slice.value / total * 100 : 0, pnl, rate: slice.cost > 0 ? pnl / slice.cost * 100 : null }
+  }).sort((a, b) => b.value - a.value)
+}

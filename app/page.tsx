@@ -33,6 +33,11 @@ import type {
   NetWorthSnapshot,
 } from '@/lib/types'
 import { trySyncMortgageSchedule } from '@/lib/mortgage-sync'
+import { loadStockPortfolio } from '@/lib/stock-portfolio'
+import { allocate } from '@/lib/calc/holdings-view'
+import { buildStockAlerts } from '@/lib/calc/stock-alerts'
+import StockAlerts from '@/components/StockAlerts'
+import StockReturnCard from '@/components/StockReturnCard'
 
 interface CompositionItem {
   label: string
@@ -194,6 +199,19 @@ export default async function DashboardPage() {
   })
 
 
+  // 주식 계좌 수익률·알림. 조회가 실패해도 홈이 멈추지 않도록 막는다.
+  const stock = await loadStockPortfolio(supabase, userId).catch(() => null)
+  const stockAccounts = stock ? allocate(stock.holdings, holding => holding.account_id, holding => holding.account_name) : []
+  const stockMissing = stock ? stock.holdings.filter(holding => holding.market_value_krw === null).length : 0
+  const stockRecorded = new Map<string, { name: string; amount: number }>()
+  if (stock) {
+    for (const account of accounts) {
+      const record = emergencySnapshots.get(account.id)
+      if (record && record.month === currentMonth) stockRecorded.set(account.id, { name: account.name, amount: Number(record.evaluation_amount) })
+    }
+  }
+  const stockAlerts = stock ? buildStockAlerts({ holdings: stock.holdings, priceAsOf: stock.priceAsOf, usdKrw: stock.usdKrw, now, recorded: stockRecorded }) : []
+
   return (
     <>
       <div className="page-container dashboard-layout max-w-[1600px]">
@@ -205,6 +223,8 @@ export default async function DashboardPage() {
         />
 
         <MonthEndBanner reminder={reminder} />
+
+        <StockAlerts alerts={stockAlerts} limit={3} />
 
         {pensionAccounts.length > 0 ? (
           <PensionYearEndBanner
@@ -224,6 +244,8 @@ export default async function DashboardPage() {
           <GoalCard goal={activeGoal} progress={activeGoalProgress} basis={goalTracking?.basis ?? null} />
           <SavingsCard points={savingsPoints} average={savingsAverage} hasIncome={monthlyIncome > 0} />
         </section>
+
+        <StockReturnCard accounts={stockAccounts} missing={stockMissing} />
 
         <section aria-label="진행 상황" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <StripCard
