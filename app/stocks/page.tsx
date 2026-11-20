@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import TabNav from '@/components/TabNav'
+import LinkPending from '@/components/LinkPending'
 import { Stat, StatStrip, toneOf } from '@/components/Stat'
 import { latestSnapshotsAtMonth } from '@/lib/calc/account-snapshots'
 import { buildHoldings, type PriceRow } from '@/lib/calc/holdings'
@@ -183,9 +184,9 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
             <TabNav label="주식 계좌 탭" active={tab} items={([['holdings', '보유 현황'], ['trades', '거래 기록'], ['dividends', '배당'], ['prices', '현재가 입력'], ['assets', '종목 관리']] as const).map(([value, label]) => ({ value, label, href: href({ tab: value }) }))} />
             {tab !== 'prices' && tab !== 'assets' ? (
               <div className="flex flex-wrap gap-1.5" aria-label="계좌 선택">
-                <Link href={href({ account: null })} className={chipClass(!selectedAccount)}>전체</Link>
+                <Link href={href({ account: null })} className={chipClass(!selectedAccount)}>전체<LinkPending /></Link>
                 {accounts.map(account => (
-                  <Link key={account.id} href={href({ account: account.id })} className={chipClass(selectedAccount?.id === account.id)}>{account.name}</Link>
+                  <Link key={account.id} href={href({ account: account.id })} className={chipClass(selectedAccount?.id === account.id)}>{account.name}<LinkPending /></Link>
                 ))}
               </div>
             ) : null}
@@ -223,20 +224,20 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="text-[12.5px] font-semibold text-[var(--color-muted)]">정렬</span>
                         {([['value', '평가금액'], ['return', '수익률'], ['pnl', '평가손익'], ['name', '이름']] as const).map(([value, label]) => (
-                          <Link key={value} href={href({ sort: value })} className={chipClass(sort === value)}>{label}</Link>
+                          <Link key={value} href={href({ sort: value })} className={chipClass(sort === value)}>{label}<LinkPending /></Link>
                         ))}
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="text-[12.5px] font-semibold text-[var(--color-muted)]">손익</span>
                         {([['all', '전체'], ['gain', '이익'], ['loss', '손실']] as const).map(([value, label]) => (
-                          <Link key={value} href={href({ filter: value })} className={chipClass(filter === value)}>{label}</Link>
+                          <Link key={value} href={href({ filter: value })} className={chipClass(filter === value)}>{label}<LinkPending /></Link>
                         ))}
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="text-[12.5px] font-semibold text-[var(--color-muted)]">구분</span>
-                        <Link href={href({ class: null })} className={chipClass(!classFilter)}>전체</Link>
+                        <Link href={href({ class: null })} className={chipClass(!classFilter)}>전체<LinkPending /></Link>
                         {STOCK_CLASSES.filter(item => holdings.some(holding => holding.asset_class === item.value)).map(item => (
-                          <Link key={item.value} href={href({ class: item.value })} className={chipClass(classFilter === item.value)}>{item.label}</Link>
+                          <Link key={item.value} href={href({ class: item.value })} className={chipClass(classFilter === item.value)}>{item.label}<LinkPending /></Link>
                         ))}
                       </div>
                     </div>
@@ -381,7 +382,7 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
               </StatStrip>
               {dividendYears.length > 1 ? (
                 <div className="flex flex-wrap gap-1.5" aria-label="연도 선택">
-                  {dividendYears.map(item => <Link key={item} href={href({ tab: 'dividends', year: item })} className={chipClass(item === dividendYear)}>{item}년</Link>)}
+                  {dividendYears.map(item => <Link key={item} href={href({ tab: 'dividends', year: item })} className={chipClass(item === dividendYear)}>{item}년<LinkPending /></Link>)}
                 </div>
               ) : null}
               <section className="app-card p-5" aria-label="월별 배당">
@@ -447,7 +448,7 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
 }
 
 function chipClass(active: boolean) {
-  return `inline-flex min-h-8 items-center rounded-full border px-3 text-[12.5px] font-semibold ${active ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'border-[var(--color-border)] bg-white text-[var(--color-muted)]'}`
+  return `inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-semibold ${active ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'border-[var(--color-border)] bg-white text-[var(--color-muted)]'}`
 }
 
 function HoldingsTable({ holdings, total }: { holdings: Holding[]; total: number }) {
