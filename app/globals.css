@@ -240,3 +240,33 @@ a {
     box-shadow: none !important;
   }
 }
+
+/* 누르는 순간의 반응: 버튼은 살짝 작아지고, 링크는 잠깐 흐려진다. 키보드 이동은 테두리로 보인다. */
+@layer base {
+  button,
+  a[href],
+  summary,
+  [role='button'] {
+    -webkit-tap-highlight-color: transparent;
+    transition-property: color, background-color, border-color, opacity, transform, box-shadow;
+    transition-duration: 150ms;
+  }
+  button:not(:disabled):active,
+  summary:active,
+  [role='button']:active {
+    transform: scale(0.97);
+  }
+  a[href]:active {
+    opacity: 0.6;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  button:focus-visible,
+  a[href]:focus-visible,
+  summary:focus-visible,
+  select:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}

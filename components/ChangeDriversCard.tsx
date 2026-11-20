@@ -53,7 +53,21 @@ export default function ChangeDriversCard({ fromMonth, toMonth, totalChange, dri
         </ul>
       )}
 
-      <div className="mt-auto pt-3 text-right">
+      {fromMonth && drivers.length > 0 ? (
+        <dl className="mt-auto grid grid-cols-3 gap-2 border-t border-[var(--color-border)] pt-3 text-center">
+          {(['account', 'asset', 'liability'] as const).map(source => {
+            const sum = drivers.filter(driver => driver.source === source).reduce((total, driver) => total + driver.change, 0)
+            return (
+              <div key={source} className="rounded-lg bg-[var(--color-canvas)]/75 px-2 py-2">
+                <dt className="text-[11.5px] text-[var(--color-muted)]">{SOURCE_LABEL[source]}{source === 'liability' ? ' 감소' : ''}</dt>
+                <dd className={`mt-0.5 text-[13px] font-bold tabular-nums ${sum === 0 ? 'text-[var(--color-subtle)]' : toneClass(sum)}`}>{sum === 0 ? '변화 없음' : signedCompactKrw(sum)}</dd>
+              </div>
+            )
+          })}
+        </dl>
+      ) : null}
+
+      <div className={`${fromMonth && drivers.length > 0 ? '' : 'mt-auto '}pt-3 text-right`}>
         <Link href="/net-worth" className="inline-flex min-h-8 items-center text-[12.5px] font-semibold text-[var(--color-primary)] hover:underline">밸런스 시트 보기 →</Link>
       </div>
     </article>

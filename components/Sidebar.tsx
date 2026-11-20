@@ -161,8 +161,11 @@ export default function Sidebar() {
 
   return (
     <>
-      <div className="sticky top-0 hidden h-dvh shrink-0 md:block">
-        {sidebarContent}
+      {/* 바깥 칸은 페이지 높이만큼 늘어나 배경을 채우고, 안쪽은 화면에 붙어 따라온다. */}
+      <div className="hidden shrink-0 bg-[var(--color-sidebar)] md:block">
+        <div className="sticky top-0 h-dvh">
+          {sidebarContent}
+        </div>
       </div>
 
       <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 px-4 backdrop-blur md:hidden">
@@ -263,7 +266,9 @@ function NavItem({
 function NavigationPending() {
   const { pending } = useLinkStatus()
   return pending ? (
-    <span role="status" className="absolute inset-x-0 bottom-0 h-0.5 bg-[#d8bc83] motion-safe:animate-pulse">
+    <span role="status" className="pointer-events-none absolute inset-0 rounded-lg bg-white/[0.08]">
+      <span aria-hidden="true" className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 animate-spin rounded-full border-2 border-[#d8bc83] border-t-transparent" />
+      <span className="absolute inset-x-0 bottom-0 h-0.5 bg-[#d8bc83] motion-safe:animate-pulse" />
       <span className="sr-only">화면으로 이동 중입니다</span>
     </span>
   ) : null
