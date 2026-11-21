@@ -95,15 +95,19 @@ export default async function PensionPage() {
       .reduce((sum, account) => sum + Number(account.monthly_payment ?? 0), 0)
     const monthlyPension = monthlyOf('pension')
     const monthlyIrp = monthlyOf('irp')
-    const recordMonthOf = (type: 'pension' | 'irp') => ownerAccounts
+    // 계좌마다 시작 달·기록 달이 달라서 연말 예상은 계좌별로 계산해 더한다.
+    const projectedOf = (type: 'pension' | 'irp') => ownerAccounts
       .filter(account => account.type === type)
-      .map(account => currentContributions.get(account.id)?.month ?? null)
-      .reduce<string | null>((latest, month) => month && (!latest || month > latest) ? month : latest, null)
+      .reduce((sum, account) => {
+        const record = currentContributions.get(account.id)
+        const monthly = isAccountActiveAtMonth(account, currentMonth) ? Number(account.monthly_payment ?? 0) : 0
+        return sum + projectYearEnd(Number(record?.ytd_contribution ?? 0), monthly, record?.month ?? null, currentMonth, account.contribution_start_month ?? null)
+      }, 0)
     return {
       owner, label, pensionContribution, irpContribution, totalContribution: pensionContribution + irpContribution, evaluationAmount,
       monthlyPension, monthlyIrp,
-      projectedPension: projectYearEnd(pensionContribution, monthlyPension, recordMonthOf('pension'), currentMonth),
-      projectedIrp: projectYearEnd(irpContribution, monthlyIrp, recordMonthOf('irp'), currentMonth),
+      projectedPension: projectedOf('pension'),
+      projectedIrp: projectedOf('irp'),
     }
   }
 
@@ -177,7 +181,7 @@ export default async function PensionPage() {
                     <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">
                       {account.type === 'irp' ? 'IRP' : '연금저축'}{active ? '' : ' · 비활성 계좌'}{latest ? ` · ${formatMonth(latest.month)} 평가` : ' · 평가 기록 없음'}
                     </p>
-                    {active ? <MonthlyContributionEditor accountId={account.id} amount={account.monthly_payment != null ? Number(account.monthly_payment) : null} /> : null}
+                    {active ? <MonthlyContributionEditor accountId={account.id} amount={account.monthly_payment != null ? Number(account.monthly_payment) : null} startMonth={account.contribution_start_month ?? null} currentMonth={currentMonth} /> : null}
                   </div>
                   <ValueCell label="현재 평가금액" value={active ? Number(latest?.evaluation_amount ?? 0) : 0} />
                   <ValueCell label={`${currentYear}년 누적 납입`} value={Number(contribution?.ytd_contribution ?? 0)} />

@@ -75,6 +75,8 @@ export interface Account {
   interest_rate: number | null
   monthly_payment: number | null
   maturity_date: string | null
+  /** 연금저축·IRP 정기 납입 시작 달(YYYY-MM). */
+  contribution_start_month?: string | null
   created_at: string
 }
 
