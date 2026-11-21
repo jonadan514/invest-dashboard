@@ -145,6 +145,8 @@ export interface MonthlyBudget {
   mortgage_interest: number
   mortgage_principal: number
   mortgage_extra_principal: number
+  /** 그달 실제 지출. 비면 설정의 월 고정비를 쓴다. */
+  actual_spending?: number | null
   memo: string
   created_at: string
   updated_at: string

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { averageSavingsRate, buildSavingsSeries } from '../lib/calc/savings.ts'
+import { averageSavingsRate, buildSavingsSeries, monthSpending } from '../lib/calc/savings.ts'
 
 const budget = (month: string, joint: number, bonusTotal = 0, bonusToPlan = 0, principal = 450_000) =>
   ({ month, joint_savings: joint, bonus_total: bonusTotal, bonus_to_plan: bonusToPlan, mortgage_principal: principal })
@@ -34,4 +34,18 @@ test('평균 저축률은 최근 기록의 소득 가중 평균이다', () => {
   assert.equal(average?.months, 2)
   assert.equal(average?.rate, (5_300_000 + 3_300_000) / (11_000_000 + 8_000_000) * 100)
   assert.equal(averageSavingsRate(buildSavingsSeries([budget('2026-10', 7_000_000)], 0, 3_700_000)), null)
+})
+
+test('실제 지출을 적은 달은 공금 − 실제 지출을 저축으로, 비운 달은 설정의 고정비를 쓴다', () => {
+  const base = { bonus_total: 0, bonus_to_plan: 0, mortgage_principal: 500_000 }
+  const [actual, legacy, zero] = buildSavingsSeries([
+    { ...base, month: '2026-09', joint_savings: 7_000_000, actual_spending: 5_200_000 },
+    { ...base, month: '2026-10', joint_savings: 7_000_000, actual_spending: null },
+    { ...base, month: '2026-11', joint_savings: 7_000_000, actual_spending: 0 },
+  ], 10_000_000, 3_700_000)
+  assert.equal(actual.saving, 1_800_000)
+  assert.equal(actual.rateWithPrincipal, 23)
+  assert.equal(legacy.saving, 3_300_000)
+  assert.equal(zero.saving, 3_300_000)
+  assert.equal(monthSpending(undefined, 3_700_000), 3_700_000)
 })
