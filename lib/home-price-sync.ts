@@ -25,14 +25,15 @@ function encodeKey(key: string) {
 
 async function fetchPage(endpoint: string, key: string, lawdCd: string, dealYmd: string, page: number) {
   const url = `${endpoint}?serviceKey=${encodeKey(key)}&LAWD_CD=${lawdCd}&DEAL_YMD=${dealYmd}&pageNo=${page}&numOfRows=${PAGE_SIZE}`
-  const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(15_000) })
+  const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(10_000) })
   const body = await response.text()
   if (!response.ok && !body.includes('<')) throw new Error(`실거래가 API 응답 ${response.status}`)
   return parseAptTrades(body)
 }
 
 async function fetchMonth(key: string, lawdCd: string, dealYmd: string) {
-  let lastError: Error | null = null
+  // 두 서비스가 모두 실패하면 첫 서비스의 오류를 보여 준다(상세 자료를 신청하지 않은 키의 인증 오류가 원래 원인을 가리지 않게).
+  let firstError: Error | null = null
   for (const endpoint of ENDPOINTS) {
     try {
       const first = await fetchPage(endpoint, key, lawdCd, dealYmd, 1)
@@ -41,10 +42,10 @@ async function fetchMonth(key: string, lawdCd: string, dealYmd: string) {
       for (let page = 2; page <= pages; page++) trades.push(...(await fetchPage(endpoint, key, lawdCd, dealYmd, page)).trades)
       return trades
     } catch (error) {
-      lastError = error as Error
+      firstError ??= error as Error
     }
   }
-  throw lastError ?? new Error('실거래가를 불러오지 못했어요.')
+  throw firstError ?? new Error('실거래가를 불러오지 못했어요.')
 }
 
 export interface HomePriceResult {

@@ -25,7 +25,8 @@ test('응답 읽기: 만원 단위를 원으로, 해제 거래 표시, 오류 �
   assert.deepEqual(trades[0], { name: '래미안 퍼스티지', area: 84.93, amount: 3_550_000_000, date: '2026-10-03', canceled: false })
   assert.equal(trades[1].canceled, true)
   assert.throws(() => parseAptTrades('<OpenAPI_ServiceResponse><cmmMsgHeader><returnAuthMsg>SERVICE_KEY_IS_NOT_REGISTERED_ERROR</returnAuthMsg></cmmMsgHeader></OpenAPI_ServiceResponse>'), /SERVICE_KEY/)
-  assert.throws(() => parseAptTrades('<response><header><resultCode>03</resultCode><resultMsg>NO DATA</resultMsg></header></response>'), /NO DATA/)
+  assert.deepEqual(parseAptTrades('<response><header><resultCode>03</resultCode><resultMsg>NODATA_ERROR</resultMsg></header></response>').trades, [])
+  assert.throws(() => parseAptTrades('<response><header><resultCode>22</resultCode><resultMsg>LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS_ERROR</resultMsg></header></response>'), /LIMITED/)
 })
 
 test('금액 고르기: 같은 단지·면적(±1㎡) 해제 안 된 거래의 중간값', () => {
