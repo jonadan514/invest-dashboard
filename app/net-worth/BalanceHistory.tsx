@@ -7,6 +7,7 @@ import { deleteItemBalance, saveItemBalance } from './actions'
 export interface BalanceRow { month: string; amount: number; source: string }
 
 const INPUT = 'field-input text-right tabular-nums'
+export const SOURCE_LABEL: Record<string, string> = { manual: '직접 입력', mortgage_auto: '자동', price_auto: '실거래가' }
 
 function formatInput(value: string) {
   const digits = value.replace(/[^0-9]/g, '')
@@ -41,13 +42,14 @@ export default function BalanceHistory({ itemId, rows, currentMonth, auto }: { i
   return (
     <div>
       <p className="text-[12.5px] font-bold">잔액 이력</p>
+      {rows.some(row => row.source === 'price_auto') ? <p className="mt-1 text-[12.5px] leading-5 text-[var(--color-muted)]">‘실거래가’는 최근 3개월 같은 단지·면적 거래의 중간값이에요. 그달 금액을 고치면 직접 입력이 되어 자동으로 바뀌지 않아요.</p> : null}
       {auto ? <p className="mt-1 text-[12.5px] leading-5 text-[var(--color-muted)]">‘자동’은 직접 입력한 잔액을 기준으로 계산한 값이에요. 은행 잔액과 다르면 그달 잔액을 입력해 바로잡으세요.</p> : null}
       {rows.length === 0 ? <p className="mt-2 text-[12.5px] text-[var(--color-subtle)]">잔액 기록이 없어요.</p> : (
         <ul className="mt-2 divide-y divide-[var(--color-border)] rounded-lg border border-[var(--color-border)] bg-white">
           {shown.map(row => (
             <li key={row.month} className="flex flex-wrap items-center gap-2 px-3 py-2 text-[13px]">
               <span className="w-24 shrink-0 font-semibold">{formatMonth(row.month)}</span>
-              <span className={`rounded px-1.5 py-0.5 text-[11.5px] font-semibold ${row.source === 'manual' ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'bg-[var(--color-section)] text-[var(--color-muted)]'}`}>{row.source === 'manual' ? '직접 입력' : '자동'}</span>
+              <span className={`rounded px-1.5 py-0.5 text-[11.5px] font-semibold ${row.source === 'manual' ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'bg-[var(--color-section)] text-[var(--color-muted)]'}`}>{SOURCE_LABEL[row.source] ?? '자동'}</span>
               {editing === row.month ? (
                 <span className="ml-auto flex w-full items-center gap-2 sm:w-auto">
                   <input value={draft} onChange={event => setDraft(formatInput(event.target.value))} inputMode="numeric" aria-label={`${formatMonth(row.month)} 잔액`} className={`${INPUT} sm:w-44`} />

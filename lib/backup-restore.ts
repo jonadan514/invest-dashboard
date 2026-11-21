@@ -6,7 +6,7 @@ const CONFIG = [
   { table: 'monthly_budgets', conflict: 'user_id,month', columns: ['id','month','joint_savings','bonus_total','bonus_to_plan','cash_balance','mortgage_interest','mortgage_principal','mortgage_extra_principal','memo','created_at','updated_at'] },
   { table: 'account_monthly_snapshots', conflict: 'user_id,account_id,month', columns: ['id','account_id','month','evaluation_amount','monthly_allocation','ytd_contribution','memo','created_at','updated_at'] },
   { table: 'financial_plan_settings', conflict: 'user_id', columns: ['monthly_fixed_cost','mortgage_interest','mortgage_principal','monthly_joint_contribution','current_emergency_fund','stage1_target','stage2_target','stage1_emergency_ratio','stage2_emergency_ratio','stage2_investment_ratio','completed_investment_ratio','completed_property_ratio','created_at','updated_at'] },
-  { table: 'net_worth_items', conflict: 'id', columns: ['id','name','kind','category','owner','interest_rate','start_date','maturity_date','monthly_payment','inactive_from_month','sort_order','is_active','created_at','updated_at'] },
+  { table: 'net_worth_items', conflict: 'id', columns: ['id','name','kind','category','owner','interest_rate','start_date','maturity_date','monthly_payment','price_lawd_cd','price_apt_name','price_area','inactive_from_month','sort_order','is_active','created_at','updated_at'] },
   { table: 'net_worth_snapshots', conflict: 'user_id,item_id,month', columns: ['id','item_id','month','amount','source','created_at','updated_at'] },
   { table: 'portfolio_snapshots', conflict: 'user_id,month', columns: ['id','month','amount','created_at','updated_at'] },
   { table: 'household_settings', conflict: 'user_id', columns: ['monthly_income','target_allocation','created_at','updated_at'] },
