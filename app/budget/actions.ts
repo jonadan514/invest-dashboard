@@ -22,6 +22,8 @@ export async function saveBudgetEntry(formData: FormData): Promise<ActionResult>
     const mortgageInterest = numberField(formData, 'mortgage_interest')
     const mortgagePrincipal = numberField(formData, 'mortgage_principal')
     const mortgageExtraPrincipal = numberField(formData, 'mortgage_extra_principal')
+    const actualSpendingValue = numberField(formData, 'actual_spending')
+    const actualSpending = actualSpendingValue > 0 ? actualSpendingValue : null
 
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('월 형식이 올바르지 않습니다.')
     if (bonusToPlan > bonusTotal) throw new Error('배분할 성과급은 전체 성과급보다 클 수 없습니다.')
@@ -65,6 +67,14 @@ export async function saveBudgetEntry(formData: FormData): Promise<ActionResult>
       p_accounts: accountRows,
     })
     if (error) throw new Error(error.message)
+    // 실제 지출은 저장 함수 밖의 칸이라 따로 적는다. SQL을 아직 실행하지 않았으면 비운 값은 넘어가고, 적은 값은 안내한다.
+    const { error: spendingError } = await supabase.from('monthly_budgets')
+      .update({ actual_spending: actualSpending }).eq('user_id', userId).eq('month', month)
+    if (spendingError && (actualSpending !== null || !spendingError.message.includes('actual_spending'))) {
+      throw new Error(spendingError.message.includes('actual_spending')
+        ? '다른 내용은 저장했지만, Supabase에 실제 지출 칸이 아직 없어요. 안내받은 SQL을 Supabase SQL Editor에서 먼저 실행해 주세요.'
+        : spendingError.message)
+    }
     await syncMortgageSchedule(supabase, userId)
     revalidatePath('/budget')
     revalidatePath('/net-worth')

@@ -9,6 +9,7 @@ import type { FinancialPlanSettings } from '@/lib/calc/budget'
 import type { Account } from '@/lib/types'
 import { ownerLabel, stageLabel, type AccountRecordState } from '@/lib/calc/monthly-record'
 import { saveBudgetEntry } from './actions'
+import { monthSpending } from '@/lib/calc/savings'
 import { ACCOUNT_TYPE_LABEL, formatAmountInput as formatInput, krw as formatKrw, parseAmountInput as parseNumber } from '@/lib/labels'
 
 type Entry = {
@@ -19,6 +20,7 @@ type Entry = {
   mortgage_interest: number
   mortgage_principal: number
   mortgage_extra_principal: number
+  actual_spending?: number | null
   memo: string
 }
 
@@ -64,6 +66,7 @@ export default function MonthlyForm({
   const [mortgageInterest, setMortgageInterest] = useState(Number(entry?.mortgage_interest ?? 0) > 0 ? Number(entry!.mortgage_interest) : mortgageDefaults?.interest ?? entry?.mortgage_interest ?? settings.mortgageInterest)
   const [mortgagePrincipal, setMortgagePrincipal] = useState(Number(entry?.mortgage_principal ?? 0) > 0 ? Number(entry!.mortgage_principal) : mortgageDefaults?.principal ?? entry?.mortgage_principal ?? settings.mortgagePrincipal)
   const [mortgageExtraPrincipal, setMortgageExtraPrincipal] = useState(entry?.mortgage_extra_principal ?? 0)
+  const [actualSpending, setActualSpending] = useState(Number(entry?.actual_spending ?? 0))
   const [memo, setMemo] = useState(entry?.memo ?? '')
   const [accountValues, setAccountValues] = useState<Record<string, AccountValue>>(() => Object.fromEntries(accounts.map(account => {
     const state = accountStates[account.id]
@@ -83,7 +86,8 @@ export default function MonthlyForm({
   const emergencyFund = emergencyAccounts.length > 0
     ? emergencyAccounts.reduce((sum, account) => sum + (accountValues[account.id]?.evaluationAmount ?? 0), 0)
     : manualEmergencyFund
-  const regularSurplus = Math.max(jointContribution - settings.monthlyFixedCost, 0)
+  const spending = monthSpending(actualSpending, settings.monthlyFixedCost)
+  const regularSurplus = Math.max(jointContribution - spending, 0)
   const totalAllocatable = regularSurplus + bonusToPlan
   const allocatedTotal = accounts.reduce((sum, account) => sum + (accountValues[account.id]?.monthlyAllocation ?? 0), 0)
   const unallocated = totalAllocatable - allocatedTotal
@@ -117,6 +121,7 @@ export default function MonthlyForm({
     formData.set('mortgage_interest', String(mortgageInterest))
     formData.set('mortgage_principal', String(mortgagePrincipal))
     formData.set('mortgage_extra_principal', String(mortgageExtraPrincipal))
+    formData.set('actual_spending', String(actualSpending))
     formData.set('memo', memo)
     for (const account of accounts) {
       const values = accountValues[account.id] ?? { evaluationAmount: 0, monthlyAllocation: 0, ytdContribution: 0 }
@@ -171,7 +176,7 @@ export default function MonthlyForm({
         <div className="metric-cell p-4">
           <p className="text-[12.5px] text-[var(--color-muted)]">이달 배분 가능액</p>
           <p className="mt-1 whitespace-nowrap text-lg font-bold tracking-[-0.03em] text-[var(--color-ink)] sm:text-2xl">{formatKrw(totalAllocatable)}</p>
-          <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">공금 − 고정비 + 포함 성과급</p>
+          <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">공금 − {actualSpending > 0 ? '실제 지출' : '고정비'} + 포함 성과급</p>
         </div>
       </div>
 
@@ -182,10 +187,11 @@ export default function MonthlyForm({
             <div className="grid grid-cols-2 gap-3">
               <MoneyInput label="매월 공금 납입금" value={jointContribution} onChange={setJointContribution} placeholder="7,000,000" />
               <MoneyInput label="성과급·일시 수입" value={bonusTotal} onChange={value => { setBonusTotal(value); setBonusToPlan(current => Math.min(current, value)) }} placeholder="0" />
+              <MoneyInput label="실제 지출(고정비+생활비)" value={actualSpending} onChange={setActualSpending} placeholder={formatInput(settings.monthlyFixedCost)} />
               {bonusTotal > 0 ? <MoneyInput label="배분에 포함할 성과급" value={bonusToPlan} onChange={value => setBonusToPlan(Math.min(value, bonusTotal))} placeholder="0" /> : null}
               {emergencyAccounts.length === 0 ? <MoneyInput label="현재 비상금(직접 입력)" value={manualEmergencyFund} onChange={setManualEmergencyFund} placeholder="13,000,000" /> : null}
             </div>
-            <p className="mt-2 text-[12.5px] text-[var(--color-muted)]">고정비 뺀 정기 잉여금 {formatKrw(regularSurplus)}{emergencyAccounts.length === 0 ? ' · 비상금 계좌를 지정하면 자동 합산돼요' : ''}</p>
+            <p className="mt-2 text-[12.5px] text-[var(--color-muted)]">{actualSpending > 0 ? '실제 지출' : '고정비'} 뺀 정기 잉여금(저축) {formatKrw(regularSurplus)} · 실제 지출에는 주담대 원리금을 넣고, 적금·투자로 옮긴 돈은 빼요. 비우면 설정의 고정비 {formatKrw(settings.monthlyFixedCost)}로 계산해요.{emergencyAccounts.length === 0 ? ' · 비상금 계좌를 지정하면 자동 합산돼요' : ''}</p>
           </section>
 
           <section className="app-card p-4" aria-label="주택담보대출 납부">
