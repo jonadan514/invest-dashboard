@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import type { NetWorthItem } from '@/lib/types'
-import { refreshHomePrice, updateNetWorthItem } from './actions'
+import { backfillHomePrice, refreshHomePrice, updateNetWorthItem } from './actions'
+import { kstMonth } from '@/lib/labels'
 import { isAutoHomePrice } from '@/lib/calc/home-price'
 import { ASSET_CATEGORIES, LIABILITY_CATEGORIES } from './categories'
 
@@ -18,12 +19,16 @@ export default function NetWorthItemEditor({ item }: { item: NetWorthItem }) {
   const [category, setCategory] = useState(item.category)
 
   const priceReady = isAutoHomePrice(item)
+  const thisMonth = kstMonth()
+  const [backfillStart, setBackfillStart] = useState(`${thisMonth.slice(0, 4)}-01`)
+  const [overwriteManual, setOverwriteManual] = useState(false)
 
-  function refresh() {
+  function refresh(backfill = false) {
+    if (backfill && overwriteManual && !confirm('직접 입력한 달도 실거래가로 바꿀까요? 바뀐 금액은 되돌릴 수 없어요.')) return
     setMessage('실거래가를 불러오는 중…')
     startTransition(async () => {
       try {
-        const result = await refreshHomePrice(item.id)
+        const result = backfill ? await backfillHomePrice(item.id, backfillStart, overwriteManual) : await refreshHomePrice(item.id)
         setMessage(result.ok ? result.message : result.error)
       } catch (error) {
         setMessage(error instanceof Error ? error.message : '불러오지 못했어요.')
@@ -102,7 +107,18 @@ export default function NetWorthItemEditor({ item }: { item: NetWorthItem }) {
             셋 다 넣으면 매일 아침 최근 3개월 같은 단지·면적(±1㎡) 실거래가 중간값으로 이번 달 금액을 맞춰요. 직접 입력한 달은 그대로 두고, 거래가 없으면 지난 금액이 이어져요. 한 단지가 실거래가에 이름 여러 개로 나오면 쉼표로 모두 적어요(예: 까치마을(4단지)(롯데), 까치마을(4단지)(선경)). 시군구 코드는 법정동 코드 앞 5자리예요(예: 서울 강남구 11680, 성남 분당구 41135).
           </p>
           {priceReady ? (
-            <button type="button" disabled={pending} onClick={refresh} className="mt-2 min-h-8 rounded-lg border border-[var(--color-border)] bg-white px-3 text-[12.5px] font-semibold text-[var(--color-primary)] disabled:opacity-50">지금 불러오기</button>
+            <div className="mt-2 flex flex-wrap items-end gap-2">
+              <button type="button" disabled={pending} onClick={() => refresh()} className="min-h-8 rounded-lg border border-[var(--color-border)] bg-white px-3 text-[12.5px] font-semibold text-[var(--color-primary)] disabled:opacity-50">지금 불러오기</button>
+              <span className="mx-1 hidden h-6 w-px bg-[var(--color-border)] sm:block" aria-hidden="true" />
+              <label className={LABEL}>시작 달
+                <input type="month" value={backfillStart} max={thisMonth} onChange={event => setBackfillStart(event.target.value)} className={`mt-1 block w-auto ${INPUT}`} />
+              </label>
+              <label className="flex min-h-8 items-center gap-1.5 text-[12.5px] text-[var(--color-muted)]">
+                <input type="checkbox" checked={overwriteManual} onChange={event => setOverwriteManual(event.target.checked)} />
+                직접 입력한 달도 바꾸기
+              </label>
+              <button type="button" disabled={pending || !backfillStart} onClick={() => refresh(true)} className="min-h-8 rounded-lg border border-[var(--color-border)] bg-white px-3 text-[12.5px] font-semibold text-[var(--color-primary)] disabled:opacity-50">지난 달 채우기</button>
+            </div>
           ) : null}
         </div>
       ) : null}
