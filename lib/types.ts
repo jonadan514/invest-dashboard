@@ -182,6 +182,9 @@ export interface NetWorthItem {
   start_date: string | null
   maturity_date: string | null
   monthly_payment: number | null
+  price_lawd_cd?: string | null
+  price_apt_name?: string | null
+  price_area?: number | null
   inactive_from_month: string | null
   sort_order: number
   is_active: boolean
@@ -195,7 +198,7 @@ export interface NetWorthSnapshot {
   item_id: string
   month: string
   amount: number
-  source: 'manual' | 'mortgage_auto'
+  source: 'manual' | 'mortgage_auto' | 'price_auto'
   created_at: string
   updated_at: string
 }

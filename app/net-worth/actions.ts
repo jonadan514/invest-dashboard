@@ -5,6 +5,27 @@ import { revalidatePath } from 'next/cache'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import { syncMortgageSchedule } from '@/lib/mortgage-sync'
 import { pickBalances } from '@/lib/calc/net-worth-items'
+import { syncHomePrices } from '@/lib/home-price-sync'
+import { formatMonth, kstMonth } from '@/lib/labels'
+
+function friendly(message: string) {
+  return /price_(lawd_cd|apt_name|area)|price_auto/.test(message)
+    ? 'Supabase에 실거래가 칸이 아직 없어요. 안내받은 SQL을 Supabase SQL Editor에서 먼저 실행해 주세요.'
+    : message
+}
+
+/** 실거래가 조회 조건. 셋 다 비우면 자동 갱신을 끈다. */
+function priceTerms(formData: FormData) {
+  const lawdCd = String(formData.get('price_lawd_cd') ?? '').trim()
+  const aptName = String(formData.get('price_apt_name') ?? '').trim()
+  const areaText = String(formData.get('price_area') ?? '').trim()
+  if (!lawdCd && !aptName && !areaText) return { price_lawd_cd: null, price_apt_name: null, price_area: null }
+  if (!/^\d{5}$/.test(lawdCd)) throw new Error('시군구 코드는 숫자 5자리로 입력해 주세요. 예: 서울 강남구 11680')
+  if (!aptName) throw new Error('실거래가에 나오는 단지명을 입력해 주세요.')
+  const area = Number(areaText)
+  if (!Number.isFinite(area) || area <= 0) throw new Error('전용면적(㎡)을 숫자로 입력해 주세요. 예: 84.97')
+  return { price_lawd_cd: lawdCd, price_apt_name: aptName, price_area: area }
+}
 
 const ASSET_CATEGORIES = new Set([
   'cash', 'savings', 'real_estate', 'deposit', 'vehicle', 'other_asset',
@@ -131,27 +152,35 @@ export async function updateNetWorthItem(id: string, formData: FormData): Promis
     if (!['household', 'me', 'spouse'].includes(owner)) throw new Error('올바른 소유자를 선택해 주세요.')
     if (startDate && maturityDate && maturityDate < startDate) throw new Error('만기일은 시작일 이후여야 합니다.')
 
-    const { data: current, error: currentError } = await supabase.from('net_worth_items').select('kind').eq('id', id).eq('user_id', userId).single()
+    const { data: current, error: currentError } = await supabase.from('net_worth_items').select('kind, category').eq('id', id).eq('user_id', userId).single()
     if (currentError) throw new Error(currentError.message)
     const liability = current.kind === 'liability'
     if (category && !(liability ? LIABILITY_CATEGORIES : ASSET_CATEGORIES).has(category)) throw new Error('올바른 분류를 선택해 주세요.')
+    // 실거래가 조건은 부동산에만 쓴다. 부동산에서 다른 분류로 바꾸면 비운다.
+    const realEstate = (category || current.category) === 'real_estate'
+    const empty = { price_lawd_cd: null, price_apt_name: null, price_area: null }
+    const price = realEstate
+      ? formData.has('price_lawd_cd') ? priceTerms(formData) : {}
+      : current.category === 'real_estate' ? empty : {}
+    const priceIsEmpty = Object.values(price).every(value => value === null)
 
-    const { error } = await supabase
-      .from('net_worth_items')
-      .update({
-        name: requiredText(formData, 'name'),
-        owner,
-        ...(category ? { category } : {}),
-        // 대출 조건은 부채에만 쓴다. 자산은 비운다.
-        interest_rate: liability ? interestRate : null,
-        monthly_payment: liability ? monthlyPayment : null,
-        start_date: startDate,
-        maturity_date: liability ? maturityDate : null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .eq('user_id', userId)
-    if (error) throw new Error(error.message)
+    const fields = {
+      name: requiredText(formData, 'name'),
+      owner,
+      ...(category ? { category } : {}),
+      // 대출 조건은 부채에만 쓴다. 자산은 비운다.
+      interest_rate: liability ? interestRate : null,
+      monthly_payment: liability ? monthlyPayment : null,
+      start_date: startDate,
+      maturity_date: liability ? maturityDate : null,
+      updated_at: new Date().toISOString(),
+    }
+    let { error } = await supabase.from('net_worth_items').update({ ...fields, ...price }).eq('id', id).eq('user_id', userId)
+    // SQL을 아직 실행하지 않았어도, 실거래가 칸을 비워 둔 저장은 나머지 정보만 저장한다.
+    if (error && priceIsEmpty && Object.keys(price).length > 0 && friendly(error.message) !== error.message) {
+      ({ error } = await supabase.from('net_worth_items').update(fields).eq('id', id).eq('user_id', userId))
+    }
+    if (error) throw new Error(friendly(error.message))
 
     await syncMortgageSchedule(supabase, userId)
     revalidatePath('/net-worth')
@@ -231,5 +260,33 @@ export async function deleteItemBalance(itemId: string, month: string): Promise<
     revalidatePath('/net-worth')
     revalidatePath('/mortgage')
     revalidatePath('/')
+  })
+}
+
+/** 부동산 한 항목의 이번 달 금액을 지금 실거래가로 불러온다. 결과를 문장으로 돌려준다. */
+export async function refreshHomePrice(itemId: string): Promise<ActionResult<{ message: string }>> {
+  return runAction(async () => {
+    const { supabase, userId } = await getHouseholdContext()
+    const month = kstMonth()
+    let results
+    try {
+      results = await syncHomePrices(supabase, userId, { itemId, month })
+    } catch (error) {
+      throw new Error(friendly((error as Error).message))
+    }
+    const result = results[0]
+    if (!result) throw new Error('시군구 코드·단지명·전용면적을 먼저 저장해 주세요.')
+    revalidatePath('/net-worth')
+    revalidatePath('/')
+    const won = (value: number) => `${Math.round(value / 10_000).toLocaleString('ko-KR')}만 원`
+    if (result.status === 'no_trades') {
+      const hint = result.sameAptFound
+        ? ` 이 단지의 거래 면적: ${result.suggestions.join(', ')}`
+        : result.suggestions.length > 0 ? ` 비슷한 단지명: ${result.suggestions.join(', ')}` : ' 단지명이 실거래가 자료와 같은지 확인해 주세요.'
+      return { message: `최근 3개월 맞는 거래가 없어 지난 금액을 그대로 둬요.${hint}` }
+    }
+    const summary = `최근 3개월 ${result.count}건 중간값 ${won(result.amount!)} (마지막 거래 ${result.latestDate})`
+    if (result.status === 'manual') return { message: `${summary}. ${formatMonth(month)}은 직접 입력한 금액이 있어 바꾸지 않았어요.` }
+    return { message: `${summary}${result.status === 'saved' ? `으로 ${formatMonth(month)} 금액을 저장했어요.` : ', 이미 같은 금액이에요.'}` }
   })
 }

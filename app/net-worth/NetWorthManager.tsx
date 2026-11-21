@@ -13,6 +13,8 @@ import NetWorthItemEditor from './NetWorthItemEditor'
 import BalanceHistory, { type BalanceRow } from './BalanceHistory'
 import { ASSET_CATEGORIES, CATEGORY_LABEL, LIABILITY_CATEGORIES, OWNER_LABEL } from './categories'
 import { isAutoMortgage } from '@/lib/calc/net-worth-items'
+import { isAutoHomePrice } from '@/lib/calc/home-price'
+import { SOURCE_LABEL } from './BalanceHistory'
 
 export { CATEGORY_LABEL }
 const INPUT = 'field-input'
@@ -390,10 +392,11 @@ export default function NetWorthManager({
                       <span className="truncate text-[13px] font-semibold">{item.name}</span>
                       <span className="shrink-0 text-[12.5px] text-[var(--color-muted)]">{item.kind === 'liability' ? '부채' : '자산'} · {CATEGORY_LABEL[item.category] ?? item.category}</span>
                       {auto ? <span className="shrink-0 rounded bg-[var(--color-positive-soft)] px-1.5 py-0.5 text-[11.5px] font-semibold text-[var(--color-positive-strong)]">자동 상환</span> : null}
+                      {isAutoHomePrice(item) ? <span className="shrink-0 rounded bg-[var(--color-positive-soft)] px-1.5 py-0.5 text-[11.5px] font-semibold text-[var(--color-positive-strong)]">실거래가</span> : null}
                     </span>
                     <span className="text-right">
                       <span className="block text-[13px] font-bold tabular-nums">{latest ? krw(latest.amount) : '—'}</span>
-                      <span className="block text-[11.5px] text-[var(--color-subtle)]">{latest ? `${formatMonth(latest.month)} ${latest.source === 'manual' ? '직접 입력' : '자동'}` : '잔액 기록 없음'}</span>
+                      <span className="block text-[11.5px] text-[var(--color-subtle)]">{latest ? `${formatMonth(latest.month)} ${SOURCE_LABEL[latest.source] ?? '자동'}` : '잔액 기록 없음'}</span>
                     </span>
                     <ChevronRight aria-hidden="true" size={16} className="text-[var(--color-subtle)] transition-transform group-open:rotate-90" />
                   </summary>
@@ -467,7 +470,8 @@ function SnapshotGroup({
       {items.length === 0 ? <p className="py-6 text-center text-[12.5px] text-[var(--color-subtle)]">등록된 {title} 항목이 없습니다.</p> : null}
       <div className="space-y-3">
         {items.map(item => {
-          const auto = isAutoMortgage(item)
+          const homePrice = isAutoHomePrice(item)
+          const auto = isAutoMortgage(item) || homePrice
           const editable = !auto || correcting.has(item.id)
           const recordedMonth = latestMonths[item.id]
           return (
@@ -477,7 +481,7 @@ function SnapshotGroup({
                   <div className="flex min-w-0 items-center gap-2">
                     <OwnerBadge owner={item.owner} />
                     <p className="truncate text-[12.5px] font-semibold">{item.name}</p>
-                    {auto ? <span className="shrink-0 rounded bg-[var(--color-positive-soft)] px-1.5 py-0.5 text-[11.5px] font-semibold text-[var(--color-positive-strong)]">자동 상환</span> : null}
+                    {auto ? <span className="shrink-0 rounded bg-[var(--color-positive-soft)] px-1.5 py-0.5 text-[11.5px] font-semibold text-[var(--color-positive-strong)]">{homePrice ? '실거래가' : '자동 상환'}</span> : null}
                   </div>
                   <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">
                     {CATEGORY_LABEL[item.category] ?? item.category}
@@ -502,11 +506,11 @@ function SnapshotGroup({
                 </div>
               ) : (
                 <div className="flex items-baseline justify-between gap-2 rounded-lg bg-[var(--color-section)] px-3 py-2">
-                  <span className="text-[12.5px] text-[var(--color-muted)]">대출 조건으로 계산한 잔액</span>
+                  <span className="text-[12.5px] text-[var(--color-muted)]">{homePrice ? '실거래가로 불러온 금액' : '대출 조건으로 계산한 잔액'}</span>
                   <span className="text-sm font-semibold tabular-nums">{krw(amounts[item.id] ?? 0)}</span>
                 </div>
               )}
-              {auto && correcting.has(item.id) ? <p className="mt-1.5 text-[11.5px] text-[var(--color-muted)]">은행 잔액을 넣으면 이 달 잔액을 기준으로 이후 달을 다시 계산해요.</p> : null}
+              {auto && correcting.has(item.id) ? <p className="mt-1.5 text-[11.5px] text-[var(--color-muted)]">{homePrice ? '넣은 금액은 이 달만 직접 입력으로 저장되고, 다음 달부터 다시 실거래가로 갱신돼요.' : '은행 잔액을 넣으면 이 달 잔액을 기준으로 이후 달을 다시 계산해요.'}</p> : null}
             </div>
           )
         })}
