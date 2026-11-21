@@ -4,8 +4,9 @@ import { runAction, type ActionResult } from '@/lib/action-result'
 import { revalidatePath } from 'next/cache'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import { syncMortgageSchedule } from '@/lib/mortgage-sync'
-import { pickBalances } from '@/lib/calc/net-worth-items'
+import { isAutoMortgage, pickBalances } from '@/lib/calc/net-worth-items'
 import { syncHomePrices } from '@/lib/home-price-sync'
+import { monthsBetween } from '@/lib/calc/home-price'
 import { formatMonth, kstMonth } from '@/lib/labels'
 
 function friendly(message: string) {
@@ -243,8 +244,14 @@ export async function deleteItemBalance(itemId: string, month: string): Promise<
   return runAction(async () => {
     const { supabase, userId } = await getHouseholdContext()
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('올바른 달을 선택해 주세요.')
-    const { count, error: countError } = await supabase.from('net_worth_snapshots').select('id', { count: 'exact', head: true })
-      .eq('user_id', userId).eq('item_id', itemId).eq('source', 'manual')
+    const { data: item, error: itemError } = await supabase.from('net_worth_items')
+      .select('category, interest_rate, monthly_payment, maturity_date').eq('id', itemId).eq('user_id', userId).single()
+    if (itemError) throw new Error(itemError.message)
+    // 자동 상환 대출은 직접 입력이 계산 기준이라 하나는 남긴다. 다른 항목은 다른 달 기록(실거래가 등)이 있으면 지울 수 있다.
+    let countQuery = supabase.from('net_worth_snapshots').select('id', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('item_id', itemId)
+    if (isAutoMortgage(item)) countQuery = countQuery.eq('source', 'manual')
+    const { count, error: countError } = await countQuery
     if (countError) throw new Error(countError.message)
     if ((count ?? 0) <= 1) throw new Error('마지막 남은 잔액 기록은 지울 수 없어요. 금액을 고쳐 주세요.')
     const { error } = await supabase.from('net_worth_snapshots').delete()
@@ -270,7 +277,7 @@ export async function refreshHomePrice(itemId: string): Promise<ActionResult<{ m
     const month = kstMonth()
     let results
     try {
-      results = await syncHomePrices(supabase, userId, { itemId, month })
+      results = await syncHomePrices(supabase, userId, { itemId, months: [month] })
     } catch (error) {
       throw new Error(friendly((error as Error).message))
     }
@@ -288,5 +295,32 @@ export async function refreshHomePrice(itemId: string): Promise<ActionResult<{ m
     const summary = `최근 3개월 ${result.count}건 중간값 ${won(result.amount!)} (마지막 거래 ${result.latestDate})`
     if (result.status === 'manual') return { message: `${summary}. ${formatMonth(month)}은 직접 입력한 금액이 있어 바꾸지 않았어요.` }
     return { message: `${summary}${result.status === 'saved' ? `으로 ${formatMonth(month)} 금액을 저장했어요.` : ', 이미 같은 금액이에요.'}` }
+  })
+}
+
+/** 시작 달부터 이번 달까지 달마다 실거래가로 금액을 채운다. overwriteManual이면 직접 입력한 달도 바꾼다. */
+export async function backfillHomePrice(itemId: string, startMonth: string, overwriteManual: boolean): Promise<ActionResult<{ message: string }>> {
+  return runAction(async () => {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(startMonth)) throw new Error('시작 달을 선택해 주세요.')
+    const { supabase, userId } = await getHouseholdContext()
+    const months = monthsBetween(startMonth, kstMonth())
+    if (months.length === 0) throw new Error('시작 달은 이번 달이거나 그 전이어야 해요.')
+    if (months.length > 36) throw new Error('한 번에 3년(36개월)까지만 채울 수 있어요.')
+    let results
+    try {
+      results = await syncHomePrices(supabase, userId, { itemId, months, overwriteManual })
+    } catch (error) {
+      throw new Error(friendly((error as Error).message))
+    }
+    if (results.length === 0) throw new Error('시군구 코드·단지명·전용면적을 먼저 저장해 주세요.')
+    revalidatePath('/net-worth')
+    revalidatePath('/')
+    const pick = (status: string) => results.filter(row => row.status === status).map(row => formatMonth(row.month))
+    const saved = pick('saved'), unchanged = pick('unchanged'), manual = pick('manual'), empty = pick('no_trades')
+    const parts = [`${formatMonth(months[0])}~${formatMonth(months.at(-1)!)}: ${saved.length}개월 저장`]
+    if (unchanged.length) parts.push(`${unchanged.length}개월은 이미 같은 금액`)
+    if (manual.length) parts.push(`직접 입력이라 그대로 둔 달 ${manual.join(', ')}`)
+    if (empty.length) parts.push(`거래가 없어 건너뛴 달 ${empty.join(', ')}`)
+    return { message: `${parts.join(' · ')}.` }
   })
 }

@@ -31,6 +31,18 @@ export function tradeMonths(throughMonth: string, count = 3) {
   })
 }
 
+/** start부터 end까지의 달(YYYY-MM) 목록. start가 늦으면 빈 목록. */
+export function monthsBetween(start: string, end: string) {
+  const months: string[] = []
+  let [year, month] = start.split('-').map(Number)
+  while (`${year}-${String(month).padStart(2, '0')}` <= end && months.length < 240) {
+    months.push(`${year}-${String(month).padStart(2, '0')}`)
+    month += 1
+    if (month > 12) { month = 1; year += 1 }
+  }
+  return months
+}
+
 function decode(value: string) {
   return value.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").trim()
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { isAutoHomePrice, parseAptTrades, pickHomePrice, tradeMonths } from '../lib/calc/home-price.ts'
+import { isAutoHomePrice, monthsBetween, parseAptTrades, pickHomePrice, tradeMonths } from '../lib/calc/home-price.ts'
 
 const item = (name: string, area: string, amount: string, day: string, cancel = '') =>
   `<item><aptNm>${name}</aptNm><excluUseAr>${area}</excluUseAr><dealAmount>${amount}</dealAmount><dealYear>2026</dealYear><dealMonth>10</dealMonth><dealDay>${day}</dealDay><cdealType>${cancel}</cdealType></item>`
@@ -62,4 +62,10 @@ test('한 단지가 이름 두 개로 나오면 쉼표로 적은 이름을 모�
   assert.equal(picked.count, 3)
   assert.equal(picked.amount, 1_240_000_000)
   assert.equal(pickHomePrice(trades, '까치마을(4단지)(롯데)', 84.7).count, 1)
+})
+
+test('지난 달 채우기: 시작 달부터 끝 달까지, 해가 바뀌어도', () => {
+  assert.deepEqual(monthsBetween('2025-11', '2026-02'), ['2025-11', '2025-12', '2026-01', '2026-02'])
+  assert.deepEqual(monthsBetween('2026-03', '2026-03'), ['2026-03'])
+  assert.deepEqual(monthsBetween('2026-04', '2026-03'), [])
 })
