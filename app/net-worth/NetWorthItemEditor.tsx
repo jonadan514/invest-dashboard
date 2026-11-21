@@ -92,14 +92,14 @@ export default function NetWorthItemEditor({ item }: { item: NetWorthItem }) {
               <input name="price_lawd_cd" inputMode="numeric" maxLength={5} defaultValue={item.price_lawd_cd ?? ''} placeholder="11680" className={`mt-1 ${INPUT}`} />
             </label>
             <label className={LABEL}>단지명
-              <input name="price_apt_name" defaultValue={item.price_apt_name ?? ''} placeholder="실거래가에 나오는 이름" className={`mt-1 ${INPUT}`} />
+              <input name="price_apt_name" defaultValue={item.price_apt_name ?? ''} placeholder="여러 이름이면 쉼표로 구분" className={`mt-1 ${INPUT}`} />
             </label>
             <label className={LABEL}>전용면적(㎡)
               <input name="price_area" type="number" min="0" step="0.01" defaultValue={item.price_area ?? ''} placeholder="84.97" className={`mt-1 ${INPUT}`} />
             </label>
           </div>
           <p className="mt-2 text-[12.5px] leading-5 text-[var(--color-muted)]">
-            셋 다 넣으면 매일 아침 최근 3개월 같은 단지·면적(±1㎡) 실거래가 중간값으로 이번 달 금액을 맞춰요. 직접 입력한 달은 그대로 두고, 거래가 없으면 지난 금액이 이어져요. 시군구 코드는 법정동 코드 앞 5자리예요(예: 서울 강남구 11680, 성남 분당구 41135).
+            셋 다 넣으면 매일 아침 최근 3개월 같은 단지·면적(±1㎡) 실거래가 중간값으로 이번 달 금액을 맞춰요. 직접 입력한 달은 그대로 두고, 거래가 없으면 지난 금액이 이어져요. 한 단지가 실거래가에 이름 여러 개로 나오면 쉼표로 모두 적어요(예: 까치마을(4단지)(롯데), 까치마을(4단지)(선경)). 시군구 코드는 법정동 코드 앞 5자리예요(예: 서울 강남구 11680, 성남 분당구 41135).
           </p>
           {priceReady ? (
             <button type="button" disabled={pending} onClick={refresh} className="mt-2 min-h-8 rounded-lg border border-[var(--color-border)] bg-white px-3 text-[12.5px] font-semibold text-[var(--color-primary)] disabled:opacity-50">지금 불러오기</button>

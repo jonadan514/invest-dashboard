@@ -77,23 +77,28 @@ export function normalizeAptName(name: string) {
   return name.replace(/[\s()·.\-_]/g, '').toLowerCase()
 }
 
+/** 한 단지가 실거래가에 여러 이름으로 나올 때를 위해 쉼표로 나눈 이름을 모두 받는다. */
+export function aptNameList(names: string) {
+  return [...new Set(names.split(/[,，]/).map(normalizeAptName).filter(Boolean))]
+}
+
 const AREA_TOLERANCE = 1
 
 /**
- * 같은 단지·같은 면적(±1㎡)의 해제되지 않은 거래 중간값을 금액으로 쓴다.
+ * 같은 단지(쉼표로 적은 이름 중 하나)·같은 면적(±1㎡)의 해제되지 않은 거래 중간값을 금액으로 쓴다.
  * 맞는 거래가 없으면 null과 함께, 이름을 고칠 수 있게 비슷한 단지명을 돌려준다.
  */
 export function pickHomePrice(trades: AptTrade[], aptName: string, area: number) {
-  const target = normalizeAptName(aptName)
+  const targets = aptNameList(aptName)
   const valid = trades.filter(trade => !trade.canceled)
-  const sameApt = valid.filter(trade => normalizeAptName(trade.name) === target)
+  const sameApt = valid.filter(trade => targets.includes(normalizeAptName(trade.name)))
   const matched = sameApt.filter(trade => Math.abs(trade.area - area) <= AREA_TOLERANCE)
   if (matched.length === 0) {
     const names = sameApt.length > 0
       ? [...new Set(sameApt.map(trade => `${trade.area}㎡`))]
       : [...new Set(valid.map(trade => trade.name).filter(name => {
         const normalized = normalizeAptName(name)
-        return target && (normalized.includes(target) || target.includes(normalized))
+        return targets.some(target => normalized.includes(target) || target.includes(normalized))
       }))]
     return { amount: null, count: 0, latestDate: null, suggestions: names.slice(0, 5), sameAptFound: sameApt.length > 0 }
   }
