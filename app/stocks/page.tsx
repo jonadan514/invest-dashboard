@@ -24,6 +24,7 @@ import { stockTrend } from '@/lib/calc/stock-trend'
 import { STOCK_CLASSES, classLabel } from './asset-classes'
 import TrendChart from './TrendChart'
 import Donut from './Donut'
+import { classColor } from './palette'
 import StockAlerts from '@/components/StockAlerts'
 import { buildStockAlerts } from '@/lib/calc/stock-alerts'
 
@@ -261,7 +262,7 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
                       <Donut title="계좌별" slices={accountSlices} center={`${accountSlices.length}개 계좌`} format={wonShort} href={slice => href({ account: slice.key })}
                         note={slice => { const recorded = latestEvaluations.get(slice.key); return recorded ? `${formatMonth(recorded.month)} 기록 ${wonShort(Number(recorded.evaluation_amount))}` : null }} />
                     ) : null}
-                    <Donut title="종목 구분별" slices={classSlices} center={wonShort(classSlices.reduce((sum, slice) => sum + slice.value, 0))} format={wonShort} />
+                    <Donut title="종목 구분별" slices={classSlices} colorOf={slice => classColor(slice.key)} center={wonShort(classSlices.reduce((sum, slice) => sum + slice.value, 0))} format={wonShort} />
                   </div>
                 </section>
               ) : null}
@@ -408,49 +409,51 @@ function HoldingsTable({ holdings, total, sort, sortHref }: { holdings: Holding[
     <>
       <ul className="divide-y divide-[var(--color-border)] md:hidden">
         {holdings.map(holding => (
-          <li key={`${holding.account_id}-${holding.asset_id}`} className="px-5 py-3.5">
+          <li key={`${holding.account_id}-${holding.asset_id}`} className="relative py-3.5 pl-6 pr-5 even:bg-[var(--color-section)]/50">
+            <ClassBar assetClass={holding.asset_class} />
             <div className="flex items-baseline justify-between gap-3">
-              <Link href={`/stocks/${holding.asset_id}`} className="min-w-0 truncate text-sm font-bold hover:text-[var(--color-primary)]">{holding.name}</Link>
-              <p className="shrink-0 text-sm font-bold tabular-nums">{holding.market_value_krw === null ? '현재가 필요' : wonShort(holding.market_value_krw)}</p>
+              <Link href={`/stocks/${holding.asset_id}`} className="min-w-0 truncate text-[15px] font-bold hover:text-[var(--color-primary)]">{holding.name}</Link>
+              <p className="shrink-0 text-[15px] font-bold tabular-nums">{holding.market_value_krw === null ? '현재가 필요' : wonShort(holding.market_value_krw)}</p>
             </div>
-            <div className="mt-1 flex items-baseline justify-between gap-3 text-[12.5px] tabular-nums text-[var(--color-muted)]">
-              <span className="truncate">{holding.account_name} · {holding.quantity.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}주 · 평단 {money(holding, holding.avg_cost)}</span>
+            <div className="mt-1 flex items-start justify-between gap-3 text-[13px] tabular-nums text-[var(--color-muted)]">
+              <span className="min-w-0"><Tags holding={holding} /><span className="mt-0.5 block truncate">{holding.quantity.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}주 · 평단 {money(holding, holding.avg_cost)}</span></span>
               <PnL holding={holding} />
             </div>
           </li>
         ))}
       </ul>
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full text-[13px]">
+        <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[var(--color-border)] text-[12.5px] text-[var(--color-muted)]">
-              <th className="px-5 py-2.5 text-left font-semibold"><SortHeader label="종목" value="name" sort={sort} href={sortHref} /></th>
-              <th className="px-3 py-2.5 text-right font-semibold">수량</th>
-              <th className="px-3 py-2.5 text-right font-semibold">평균 단가</th>
-              <th className="px-3 py-2.5 text-right font-semibold">현재가</th>
-              <th className="px-3 py-2.5 text-right font-semibold"><SortHeader label="평가금액" value="value" sort={sort} href={sortHref} /></th>
-              <th className="px-3 py-2.5 text-right font-semibold"><SortHeader label="평가손익" value="pnl" sort={sort} href={sortHref} /> <span className="text-[var(--color-border-strong)]">·</span> <SortHeader label="수익률" value="return" sort={sort} href={sortHref} /></th>
-              <th className="px-5 py-2.5 text-left font-semibold">비중</th>
+            <tr className="border-b border-[var(--color-border)] text-[13px] text-[var(--color-muted)]">
+              <th className="py-3 pl-6 pr-3 text-left font-semibold"><SortHeader label="종목" value="name" sort={sort} href={sortHref} /></th>
+              <th className="px-3 py-3 text-right font-semibold">수량</th>
+              <th className="px-3 py-3 text-right font-semibold">평균 단가</th>
+              <th className="px-3 py-3 text-right font-semibold">현재가</th>
+              <th className="px-3 py-3 text-right font-semibold"><SortHeader label="평가금액" value="value" sort={sort} href={sortHref} /></th>
+              <th className="px-3 py-3 text-right font-semibold"><SortHeader label="평가손익" value="pnl" sort={sort} href={sortHref} /> <span className="text-[var(--color-border-strong)]">·</span> <SortHeader label="수익률" value="return" sort={sort} href={sortHref} /></th>
+              <th className="px-5 py-3 text-left font-semibold">비중</th>
             </tr>
           </thead>
           <tbody>
             {holdings.map(holding => {
               const weight = total > 0 && holding.market_value_krw !== null ? holding.market_value_krw / total * 100 : 0
               return (
-                <tr key={`${holding.account_id}-${holding.asset_id}`} className="border-b border-[var(--color-section)] last:border-0">
-                  <td className="px-5 py-3">
-                    <p className="font-semibold"><Link href={`/stocks/${holding.asset_id}`} className="hover:text-[var(--color-primary)] hover:underline">{holding.name}</Link>{holding.symbol ? <span className="ml-1.5 text-[12.5px] font-normal text-[var(--color-subtle)]">{holding.symbol}</span> : null}</p>
-                    <p className="text-[12.5px] text-[var(--color-muted)]">{holding.account_name}</p>
+                <tr key={`${holding.account_id}-${holding.asset_id}`} className="border-b border-[var(--color-border)]/70 last:border-0 even:bg-[var(--color-section)]/50 hover:bg-[var(--color-primary-soft)]/60">
+                  <td className="relative py-3.5 pl-6 pr-3">
+                    <ClassBar assetClass={holding.asset_class} />
+                    <p className="text-[15px] font-bold"><Link href={`/stocks/${holding.asset_id}`} className="hover:text-[var(--color-primary)] hover:underline">{holding.name}</Link>{holding.symbol ? <span className="ml-1.5 text-[12.5px] font-normal text-[var(--color-subtle)]">{holding.symbol}</span> : null}</p>
+                    <div className="mt-1"><Tags holding={holding} /></div>
                   </td>
-                  <td className="px-3 py-3 text-right tabular-nums">{holding.quantity.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}</td>
-                  <td className="px-3 py-3 text-right tabular-nums">{money(holding, holding.avg_cost)}</td>
-                  <td className="px-3 py-3 text-right tabular-nums">{money(holding, holding.current_price)}</td>
-                  <td className="px-3 py-3 text-right font-semibold tabular-nums" title={holding.market_value_krw === null ? undefined : krw(holding.market_value_krw)}>{holding.market_value_krw === null ? '—' : wonShort(holding.market_value_krw)}</td>
-                  <td className="px-3 py-3 text-right"><PnL holding={holding} /></td>
-                  <td className="px-5 py-3">
+                  <td className="px-3 py-3.5 text-right tabular-nums">{holding.quantity.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}</td>
+                  <td className="px-3 py-3.5 text-right tabular-nums">{money(holding, holding.avg_cost)}</td>
+                  <td className="px-3 py-3.5 text-right tabular-nums">{money(holding, holding.current_price)}</td>
+                  <td className="px-3 py-3.5 text-right text-[15px] font-bold tabular-nums" title={holding.market_value_krw === null ? undefined : krw(holding.market_value_krw)}>{holding.market_value_krw === null ? '—' : wonShort(holding.market_value_krw)}</td>
+                  <td className="px-3 py-3.5 text-right"><PnL holding={holding} /></td>
+                  <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2">
-                      <span className="h-1.5 w-20 overflow-hidden rounded-full bg-[var(--color-section)]"><span className="block h-full rounded-full bg-[var(--color-primary)]" style={{ width: `${weight}%` }} /></span>
-                      <span className="w-10 text-right text-[12.5px] tabular-nums text-[var(--color-muted)]">{weight.toFixed(0)}%</span>
+                      <span className="h-2 w-20 overflow-hidden rounded-full bg-[var(--color-border)]/60"><span className="block h-full rounded-full" style={{ width: `${weight}%`, backgroundColor: classColor(holding.asset_class) }} /></span>
+                      <span className="w-10 text-right text-[13px] tabular-nums text-[var(--color-muted)]">{weight.toFixed(0)}%</span>
                     </div>
                   </td>
                 </tr>
@@ -463,13 +466,38 @@ function HoldingsTable({ holdings, total, sort, sortHref }: { holdings: Holding[
   )
 }
 
+/** 종목 왼쪽의 구분 색 막대. */
+function ClassBar({ assetClass }: { assetClass: string }) {
+  return <span aria-hidden="true" className="absolute bottom-3 left-2.5 top-3 w-1 rounded-full" style={{ backgroundColor: classColor(assetClass) }} />
+}
+
+/** 종목 구분·계좌 표시. 같은 종목이 여러 계좌에 있어도 구분된다. */
+function Tags({ holding }: { holding: Holding }) {
+  const color = classColor(holding.asset_class)
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1 text-[12px]">
+      <span className="rounded px-1.5 py-0.5 font-semibold" style={{ color, backgroundColor: `color-mix(in srgb, ${color} 12%, white)` }}>{classLabel(holding.asset_class)}</span>
+      <span className="rounded bg-[var(--color-section)] px-1.5 py-0.5 text-[var(--color-muted)]">{holding.account_name}</span>
+    </span>
+  )
+}
+
 function PnL({ holding }: { holding: Holding }) {
   if (holding.unrealized_pnl_krw === null) return <span className="text-[var(--color-subtle)]">—</span>
   const tone = holding.unrealized_pnl_krw > 0 ? 'text-[var(--color-positive)]' : holding.unrealized_pnl_krw < 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-muted)]'
+  // 달러 종목: 손익을 주가 변화와 환율 변화(매수 평균 환율 대비 지금 환율)로 나눠 보여 준다.
+  const usd = holding.currency === 'USD' && holding.current_price !== null && holding.avg_cost > 0
+  const priceEffect = usd ? (holding.current_price! / holding.avg_cost - 1) * 100 : null
+  const buyFx = usd ? holding.avg_cost_krw / holding.avg_cost : null
+  const fxEffect = usd && buyFx ? (holding.fx_rate / buyFx - 1) * 100 : null
+  const signed = (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(1)}%`
   return (
-    <span className={`shrink-0 font-semibold tabular-nums ${tone}`} title={krw(holding.unrealized_pnl_krw)}>
-      {signedWonShort(holding.unrealized_pnl_krw)}
-      {holding.unrealized_pnl_pct !== null ? <span className="ml-1 text-[12.5px] font-medium">({holding.unrealized_pnl_pct > 0 ? '+' : ''}{holding.unrealized_pnl_pct.toFixed(1)}%)</span> : null}
+    <span className={`inline-flex shrink-0 flex-col items-end font-semibold tabular-nums ${tone}`} title={krw(holding.unrealized_pnl_krw)}>
+      <span>
+        {signedWonShort(holding.unrealized_pnl_krw)}
+        {holding.unrealized_pnl_pct !== null ? <span className="ml-1 text-[13px] font-medium">({signed(holding.unrealized_pnl_pct)})</span> : null}
+      </span>
+      {priceEffect !== null && fxEffect !== null ? <span className="text-[12px] font-normal text-[var(--color-muted)]">주가 {signed(priceEffect)} · 환율 {signed(fxEffect)}</span> : null}
     </span>
   )
 }

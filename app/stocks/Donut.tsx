@@ -3,7 +3,7 @@ import { colorAt } from './palette'
 export interface DonutSlice { key: string; label: string; share: number; value: number; rate: number | null }
 
 /** 비중 도넛 + 범례. 범례에는 비중과 수익률을 함께 적는다. */
-export default function Donut({ title, slices, center, format, href, note }: {
+export default function Donut({ title, slices, center, format, href, note, colorOf }: {
   title: string
   slices: DonutSlice[]
   center: string
@@ -11,6 +11,8 @@ export default function Donut({ title, slices, center, format, href, note }: {
   href?: (slice: DonutSlice) => string | null
   /** 범례 이름 아래 작은 글씨(예: 월간 기록 금액). */
   note?: (slice: DonutSlice) => string | null
+  /** 조각 색을 정한다(없으면 순서대로 팔레트). */
+  colorOf?: (slice: DonutSlice) => string
 }) {
   const radius = 42
   const circumference = 2 * Math.PI * radius
@@ -24,7 +26,7 @@ export default function Donut({ title, slices, center, format, href, note }: {
           {slices.map((slice, index) => {
             const length = circumference * slice.share / 100
             return (
-              <circle key={slice.key} cx="50" cy="50" r={radius} fill="none" stroke={colorAt(index)} strokeWidth="14"
+              <circle key={slice.key} cx="50" cy="50" r={radius} fill="none" stroke={(colorOf ? colorOf(slice) : colorAt(index))} strokeWidth="14"
                 strokeDasharray={`${Math.max(length - (slices.length > 1 ? 0.8 : 0), 0)} ${circumference}`} strokeDashoffset={-offsets[index]} />
             )
           })}
@@ -37,7 +39,7 @@ export default function Donut({ title, slices, center, format, href, note }: {
             const label = <span className="min-w-0"><span className="block truncate font-semibold">{slice.label}</span>{extra ? <span className="block truncate text-[11.5px] font-normal text-[var(--color-subtle)]">{extra}</span> : null}</span>
             return (
               <li key={slice.key} className="flex items-center gap-2 text-[12.5px]">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: colorAt(index) }} aria-hidden="true" />
+                <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: (colorOf ? colorOf(slice) : colorAt(index)) }} aria-hidden="true" />
                 {link ? <a href={link} className="min-w-0 truncate hover:text-[var(--color-primary)]">{label}</a> : label}
                 <span className="ml-auto shrink-0 tabular-nums text-[var(--color-muted)]">{format(slice.value)} · {slice.share.toFixed(0)}%</span>
                 {slice.rate !== null ? (
