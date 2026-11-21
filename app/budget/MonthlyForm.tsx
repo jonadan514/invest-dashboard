@@ -70,6 +70,8 @@ export default function MonthlyForm({
   })))
   // 지난달 값을 불러온 계좌 중 사용자가 고치거나 '같음'으로 확인한 계좌.
   const [confirmed, setConfirmed] = useState<Set<string>>(new Set())
+  // 배분액은 대부분 0이라 기본으로 접는다. 이번 달에 이미 적은 배분액이 있으면 펼친다.
+  const [showAllocation, setShowAllocation] = useState(() => accounts.some(account => (accountStates[account.id]?.monthlyAllocation ?? 0) > 0))
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -193,13 +195,24 @@ export default function MonthlyForm({
           <div className="flex flex-col justify-between gap-2 border-b border-[var(--color-border)] bg-[var(--color-section)] px-5 py-4 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-base font-bold text-[var(--color-ink)]"><StepNo n={2} />계좌 월말 잔액</h2>
-              <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">월말 앱 잔액을 평가금액에 적어요. 기록이 없는 달은 지난 기록 값을 불러오니, 바뀌지 않았으면 ‘같음’을 눌러 확인하세요.</p>
+              <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">월말 앱 잔액을 적어요. 바뀐 계좌만 고치면 돼요.</p>
             </div>
-            <div className="shrink-0 text-right text-[12.5px]">
-              <p className="text-[var(--color-muted)]">배분 {formatKrw(allocatedTotal)} / 가능 {formatKrw(totalAllocatable)}</p>
-              <p className={unallocated < 0 ? 'font-semibold text-[var(--color-negative)]' : 'font-semibold text-[var(--color-primary)]'}>{unallocated < 0 ? `초과 ${formatKrw(-unallocated)} (저장은 돼요)` : `미배분 ${formatKrw(unallocated)}`}</p>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              {pendingAccounts.length > 0 ? (
+                <button type="button" onClick={() => setConfirmed(new Set(accounts.map(account => account.id)))} className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-[var(--color-accent)] bg-white px-3 text-[12.5px] font-bold text-[var(--color-accent)] shadow-sm hover:bg-[var(--color-accent-soft)]">
+                  <Check size={14} aria-hidden="true" />나머지 {pendingAccounts.length}개 모두 지난달과 같음
+                </button>
+              ) : null}
+              <button type="button" onClick={() => setShowAllocation(value => !value)} aria-expanded={showAllocation} className="inline-flex min-h-9 items-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-[12.5px] font-semibold text-[var(--color-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]">
+                {showAllocation ? '배분액 접기' : '배분액 입력'}
+              </button>
             </div>
           </div>
+          {showAllocation ? (
+            <p className="border-b border-[var(--color-border)] px-5 py-2 text-right text-[12.5px] text-[var(--color-muted)]">
+              배분 {formatKrw(allocatedTotal)} / 가능 {formatKrw(totalAllocatable)} · <span className={unallocated < 0 ? 'font-semibold text-[var(--color-negative)]' : 'font-semibold text-[var(--color-primary)]'}>{unallocated < 0 ? `초과 ${formatKrw(-unallocated)} (저장은 돼요)` : `미배분 ${formatKrw(unallocated)}`}</span>
+            </p>
+          ) : null}
 
           {accounts.length === 0 ? (
             <div className="px-5 py-8 text-center text-[12.5px] text-[var(--color-subtle)]">
@@ -242,7 +255,7 @@ export default function MonthlyForm({
                       ) : null}
                     </div>
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-1">
-                      <MoneyInput idSuffix={account.id} label="이번 달 배분액" value={values.monthlyAllocation} onChange={value => updateAccount(account.id, 'monthlyAllocation', value)} placeholder="0" />
+                      {showAllocation ? <MoneyInput idSuffix={account.id} label="이번 달 배분액" value={values.monthlyAllocation} onChange={value => updateAccount(account.id, 'monthlyAllocation', value)} placeholder="0" /> : null}
                       {isPension ? (
                         <div>
                           <MoneyInput idSuffix={account.id} label={`${month.slice(0, 4)}년 누적 납입액`} value={values.ytdContribution} onChange={value => updateAccount(account.id, 'ytdContribution', value)} placeholder="0" />

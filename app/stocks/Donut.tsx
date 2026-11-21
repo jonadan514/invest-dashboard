@@ -3,12 +3,14 @@ import { colorAt } from './palette'
 export interface DonutSlice { key: string; label: string; share: number; value: number; rate: number | null }
 
 /** 비중 도넛 + 범례. 범례에는 비중과 수익률을 함께 적는다. */
-export default function Donut({ title, slices, center, format, href }: {
+export default function Donut({ title, slices, center, format, href, note }: {
   title: string
   slices: DonutSlice[]
   center: string
   format: (value: number) => string
   href?: (slice: DonutSlice) => string | null
+  /** 범례 이름 아래 작은 글씨(예: 월간 기록 금액). */
+  note?: (slice: DonutSlice) => string | null
 }) {
   const radius = 42
   const circumference = 2 * Math.PI * radius
@@ -31,7 +33,8 @@ export default function Donut({ title, slices, center, format, href }: {
         <ul className="w-full min-w-0 flex-1 space-y-1.5">
           {slices.map((slice, index) => {
             const link = href?.(slice) ?? null
-            const label = <span className="truncate font-semibold">{slice.label}</span>
+            const extra = note?.(slice) ?? null
+            const label = <span className="min-w-0"><span className="block truncate font-semibold">{slice.label}</span>{extra ? <span className="block truncate text-[11.5px] font-normal text-[var(--color-subtle)]">{extra}</span> : null}</span>
             return (
               <li key={slice.key} className="flex items-center gap-2 text-[12.5px]">
                 <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: colorAt(index) }} aria-hidden="true" />

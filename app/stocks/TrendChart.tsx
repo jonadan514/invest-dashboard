@@ -6,8 +6,9 @@ export default function TrendChart({ points }: { points: TrendPoint[] }) {
   if (points.length < 2) {
     return <p className="py-6 text-center text-[13px] text-[var(--color-muted)]">월간 기록이 2개월 이상 쌓이면 추이가 보여요.</p>
   }
-  const width = 600
-  const height = 160
+  // 가로로 길게 잡아 화면 폭에서도 높이가 과하지 않게 한다.
+  const width = 1000
+  const height = 150
   const pad = { left: 8, right: 8, top: 12, bottom: 22 }
   const max = Math.max(...points.map(point => point.value))
   const min = Math.min(...points.map(point => point.value))

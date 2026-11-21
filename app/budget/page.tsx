@@ -113,9 +113,7 @@ export default async function BudgetPage({
     <>
       <div className="page-container max-w-[1240px]">
         <div className="mb-5">
-          <p className="page-eyebrow">Monthly household record</p>
           <h1 className="page-title">월간 기록</h1>
-          <p className="page-subtitle">매월 자금 흐름과 계좌 평가금액을 한 번에 기록합니다.</p>
         </div>
 
 

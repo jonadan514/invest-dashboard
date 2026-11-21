@@ -29,9 +29,7 @@ export default async function SettingsPage() {
     <>
       <div className="page-container max-w-[1240px]">
         <header className="mb-5">
-          <p className="page-eyebrow">Household settings</p>
           <h1 className="page-title">설정</h1>
-          <p className="page-subtitle">가계 목표, 월 소득과 전체 데이터 백업을 관리합니다.</p>
         </header>
         <SettingsClient
           key={renderKey}

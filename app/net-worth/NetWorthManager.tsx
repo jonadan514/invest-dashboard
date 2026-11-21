@@ -3,12 +3,11 @@
 import { useRef, useState, useTransition } from 'react'
 import { ACCOUNT_TYPE_LABEL, formatAmountInput as formatInput, formatMonth, krw, parseAmountInput as parseAmount } from '@/lib/labels'
 import Link from 'next/link'
-import { ChevronRight, CircleGauge, ClipboardCheck, ListTree, type LucideIcon } from 'lucide-react'
+import { ChevronRight, ClipboardCheck, ListTree, type LucideIcon } from 'lucide-react'
 import MonthNavigator from '@/components/MonthNavigator'
 import { TAB_LIST, tabClass } from '@/components/TabNav'
 import type { Account, NetWorthItem } from '@/lib/types'
 import AccountForm from '@/app/accounts/AccountForm'
-import DeleteButton from '@/app/accounts/DeleteButton'
 import { createNetWorthItem, saveNetWorthSnapshot, setNetWorthItemActive } from './actions'
 import NetWorthItemEditor from './NetWorthItemEditor'
 import BalanceHistory, { type BalanceRow } from './BalanceHistory'
@@ -18,16 +17,14 @@ import { isAutoMortgage } from '@/lib/calc/net-worth-items'
 export { CATEGORY_LABEL }
 const INPUT = 'field-input'
 
-type WorkspaceView = 'overview' | 'record' | 'settings'
+type WorkspaceView = 'record' | 'settings'
 
 const VIEWS: Array<{ id: WorkspaceView; label: string; description: string; icon: LucideIcon }> = [
-  { id: 'overview', label: '한눈에 보기', description: '순자산과 월별 추이', icon: CircleGauge },
   { id: 'record', label: '월말 기록', description: '자산·부채 잔액 입력', icon: ClipboardCheck },
   { id: 'settings', label: '항목 관리', description: '계좌와 자산·부채 설정', icon: ListTree },
 ]
 
 interface Props {
-  overview: React.ReactNode
   month: string
   months: string[]
   activeItems: NetWorthItem[]
@@ -46,7 +43,6 @@ interface Props {
 }
 
 export default function NetWorthManager({
-  overview,
   month,
   months,
   activeItems,
@@ -57,7 +53,7 @@ export default function NetWorthManager({
   latestMonths,
   history,
   currentMonth,
-  initialView = 'overview',
+  initialView = 'record',
   hasExactSnapshot,
   investmentValue,
   investmentRecordedMonth,
@@ -150,7 +146,6 @@ export default function NetWorthManager({
         </p>
       </div> : null}
 
-      {view === 'overview' ? overview : null}
 
       {view === 'settings' ? <section className="app-card overflow-hidden">
         <div className="border-b border-[var(--color-border)] bg-[var(--color-primary-soft)] px-4 py-4 sm:px-5">
@@ -168,23 +163,21 @@ export default function NetWorthManager({
             {accounts.map(account => {
               const latest = latestAccountSnapshots[account.id]
               return (
-                <div key={account.id} className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                  <div className="min-w-0">
+                <Link key={account.id} href={`/accounts/${account.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--color-section)] sm:px-5">
+                  <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <OwnerBadge owner={account.owner} />
-                      <Link href={`/accounts/${account.id}`} className="truncate text-[12.5px] font-semibold text-[var(--color-ink)] hover:text-[var(--color-primary)]">{account.name}</Link>
+                      <span className="truncate text-[13px] font-semibold text-[var(--color-ink)]">{account.name}</span>
                       {account.is_emergency_fund ? <span className="rounded-full bg-[var(--color-accent-soft)] px-2 py-0.5 text-[11.5px] font-semibold text-[var(--color-accent)]">비상금</span> : null}
                     </div>
                     <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{ACCOUNT_TYPE_LABEL[account.type] ?? account.type}{account.broker ? ` · ${account.broker}` : ''}</p>
                   </div>
-                  <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
-                    <div className="text-right">
-                      <p className="text-[12.5px] font-semibold tabular-nums text-[var(--color-ink)]">{krw(latest?.amount ?? 0)}</p>
-                      <p className="mt-0.5 text-[11.5px] text-[var(--color-subtle)]">{latest ? `${latest.month.replace('-', '년 ')}월 기록` : '월말 기록 없음'}</p>
-                    </div>
-                    <DeleteButton id={account.id} name={account.name} />
+                  <div className="shrink-0 text-right">
+                    <p className="text-[13px] font-semibold tabular-nums text-[var(--color-ink)]">{krw(latest?.amount ?? 0)}</p>
+                    <p className="mt-0.5 text-[11.5px] text-[var(--color-subtle)]">{latest ? `${formatMonth(latest.month)} 기록` : '월말 기록 없음'}</p>
                   </div>
-                </div>
+                  <ChevronRight aria-hidden="true" size={16} className="shrink-0 text-[var(--color-subtle)]" />
+                </Link>
               )
             })}
           </div>

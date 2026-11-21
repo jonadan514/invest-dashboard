@@ -1,6 +1,8 @@
 import Link from 'next/link'
+import { ArrowDown, SlidersHorizontal } from 'lucide-react'
 import TabNav from '@/components/TabNav'
 import LinkPending from '@/components/LinkPending'
+import Hint from '@/components/Hint'
 import { Stat, StatStrip, toneOf } from '@/components/Stat'
 import { latestSnapshotsAtMonth } from '@/lib/calc/account-snapshots'
 import { buildHoldings, type PriceRow } from '@/lib/calc/holdings'
@@ -16,16 +18,14 @@ import RefreshPricesButton from './RefreshPricesButton'
 import AssetManager, { type ManagedAsset } from './AssetManager'
 import TradeForm, { type TradeCostContext, type TradeInitial } from './TradeForm'
 import { inferFeeRates } from '@/lib/calc/trade-costs'
-import { allocate, parseFilter, parseSort, summarizeReturns, viewHoldings, type HoldingFilter, type HoldingSort } from '@/lib/calc/holdings-view'
+import { allocate, parseFilter, parseSort, viewHoldings, type HoldingFilter, type HoldingSort } from '@/lib/calc/holdings-view'
 import { summarizeDividends } from '@/lib/calc/dividends'
 import { stockTrend } from '@/lib/calc/stock-trend'
 import { STOCK_CLASSES, classLabel } from './asset-classes'
 import TrendChart from './TrendChart'
 import Donut from './Donut'
-import ReturnBars from './ReturnBars'
 import StockAlerts from '@/components/StockAlerts'
 import { buildStockAlerts } from '@/lib/calc/stock-alerts'
-import { colorAt } from './palette'
 
 export const metadata = { title: '주식 계좌' }
 
@@ -89,7 +89,6 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
   const filter = parseFilter(params.filter)
   const classFilter = STOCK_CLASSES.find(item => item.value === params.class)?.value ?? null
   const shownHoldings = viewHoldings(holdings, { sort, filter, assetClass: classFilter })
-  const returns = summarizeReturns(holdings, holding => classLabel(holding.asset_class))
   const trend = stockTrend((snapshotRows ?? []) as AccountMonthlySnapshot[], (selectedAccount ? [selectedAccount] : accounts).map(account => account.id))
   const dividendYears = summarizeDividends(scopedTrades, year).years
   const dividendYear = params.year && /^\d{4}$/.test(params.year) ? params.year : (dividendYears.includes(year) ? year : dividendYears[0] ?? year)
@@ -119,6 +118,8 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
 
   const assetMap = new Map(assets.map(asset => [asset.id, asset]))
   const accountMap = new Map(accounts.map(account => [account.id, account]))
+  // 위쪽 계좌 칩은 거래가 있는 계좌만(주식이 없는 연금 계좌 등은 뺀다).
+  const chipAccounts = accounts.filter(account => account.id === selectedAccount?.id || trades.some(trade => trade.account_id === account.id))
   const latestEvaluations = latestSnapshotsAtMonth((snapshotRows ?? []) as AccountMonthlySnapshot[], currentMonth)
   const tradeAccounts = accounts.map(account => ({ id: account.id, name: account.name, owner: account.owner, type: account.type }))
   const latestPriceAt = (priceRows ?? []).reduce<string | null>((latest, row) => !latest || row.as_of > latest ? row.as_of : latest, null)
@@ -166,9 +167,7 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
     <div className="page-container max-w-[1240px]">
       <header className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
-          <p className="page-eyebrow">Stock accounts</p>
           <h1 className="page-title">주식 계좌</h1>
-          <p className="page-subtitle">매수·매도·배당 기록으로 종목별 보유 수량과 평균 단가, 평가손익을 계산합니다.</p>
         </div>
         <Link href={href({ tab: 'trades' })} className="inline-flex min-h-10 w-fit items-center rounded-lg bg-[var(--color-primary)] px-4 text-[13px] font-semibold text-white hover:bg-[var(--color-primary-strong)]">거래 추가</Link>
       </header>
@@ -185,7 +184,7 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
             {tab !== 'prices' && tab !== 'assets' ? (
               <div className="flex flex-wrap gap-1.5" aria-label="계좌 선택">
                 <Link href={href({ account: null })} className={chipClass(!selectedAccount)}>전체<LinkPending /></Link>
-                {accounts.map(account => (
+                {chipAccounts.map(account => (
                   <Link key={account.id} href={href({ account: account.id })} className={chipClass(selectedAccount?.id === account.id)}>{account.name}<LinkPending /></Link>
                 ))}
               </div>
@@ -213,115 +212,65 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
 
               <section className="app-card overflow-hidden" aria-label="종목별 보유 현황">
                 <div className="border-b border-[var(--color-border)] px-5 py-4">
-                  <h2 className="text-[15px] font-bold">종목별 보유 현황</h2>
-                  <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">평균 단가는 수수료·세금을 포함한 이동평균이에요. 달러 종목의 원가는 매수 당시 환율로 계산해요.</p>
+                  <h2 className="flex items-center gap-1 text-[15px] font-bold">종목별 보유 현황 <Hint text="평균 단가는 수수료·세금을 포함한 이동평균이에요. 달러 종목의 원가는 매수 당시 환율로 계산해요. 표 제목(종목·평가금액·평가손익·수익률)을 누르면 정렬돼요." /></h2>
                 </div>
                 {holdings.length === 0 ? (
                   <p className="px-5 py-10 text-center text-[13px] text-[var(--color-muted)]">보유 중인 종목이 없어요. <Link href={href({ tab: 'trades' })} className="font-semibold text-[var(--color-primary)]">거래 기록</Link>에서 매수를 추가해 보세요.</p>
                 ) : (
                   <>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-[var(--color-border)] px-5 py-3" aria-label="정렬과 필터">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[12.5px] font-semibold text-[var(--color-muted)]">정렬</span>
-                        {([['value', '평가금액'], ['return', '수익률'], ['pnl', '평가손익'], ['name', '이름']] as const).map(([value, label]) => (
-                          <Link key={value} href={href({ sort: value })} className={chipClass(sort === value)}>{label}<LinkPending /></Link>
-                        ))}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[12.5px] font-semibold text-[var(--color-muted)]">손익</span>
-                        {([['all', '전체'], ['gain', '이익'], ['loss', '손실']] as const).map(([value, label]) => (
-                          <Link key={value} href={href({ filter: value })} className={chipClass(filter === value)}>{label}<LinkPending /></Link>
-                        ))}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[12.5px] font-semibold text-[var(--color-muted)]">구분</span>
-                        <Link href={href({ class: null })} className={chipClass(!classFilter)}>전체<LinkPending /></Link>
-                        {STOCK_CLASSES.filter(item => holdings.some(holding => holding.asset_class === item.value)).map(item => (
-                          <Link key={item.value} href={href({ class: item.value })} className={chipClass(classFilter === item.value)}>{item.label}<LinkPending /></Link>
-                        ))}
-                      </div>
+                    <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-border)] px-5 py-2.5" aria-label="정렬과 필터">
+                      <details className="relative">
+                        <summary className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1 rounded-full border border-[var(--color-border)] bg-white px-3 text-[12.5px] font-semibold text-[var(--color-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]">
+                          <SlidersHorizontal size={14} aria-hidden="true" />필터·정렬
+                        </summary>
+                        <div className="absolute left-0 top-10 z-20 w-72 max-w-[85vw] space-y-3 rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[var(--shadow-card)]">
+                          <FilterGroup label="정렬">
+                            {([['value', '평가금액'], ['return', '수익률'], ['pnl', '평가손익'], ['name', '이름']] as const).map(([value, label]) => (
+                              <Link key={value} href={href({ sort: value })} className={chipClass(sort === value)}>{label}<LinkPending /></Link>
+                            ))}
+                          </FilterGroup>
+                          <FilterGroup label="손익">
+                            {([['all', '전체'], ['gain', '이익'], ['loss', '손실']] as const).map(([value, label]) => (
+                              <Link key={value} href={href({ filter: value })} className={chipClass(filter === value)}>{label}<LinkPending /></Link>
+                            ))}
+                          </FilterGroup>
+                          <FilterGroup label="구분">
+                            <Link href={href({ class: null })} className={chipClass(!classFilter)}>전체<LinkPending /></Link>
+                            {STOCK_CLASSES.filter(item => holdings.some(holding => holding.asset_class === item.value)).map(item => (
+                              <Link key={item.value} href={href({ class: item.value })} className={chipClass(classFilter === item.value)}>{item.label}<LinkPending /></Link>
+                            ))}
+                          </FilterGroup>
+                        </div>
+                      </details>
+                      {filter !== 'all' ? <Link href={href({ filter: 'all' })} className={chipClass(true)}>{filter === 'gain' ? '이익' : '손실'} ✕<LinkPending /></Link> : null}
+                      {classFilter ? <Link href={href({ class: null })} className={chipClass(true)}>{classLabel(classFilter)} ✕<LinkPending /></Link> : null}
+                      <span className="ml-auto text-[12px] text-[var(--color-subtle)]">{shownHoldings.length}종목 · {SORT_LABEL[sort]}순</span>
                     </div>
                     {shownHoldings.length === 0
                       ? <p className="px-5 py-10 text-center text-[13px] text-[var(--color-muted)]">조건에 맞는 종목이 없어요.</p>
-                      : <HoldingsTable holdings={shownHoldings} total={marketValue} />}
+                      : <HoldingsTable holdings={shownHoldings} total={marketValue} sort={sort} sortHref={value => href({ sort: value })} />}
                   </>
                 )}
               </section>
 
               {accountSlices.length > 0 ? (
                 <section className="app-card p-5" aria-label="비중">
-                  <h2 className="text-[15px] font-bold">비중</h2>
-                  <p className="mb-4 mt-1 text-[12.5px] text-[var(--color-muted)]">현재가가 있는 종목의 평가금액 기준이에요. 오른쪽 숫자는 투자원금 대비 수익률이에요.</p>
+                  <h2 className="mb-3 flex items-center gap-1 text-[15px] font-bold">비중 <Hint text="현재가가 있는 종목의 평가금액 기준이에요. 오른쪽 숫자는 투자원금 대비 수익률, 계좌 아래 작은 글씨는 월간 기록에 적은 계좌 평가금액(예수금 포함)이에요." /></h2>
                   <div className={`grid justify-items-start gap-x-10 gap-y-6 ${!selectedAccount && accountSlices.length > 1 ? 'lg:grid-cols-2' : ''}`}>
                     {!selectedAccount && accountSlices.length > 1 ? (
-                      <Donut title="계좌별" slices={accountSlices} center={`${accountSlices.length}개 계좌`} format={wonShort} href={slice => href({ account: slice.key })} />
+                      <Donut title="계좌별" slices={accountSlices} center={`${accountSlices.length}개 계좌`} format={wonShort} href={slice => href({ account: slice.key })}
+                        note={slice => { const recorded = latestEvaluations.get(slice.key); return recorded ? `${formatMonth(recorded.month)} 기록 ${wonShort(Number(recorded.evaluation_amount))}` : null }} />
                     ) : null}
                     <Donut title="종목 구분별" slices={classSlices} center={wonShort(classSlices.reduce((sum, slice) => sum + slice.value, 0))} format={wonShort} />
                   </div>
                 </section>
               ) : null}
 
-              {returns.byGroup.length > 0 ? (
-                <section className="app-card p-5" aria-label="수익률 요약">
-                  <h2 className="text-[15px] font-bold">수익률 요약</h2>
-                  <p className="mb-4 mt-1 text-[12.5px] text-[var(--color-muted)]">투자원금 대비 평가손익이에요. 가운데 선이 0%이고 오른쪽 초록은 이익, 왼쪽 빨강은 손실이에요.</p>
-                  <div className="grid gap-6 lg:grid-cols-2">
-                    <div>
-                      <h3 className="mb-3 text-[13px] font-bold">종목 구분별</h3>
-                      <ReturnBars rows={returns.byGroup.map(group => ({ key: group.key, label: group.key, rate: group.rate, pnl: group.pnl, detail: `${group.count}종목` }))} />
-                    </div>
-                    <div>
-                      <h3 className="mb-3 text-[13px] font-bold">종목별 (상위·하위)</h3>
-                      <ReturnBars rows={[...holdings].filter(holding => holding.unrealized_pnl_pct !== null).sort((a, b) => b.unrealized_pnl_pct! - a.unrealized_pnl_pct!)
-                        .filter((_, index, list) => index < 3 || index >= list.length - 3)
-                        .map(holding => ({ key: `${holding.account_id}-${holding.asset_id}`, label: holding.name, rate: holding.unrealized_pnl_pct, pnl: holding.unrealized_pnl_krw ?? 0, detail: holding.account_name }))} />
-                    </div>
-                  </div>
-                </section>
-              ) : null}
-
               <section className="app-card p-5" aria-label="평가액 추이">
-                <h2 className="text-[15px] font-bold">평가액 추이</h2>
-                <p className="mb-2 mt-1 text-[12.5px] text-[var(--color-muted)]">월간 기록에 적은 {selectedAccount ? selectedAccount.name : '주식·연금·ISA 계좌'} 평가액 합계예요(최근 12개월).</p>
+                <h2 className="mb-2 flex items-center gap-1 text-[15px] font-bold">평가액 추이 <Hint text={`월간 기록에 적은 ${selectedAccount ? selectedAccount.name : '주식·연금·ISA 계좌'} 평가액 합계예요(최근 12개월).`} /></h2>
                 <TrendChart points={trend} />
               </section>
 
-              {!selectedAccount ? (
-                <section aria-label="계좌별 합계">
-                  <h2 className="mb-1 text-[15px] font-bold">계좌별 합계</h2>
-                  <p className="mb-3 text-[12.5px] text-[var(--color-muted)]">보유 종목 평가금액과 월간 기록에 적은 계좌 평가금액을 비교해요. 차이는 예수금(현금)이나 현재가 차이일 수 있어요.</p>
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    {accounts.map((account, index) => {
-                      const rows = holdings.filter(holding => holding.account_id === account.id)
-                      if (rows.length === 0) return null
-                      const value = rows.reduce((sum, holding) => sum + (holding.market_value_krw ?? 0), 0)
-                      const cost = rows.filter(holding => holding.market_value_krw !== null).reduce((sum, holding) => sum + holding.total_cost_krw, 0)
-                      const missing = rows.filter(holding => holding.market_value_krw === null).length
-                      const pnl = value - cost
-                      const rate = cost > 0 ? pnl / cost * 100 : null
-                      const recorded = latestEvaluations.get(account.id)
-                      const share = marketValue > 0 ? value / marketValue * 100 : 0
-                      return (
-                        <Link key={account.id} href={href({ account: account.id })} className="app-card block p-4 hover:border-[var(--color-primary)]">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="min-w-0 truncate text-sm font-bold">{account.name}</p>
-                            <span className="shrink-0 text-[12.5px] text-[var(--color-muted)]">{rows.length}종목</span>
-                          </div>
-                          <p className="mt-2 text-[22px] font-bold tabular-nums leading-none">{missing === rows.length ? '현재가 필요' : wonShort(value)}</p>
-                          <p className={`mt-1.5 text-[13px] font-semibold tabular-nums ${pnl > 0 ? 'text-[var(--color-positive)]' : pnl < 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-muted)]'}`}>
-                            {rate === null ? '—' : `${rate > 0 ? '+' : ''}${rate.toFixed(1)}%`} <span className="text-[12.5px] font-medium">{rate === null ? '' : signedWonShort(pnl)}</span>
-                          </p>
-                          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--color-section)]"><span className="block h-full rounded-full" style={{ width: `${share}%`, background: colorAt(index) }} /></div>
-                          <p className="mt-1.5 flex flex-wrap justify-between gap-x-2 text-[12.5px] tabular-nums text-[var(--color-muted)]">
-                            <span>전체의 {share.toFixed(0)}%{missing > 0 && missing < rows.length ? ` · 미입력 ${missing}` : ''}</span>
-                            {recorded ? <span>{formatMonth(recorded.month)} 기록 {wonShort(Number(recorded.evaluation_amount))}</span> : null}
-                          </p>
-                        </Link>
-                      )
-                    })}
-                  </div>
-                </section>
-              ) : null}
             </div>
           ) : null}
 
@@ -451,7 +400,7 @@ function chipClass(active: boolean) {
   return `inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-semibold ${active ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'border-[var(--color-border)] bg-white text-[var(--color-muted)]'}`
 }
 
-function HoldingsTable({ holdings, total }: { holdings: Holding[]; total: number }) {
+function HoldingsTable({ holdings, total, sort, sortHref }: { holdings: Holding[]; total: number; sort: HoldingSort; sortHref: (sort: HoldingSort) => string }) {
   const money = (holding: Holding, value: number | null) => value === null ? '—' : holding.currency === 'USD'
     ? `$${value.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
     : krw(value)
@@ -475,12 +424,12 @@ function HoldingsTable({ holdings, total }: { holdings: Holding[]; total: number
         <table className="w-full text-[13px]">
           <thead>
             <tr className="border-b border-[var(--color-border)] text-[12.5px] text-[var(--color-muted)]">
-              <th className="px-5 py-2.5 text-left font-semibold">종목</th>
+              <th className="px-5 py-2.5 text-left font-semibold"><SortHeader label="종목" value="name" sort={sort} href={sortHref} /></th>
               <th className="px-3 py-2.5 text-right font-semibold">수량</th>
               <th className="px-3 py-2.5 text-right font-semibold">평균 단가</th>
               <th className="px-3 py-2.5 text-right font-semibold">현재가</th>
-              <th className="px-3 py-2.5 text-right font-semibold">평가금액</th>
-              <th className="px-3 py-2.5 text-right font-semibold">평가손익</th>
+              <th className="px-3 py-2.5 text-right font-semibold"><SortHeader label="평가금액" value="value" sort={sort} href={sortHref} /></th>
+              <th className="px-3 py-2.5 text-right font-semibold"><SortHeader label="평가손익" value="pnl" sort={sort} href={sortHref} /> <span className="text-[var(--color-border-strong)]">·</span> <SortHeader label="수익률" value="return" sort={sort} href={sortHref} /></th>
               <th className="px-5 py-2.5 text-left font-semibold">비중</th>
             </tr>
           </thead>
@@ -522,5 +471,26 @@ function PnL({ holding }: { holding: Holding }) {
       {signedWonShort(holding.unrealized_pnl_krw)}
       {holding.unrealized_pnl_pct !== null ? <span className="ml-1 text-[12.5px] font-medium">({holding.unrealized_pnl_pct > 0 ? '+' : ''}{holding.unrealized_pnl_pct.toFixed(1)}%)</span> : null}
     </span>
+  )
+}
+
+const SORT_LABEL: Record<HoldingSort, string> = { value: '평가금액', return: '수익률', pnl: '평가손익', name: '이름' }
+
+/** 표 제목을 눌러 정렬한다. 지금 정렬 기준은 진하게 화살표와 함께 보인다. */
+function SortHeader({ label, value, sort, href }: { label: string; value: HoldingSort; sort: HoldingSort; href: (sort: HoldingSort) => string }) {
+  const active = sort === value
+  return (
+    <Link href={href(value)} aria-current={active ? 'true' : undefined} className={`inline-flex items-center gap-0.5 hover:text-[var(--color-primary)] ${active ? 'text-[var(--color-ink)]' : ''}`}>
+      {label}{active ? <ArrowDown size={12} aria-hidden="true" /> : null}<LinkPending />
+    </Link>
+  )
+}
+
+function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="mb-1.5 text-[11.5px] font-semibold text-[var(--color-subtle)]">{label}</p>
+      <div className="flex flex-wrap gap-1.5">{children}</div>
+    </div>
   )
 }

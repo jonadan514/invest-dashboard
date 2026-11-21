@@ -32,9 +32,7 @@ export default async function ChildrenPage() {
     <>
       <div className="page-container max-w-[1240px]">
         <header className="mb-5">
-          <p className="page-eyebrow">Children gift tracker</p>
           <h1 className="page-title">자녀 증여 관리</h1>
-          <p className="page-subtitle">자녀 계좌 납입액과 월말 평가금액을 기록하고 증여 한도와 자금 운용 현황을 함께 확인합니다.</p>
         </header>
 
         <details className="mb-4 overflow-hidden rounded-2xl border border-lime-300 bg-lime-50/70">
