@@ -257,12 +257,19 @@ export async function deleteItemBalance(itemId: string, month: string): Promise<
     const { error } = await supabase.from('net_worth_snapshots').delete()
       .eq('user_id', userId).eq('item_id', itemId).eq('month', month).eq('source', 'manual')
     if (error) throw new Error(error.message)
-    // 지운 기준점으로 계산된 자동 잔액을 비우고 남은 기준점으로 다시 채운다.
-    const { error: autoError } = await supabase.from('net_worth_snapshots').delete()
-      .eq('user_id', userId).eq('item_id', itemId).eq('source', 'mortgage_auto')
-    if (autoError) throw new Error(autoError.message)
-    const { error: recomputeError } = await supabase.rpc('recompute_mortgage_snapshots', { p_user_id: userId })
-    if (recomputeError) throw new Error(recomputeError.message)
+    if (isAutoMortgage(item)) {
+      // 지운 기준점으로 계산된 자동 잔액을 비우고 남은 기준점으로 다시 채운다.
+      const { error: autoError } = await supabase.from('net_worth_snapshots').delete()
+        .eq('user_id', userId).eq('item_id', itemId).eq('source', 'mortgage_auto')
+      if (autoError) throw new Error(autoError.message)
+      // 공용 DB에는 이 함수가 없다. 아래 syncMortgageSchedule이 같은 잔액을 다시 채우므로 실패해도 계속한다.
+      try {
+        const { error: recomputeError } = await supabase.rpc('recompute_mortgage_snapshots', { p_user_id: userId })
+        if (recomputeError) console.error('[recompute_mortgage_snapshots]', recomputeError.message)
+      } catch (error) {
+        console.error('[recompute_mortgage_snapshots]', error)
+      }
+    }
     await syncMortgageSchedule(supabase, userId)
     revalidatePath('/net-worth')
     revalidatePath('/mortgage')
