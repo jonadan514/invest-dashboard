@@ -1,4 +1,5 @@
 import { wonShort } from '../labels.ts'
+import { regularYtd } from './pension.ts'
 
 export interface SnapshotLike {
   account_id: string
@@ -26,8 +27,9 @@ export interface AccountRecordState {
  * - 없으면 평가금액은 직전 기록에서 불러오고(carried), 배분액은 0, 연금 누적액은 같은 해 기록일 때만 불러온다.
  * - monthlyContribution(매달 정기 납입액)이 있으면 누적 납입액에 직전 기록 이후 달 수만큼 더한다.
  *   올해 기록이 없으면 이번 달 한 번만 더한다.
+ * startMonth(정기 납입 시작 달)를 알면 시작 전 달은 세지 않고, 올해 기록이 없을 때 시작 달부터 계산한다.
  */
-export function accountRecordState(snapshots: SnapshotLike[], accountId: string, month: string, monthlyContribution: number | null = null): AccountRecordState {
+export function accountRecordState(snapshots: SnapshotLike[], accountId: string, month: string, monthlyContribution: number | null = null, startMonth: string | null = null): AccountRecordState {
   const rows = snapshots.filter(row => row.account_id === accountId && row.month <= month).sort((a, b) => a.month.localeCompare(b.month))
   const exact = rows.find(row => row.month === month) ?? null
   const before = rows.filter(row => row.month < month).at(-1) ?? null
@@ -39,10 +41,13 @@ export function accountRecordState(snapshots: SnapshotLike[], accountId: string,
   const baseYtd = sameYear ? Number(sameYear.ytd_contribution) : 0
   const monthly = monthlyContribution != null && monthlyContribution > 0 ? monthlyContribution : 0
   const gap = sameYear ? Number(month.slice(5, 7)) - Number(sameYear.month.slice(5, 7)) : 1
+  const added = startMonth
+    ? regularYtd(month, startMonth, monthly) - (sameYear ? regularYtd(sameYear.month, startMonth, monthly) : 0)
+    : monthly * gap
   return {
     evaluationAmount: before ? Number(before.evaluation_amount) : 0,
     monthlyAllocation: 0,
-    ytdContribution: baseYtd + monthly * gap,
+    ytdContribution: baseYtd + added,
     carried: before !== null,
     previous,
     ...(monthly > 0 ? { autoContribution: true } : {}),

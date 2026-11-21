@@ -36,3 +36,11 @@ test('정기 납입액이 있으면 누적 납입액에 직전 기록 이후 달
   assert.equal(accountRecordState([pension('2026-11', 5_200_000)], 'p', '2026-11', 500_000).ytdContribution, 5_200_000, '이미 기록한 달은 그대로')
   assert.equal(accountRecordState([pension('2026-10', 5_000_000)], 'p', '2026-11').autoContribution, undefined)
 })
+
+test('시작 달을 알면 올해 기록이 없어도 시작 달부터 누적 납입액을 채운다', () => {
+  const pension = (month: string, ytd: number) => ({ account_id: 'p', month, evaluation_amount: 1_000_000, monthly_allocation: 0, ytd_contribution: ytd })
+  assert.equal(accountRecordState([pension('2025-12', 6_000_000)], 'p', '2026-11', 500_000, '2026-03').ytdContribution, 4_500_000)
+  assert.equal(accountRecordState([], 'p', '2026-11', 500_000, '2025-01').ytdContribution, 5_500_000, '작년부터면 1~11월')
+  assert.equal(accountRecordState([pension('2026-08', 3_000_000)], 'p', '2026-11', 500_000, '2026-03').ytdContribution, 4_500_000, '8월 기록 + 9~11월')
+  assert.equal(accountRecordState([pension('2026-08', 0)], 'p', '2026-11', 500_000, '2026-10').ytdContribution, 1_000_000, '10·11월만')
+})

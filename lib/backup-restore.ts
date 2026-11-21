@@ -1,5 +1,5 @@
 const CONFIG = [
-  { table: 'accounts', conflict: 'id', columns: ['id','name','broker','owner','type','base_currency','tax_benefit','is_emergency_fund','sort_order','is_active','interest_rate','monthly_payment','maturity_date','inactive_from_month','activity_history','created_at'] },
+  { table: 'accounts', conflict: 'id', columns: ['id','name','broker','owner','type','base_currency','tax_benefit','is_emergency_fund','sort_order','is_active','interest_rate','monthly_payment','maturity_date','contribution_start_month','inactive_from_month','activity_history','created_at'] },
   { table: 'assets', conflict: 'id', columns: ['id','symbol','name','asset_class','currency','market','price_source','is_active'] },
   { table: 'transactions', conflict: 'id', columns: ['id','date','account_id','asset_id','type','quantity','price','amount','fee','tax','fx_rate','currency','memo','created_at'] },
   { table: 'balances', conflict: 'id', columns: ['id','account_id','value','as_of','memo','created_at'] },

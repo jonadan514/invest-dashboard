@@ -82,9 +82,33 @@ export function pensionBreakdown(pension: number, irp: number): PensionBreakdown
   }
 }
 
-/** recordMonth까지 기록된 누적 납입액에 12월까지 매달 정기 납입액을 더한 연말 예상액. */
-export function projectYearEnd(contribution: number, monthly: number, recordMonth: string | null, currentMonth: string) {
-  const from = recordMonth && recordMonth.slice(0, 4) === currentMonth.slice(0, 4) ? Number(recordMonth.slice(5, 7)) : Number(currentMonth.slice(5, 7)) - 1
+/** 그해 달 번호(1~12). 시작 달이 그해 이전이면 0(1월부터 납입), 이후 해면 13(그해 납입 없음). */
+function startIndexInYear(startMonth: string | null, year: string) {
+  if (!startMonth) return null
+  if (startMonth.slice(0, 4) < year) return 0
+  if (startMonth.slice(0, 4) > year) return 13
+  return Number(startMonth.slice(5, 7)) - 1
+}
+
+/**
+ * recordMonth까지 기록된 누적 납입액에 12월까지 매달 정기 납입액을 더한 연말 예상액.
+ * startMonth(정기 납입 시작 달)가 있으면 그 전 달은 세지 않고, 올해 기록이 없으면 시작 달부터 센다.
+ */
+export function projectYearEnd(contribution: number, monthly: number, recordMonth: string | null, currentMonth: string, startMonth: string | null = null) {
+  const year = currentMonth.slice(0, 4)
+  const startIndex = startIndexInYear(startMonth, year)
+  let from: number
+  if (recordMonth && recordMonth.slice(0, 4) === year) from = Number(recordMonth.slice(5, 7))
+  else if (startIndex !== null) from = startIndex
+  else from = Number(currentMonth.slice(5, 7)) - 1
+  if (startIndex !== null) from = Math.max(from, startIndex)
   const monthsLeft = Math.max(12 - from, 0)
   return contribution + Math.max(monthly, 0) * monthsLeft
+}
+
+/** 정기 납입만으로 그해 month까지 쌓인 누적액: 시작 달(그해 이전이면 1월)부터 month까지 매달 monthly. */
+export function regularYtd(month: string, startMonth: string, monthly: number) {
+  if (!(monthly > 0) || startMonth > month) return 0
+  const startIndex = startIndexInYear(startMonth, month.slice(0, 4)) ?? 0
+  return monthly * Math.max(Number(month.slice(5, 7)) - startIndex, 0)
 }
