@@ -13,8 +13,10 @@ import { trySyncMortgageSchedule } from '@/lib/mortgage-sync'
 
 export const metadata = { title: '대출 상환' }
 
-export default async function MortgagePage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
-  const tab = (await searchParams).tab === 'prepay' ? 'prepay' : 'status'
+export default async function MortgagePage({ searchParams }: { searchParams: Promise<{ tab?: string; months?: string }> }) {
+  const params = await searchParams
+  const tab = params.tab === 'prepay' ? 'prepay' : 'status'
+  const showAllMonths = params.months === '12'
   const { supabase, userId } = await getHouseholdContext()
   await trySyncMortgageSchedule(supabase, userId)
   const currentMonth = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date())
@@ -61,6 +63,7 @@ export default async function MortgagePage({ searchParams }: { searchParams: Pro
       monthlyPayment: payment,
       paymentSource: resolved?.source ?? (budgetPayment != null ? 'budget' : 'none'),
       maturityDate: item.maturity_date,
+      auto: rate != null && (item.monthly_payment != null || Boolean(item.maturity_date)),
       remainingPayments: item.maturity_date ? Math.max(monthsBetween(latest.month, item.maturity_date.slice(0, 7)), 0) : null,
     }
     // 월간 기록의 이자·원금은 가구 전체 값이라 대출이 하나일 때만 그 대출의 실제 납부 내역으로 본다.
@@ -78,9 +81,7 @@ export default async function MortgagePage({ searchParams }: { searchParams: Pro
   return (
     <div className="page-container max-w-[1240px]">
       <header className="mb-5">
-        <p className="page-eyebrow">Mortgage payoff</p>
         <h1 className="page-title">대출 상환</h1>
-        <p className="page-subtitle">대출 잔액과 상환 이력, 앞으로의 월별 상환 일정을 보여 줍니다. 대출 정보는 밸런스 시트에서 고쳐요.</p>
       </header>
 
       {loans.length === 0 ? (
@@ -91,16 +92,11 @@ export default async function MortgagePage({ searchParams }: { searchParams: Pro
         </div>
       ) : (
         <>
-          {(() => {
-            const autoReady = items.length > 0 && items.every(item => item.interest_rate != null && (item.monthly_payment != null || item.maturity_date))
-            return (
-              <p className={`mb-4 rounded-xl px-4 py-3 text-[13px] leading-6 ${autoReady ? 'bg-[var(--color-positive-soft)] text-[var(--color-positive-strong)]' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'}`}>
-                {autoReady
-                  ? '자동 상환 켜짐 · 매달 잔액이 줄고, 월간 기록의 이자·원금도 미리 채워져요. 직접 입력한 잔액이 있으면 그 값을 기준으로 다시 계산해요.'
-                  : '밸런스 시트의 주택담보대출 항목에 연 금리와 월 상환액(또는 만기)을 입력하면 잔액과 월간 기록의 이자·원금이 매달 자동으로 채워져요.'}
-              </p>
-            )
-          })()}
+          {items.some(item => item.interest_rate == null || (item.monthly_payment == null && !item.maturity_date)) ? (
+            <p className="mb-4 rounded-xl bg-[var(--color-accent-soft)] px-4 py-3 text-[13px] leading-6 text-[var(--color-accent)]">
+              밸런스 시트의 주택담보대출 항목에 연 금리와 월 상환액(또는 만기)을 넣으면 잔액과 월간 기록의 이자·원금이 매달 자동으로 채워져요.
+            </p>
+          ) : null}
           <div className="mb-4">
             <TabNav label="대출 상환 탭" active={tab} items={[{ value: 'status', label: '상환 현황', href: '/mortgage' }, { value: 'prepay', label: '한 번에 더 갚기', href: '/mortgage?tab=prepay' }]} />
           </div>
@@ -111,7 +107,7 @@ export default async function MortgagePage({ searchParams }: { searchParams: Pro
                 annualRate: loan.overview.annualRate, monthlyPayment: loan.overview.monthlyPayment, startDate: loan.startDate,
               }} />
             ) : (
-              <LoanRepayment key={loan.overview.id} loan={loan.overview} past={loan.past} future={loan.future} />
+              <LoanRepayment key={loan.overview.id} loan={loan.overview} past={loan.past} future={loan.future} showAll={showAllMonths} />
             ))}
           </div>
         </>

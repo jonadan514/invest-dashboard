@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { pensionRoom, yearEndSchedule } from '@/lib/calc/pension'
-import { compactKrw, formatMonth, krw } from '@/lib/labels'
+import { compactKrw, formatMonth } from '@/lib/labels'
 
 export interface PensionPerson {
   label: string
@@ -60,58 +60,24 @@ export function PensionYearEndBanner({ persons, today, recordMonth, embedded = f
   )
 }
 
-/** 연금 화면의 사람별 남은 한도 계획. */
+/** 연금 화면 맨 위 한 줄 요약: 마감까지 부부 합계로 더 넣을 수 있는 금액. 사람별 안내는 사람별 카드에 있다. */
 export function PensionYearEndPlan({ persons, today, recordMonth }: Props) {
-  const { schedule, rows, remaining, credit } = summarize(persons, today)
+  const { schedule, remaining, credit } = summarize(persons, today)
   const year = today.slice(0, 4)
   return (
-    <section className="app-card mb-4 p-5" aria-label="올해 남은 공제 한도">
-      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
-        <div>
-          <p className="text-[11.5px] font-bold text-[var(--color-primary)]">
-            {schedule.isYearEndSeason ? `${year}년 세액공제 마감 ${dDay(schedule.daysLeft)}` : `${year}년 남은 공제 한도`}
-          </p>
-          <h2 className="mt-1 text-base font-bold text-[var(--color-ink)]">
-            {remaining > 0 ? `부부 합계 ${krw(remaining)} 더 넣을 수 있어요` : '올해 세액공제 한도를 모두 채웠어요'}
-          </h2>
-          <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{staleNote(recordMonth, today)}</p>
-        </div>
-        {remaining > 0 ? (
-          <div className="rounded-lg bg-[var(--color-accent-soft)] px-3 py-2 text-right">
-            <p className="text-[11.5px] text-[var(--color-primary)]">모두 채우면 추가 세액공제</p>
-            <p className="text-sm font-bold tabular-nums text-[var(--color-primary)]">약 {compactKrw(credit)}</p>
-          </div>
-        ) : null}
+    <section className="app-card mb-4 flex flex-col justify-between gap-2 px-5 py-4 sm:flex-row sm:items-center" aria-label="올해 남은 공제 한도">
+      <div>
+        <p className="text-[11.5px] font-bold text-[var(--color-primary)]">
+          {schedule.isYearEndSeason ? `${year}년 세액공제 마감 ${dDay(schedule.daysLeft)}` : `${year}년 남은 공제 한도`}
+        </p>
+        <h2 className="mt-0.5 text-base font-bold text-[var(--color-ink)]">
+          {remaining > 0 ? `부부 합계 ${compactKrw(remaining)} 더 넣을 수 있어요` : '올해 세액공제 한도를 모두 채웠어요'}
+        </h2>
+        <p className="mt-0.5 text-[12.5px] text-[var(--color-muted)]">{staleNote(recordMonth, today)}</p>
       </div>
-
       {remaining > 0 ? (
-        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-          {rows.map(row => (
-            <div key={row.label} className="rounded-lg border border-[var(--color-border)] bg-white/60 p-4">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[12.5px] font-bold text-[var(--color-ink)]">{row.label}</span>
-                <span className="text-sm font-bold tabular-nums text-[var(--color-ink)]">{row.room.remaining > 0 ? krw(row.room.remaining) : '한도 채움'}</span>
-              </div>
-              {row.room.remaining > 0 ? (
-                <ul className="mt-2 space-y-1 text-[12.5px] leading-5 text-[var(--color-muted)]">
-                  <li>
-                    {row.room.pensionSavingsRoom >= row.room.remaining
-                      ? '연금저축·IRP 어느 쪽에 넣어도 모두 인정돼요.'
-                      : row.room.pensionSavingsRoom > 0
-                        ? `연금저축은 ${compactKrw(row.room.pensionSavingsRoom)}까지만 인정돼요. 나머지 ${compactKrw(row.room.remaining - row.room.pensionSavingsRoom)}은 IRP로 넣어야 해요.`
-                        : '연금저축 한도(600만)는 다 찼어요. IRP로 넣어야 인정돼요.'}
-                  </li>
-                  <li>추가 세액공제 약 {compactKrw(row.room.extraCredit)}</li>
-                </ul>
-              ) : null}
-            </div>
-          ))}
-        </div>
+        <p className="shrink-0 rounded-lg bg-[var(--color-accent-soft)] px-3 py-2 text-[12.5px] text-[var(--color-primary)]">모두 채우면 추가 세액공제 <strong className="tabular-nums">약 {compactKrw(credit)}</strong></p>
       ) : null}
-
-      <p className="mt-3 text-[11.5px] leading-4 text-[var(--color-subtle)]">
-        연금저축 600만 원, 연금저축+IRP 합산 900만 원 한도 기준이에요. 세액공제는 총급여 5,500만 원 초과 기준 13.2%로 계산했어요.
-      </p>
     </section>
   )
 }

@@ -11,8 +11,7 @@ import {
   pickActiveGoal,
   type MonthValue,
 } from '@/lib/calc/home-insights'
-import { calcDeductible, TOTAL_DEDUCT_LIMIT } from '@/lib/calc/pension'
-import { formatMonth, wonShort } from '@/lib/labels'
+import { formatMonth } from '@/lib/labels'
 import { getHouseholdContext } from '@/lib/supabase/server'
 import ChangeDriversCard from '@/components/ChangeDriversCard'
 import GoalCard from '@/components/GoalCard'
@@ -112,10 +111,6 @@ export default async function DashboardPage() {
     : latestBudget
       ? Number(latestBudget.cash_balance)
       : Number(plan?.current_emergency_fund ?? DEFAULT_FINANCIAL_PLAN.currentEmergencyFund)
-  const stage1Target = Number(plan?.stage1_target ?? DEFAULT_FINANCIAL_PLAN.stage1Target)
-  const stage2Target = Number(plan?.stage2_target ?? DEFAULT_FINANCIAL_PLAN.stage2Target)
-  const emergencyTarget = emergencyFund < stage1Target ? stage1Target : stage2Target
-  const emergencyStage = emergencyFund < stage1Target ? '3천만 목표' : emergencyFund < stage2Target ? '5천만 목표' : '목표 완료'
 
   const pensionAccounts = accounts.filter(account => account.type === 'pension' || account.type === 'irp')
   const pensionAccountMap = new Map(pensionAccounts.map(account => [account.id, account]))
@@ -139,10 +134,6 @@ export default async function DashboardPage() {
   const pensionRecordMonth = [...pensionSnapshots.values()].reduce<string | null>(
     (latest, snapshot) => (pensionAccountMap.has(snapshot.account_id) && (!latest || snapshot.month > latest) ? snapshot.month : latest), null)
   const todayKst = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(now)
-  const meDeductible = calcDeductible(mePensionSavings, meIrp).total
-  const spouseDeductible = calcDeductible(spousePensionSavings, spouseIrp).total
-  const totalPension = meDeductible + spouseDeductible
-  const householdPensionTarget = TOTAL_DEDUCT_LIMIT * 2
 
   const composition = buildComposition(netWorthItems, netWorthSnapshots, accountTotals, current.month)
   const latestSnapshotMonth = netWorthSnapshots.at(-1)?.month ?? null
@@ -249,27 +240,7 @@ export default async function DashboardPage() {
 
         <StockReturnCard accounts={stockAccounts} missing={stockMissing} />
 
-        <section aria-label="진행 상황" className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <StripCard
-            mark="비"
-            markClass="bg-[var(--color-positive-soft)] text-[var(--color-positive)]"
-            title={`비상금 · ${emergencyStage}`}
-            value={`${Math.round(Math.min(emergencyFund / Math.max(emergencyTarget, 1), 1) * 100)}%`}
-            percent={emergencyFund / Math.max(emergencyTarget, 1) * 100}
-            barColor="var(--color-positive)"
-            caption={`${wonShort(emergencyFund)} / ${wonShort(emergencyTarget)}${emergencyFund >= stage2Target ? ' · 목표 완료' : ''}`}
-            href="/budget"
-          />
-          <StripCard
-            mark="연"
-            markClass="bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
-            title={`${currentYear}년 연금 세액공제`}
-            value={`${Math.round(Math.min(totalPension / householdPensionTarget, 1) * 100)}%`}
-            percent={totalPension / householdPensionTarget * 100}
-            barColor="var(--color-gold)"
-            caption={`나 ${wonShort(meDeductible)} · 아내 ${wonShort(spouseDeductible)} / 각 900만`}
-            href="/pension"
-          />
+        <section aria-label="이번 달 기록">
           <MonthlyCheckCard
             currentMonth={currentMonth}
             budgetMonth={latestBudget?.month ?? null}
@@ -282,33 +253,6 @@ export default async function DashboardPage() {
         </section>
       </div>
     </>
-  )
-}
-
-function StripCard({ mark, markClass, title, value, percent, barColor, caption, href }: {
-  mark: string
-  markClass: string
-  title: string
-  value: string
-  percent: number
-  barColor: string
-  caption: string
-  href: string
-}) {
-  return (
-    <Link href={href} className="app-card flex items-center gap-4 p-5 transition-shadow hover:shadow-[0_8px_24px_rgb(17_28_43/0.08)]">
-      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[15px] font-extrabold ${markClass}`} aria-hidden="true">{mark}</span>
-      <span className="min-w-0 flex-1">
-        <span className="flex items-baseline justify-between gap-3">
-          <span className="truncate text-sm font-bold text-[var(--color-ink)]">{title}</span>
-          <span className="text-[15px] font-extrabold tabular-nums text-[var(--color-ink)]">{value}</span>
-        </span>
-        <span className="mt-2.5 block h-2 overflow-hidden rounded-full bg-[var(--color-section)]">
-          <span className="block h-full rounded-full" style={{ width: `${Math.max(0, Math.min(percent, 100))}%`, backgroundColor: barColor }} />
-        </span>
-        <span className="mt-2 block truncate text-[12.5px] tabular-nums text-[var(--color-muted)]">{caption}</span>
-      </span>
-    </Link>
   )
 }
 

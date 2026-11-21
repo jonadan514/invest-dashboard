@@ -3,7 +3,7 @@ import { isAccountActiveAtMonth, latestSnapshotsAtMonth, latestYearContributions
 import { getHouseholdContext } from '@/lib/supabase/server'
 import type { Account, AccountMonthlySnapshot } from '@/lib/types'
 
-import { calcDeductible, pensionBreakdown, projectYearEnd, PENSION_CREDIT_RATE, TOTAL_DEDUCT_LIMIT } from '@/lib/calc/pension'
+import { calcDeductible, pensionBreakdown, pensionRoom, projectYearEnd, PENSION_CREDIT_RATE, TOTAL_DEDUCT_LIMIT } from '@/lib/calc/pension'
 import MonthlyContributionEditor from './MonthlyContributionEditor'
 import { PensionYearEndPlan } from '@/components/PensionYearEnd'
 import { Stat, StatStrip } from '@/components/Stat'
@@ -122,9 +122,7 @@ export default async function PensionPage() {
       <div className="page-container max-w-[1240px]">
         <header className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
-            <p className="page-eyebrow">Pension progress</p>
             <h1 className="page-title">연금 현황</h1>
-            <p className="page-subtitle">월말에 입력한 올해 누적 납입액으로 달성률을 계산합니다.</p>
           </div>
           <Link href={`/budget?month=${currentMonth}`} className="inline-flex min-h-10 w-fit items-center rounded-lg bg-[var(--color-primary)] px-4 text-[12.5px] font-semibold text-white hover:bg-[var(--color-primary-strong)]">
             {formatMonth(currentMonth)} 기록하기
@@ -146,6 +144,7 @@ export default async function PensionPage() {
         <section className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           {persons.map(person => <PersonCard key={person.owner} person={person} />)}
         </section>
+        <p className="-mt-2 mb-4 text-[12px] text-[var(--color-subtle)]">한도: 연금저축 600만, 연금저축+IRP 합산 900만(연금저축이 600만에 못 미치면 IRP로 900만까지). 세액공제는 13.2%로 계산했어요.</p>
 
         <div className={`grid gap-4 ${yearlyData.length > 1 ? 'xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' : ''}`}>
           {yearlyData.length > 1 ? (
@@ -200,6 +199,7 @@ const IRP_COLOR = 'var(--color-gold)'
 
 function PersonCard({ person }: { person: PersonStats }) {
   const breakdown = pensionBreakdown(person.pensionContribution, person.irpContribution)
+  const room = pensionRoom(person.pensionContribution, person.irpContribution)
   const percent = Math.min(breakdown.total / TOTAL_DEDUCT_LIMIT * 100, 100)
   const isSpouse = person.owner === 'spouse'
   const hasMonthly = person.monthlyPension + person.monthlyIrp > 0
@@ -217,8 +217,8 @@ function PersonCard({ person }: { person: PersonStats }) {
         </div>
       </div>
       <div className="mt-4 flex items-end justify-between gap-3 text-[12.5px]">
-        <strong className="text-base tabular-nums text-[var(--color-ink)]">{fmtKrw(breakdown.total)}</strong>
-        <span className="text-[var(--color-muted)]">목표 {fmtKrw(TOTAL_DEDUCT_LIMIT)}</span>
+        <strong className="text-base tabular-nums text-[var(--color-ink)]">{compactKrw(breakdown.total)} <span className="text-[12.5px] font-medium text-[var(--color-muted)]">/ 900만</span></strong>
+        {room.remaining > 0 ? <span className="text-[var(--color-muted)]">{compactKrw(room.remaining)} 더 넣을 수 있어요</span> : null}
       </div>
       <div className="mt-2.5 flex h-2.5 overflow-hidden rounded-full bg-[var(--color-border)]/75" role="img" aria-label={`연금저축 ${compactKrw(breakdown.pensionCounted)}, IRP ${compactKrw(breakdown.irpCounted)}`}>
         <span style={{ width: `${breakdown.pensionCounted / TOTAL_DEDUCT_LIMIT * 100}%`, backgroundColor: PENSION_COLOR }} />
@@ -229,7 +229,9 @@ function PersonCard({ person }: { person: PersonStats }) {
         <LimitRow label="연금저축" counted={breakdown.pensionCounted} limit={breakdown.pensionLimit} done={breakdown.pensionDone} color={PENSION_COLOR} />
         <LimitRow label="IRP" counted={breakdown.irpCounted} limit={breakdown.irpLimit} done={breakdown.irpDone} color={IRP_COLOR} />
         {breakdown.pensionOver > 0 ? <p className="text-[11.5px] text-[var(--color-accent)]">연금저축이 600만을 {compactKrw(breakdown.pensionOver)} 넘었어요. 넘은 금액은 세액공제가 안 돼요.</p> : null}
-        {!breakdown.pensionDone ? <p className="text-[11.5px] text-[var(--color-subtle)]">연금저축이 600만에 못 미치면 IRP로 최대 900만까지 채울 수 있어요.</p> : null}
+        {room.remaining > 0 && room.pensionSavingsRoom < room.remaining ? (
+          <p className="text-[12px] text-[var(--color-muted)]">{room.pensionSavingsRoom > 0 ? `연금저축은 ${compactKrw(room.pensionSavingsRoom)}까지 인정, 나머지 ${compactKrw(room.remaining - room.pensionSavingsRoom)}은 IRP로` : '남은 금액은 IRP로 넣어야 인정돼요'}</p>
+        ) : null}
       </div>
 
       {hasMonthly && !breakdown.totalDone ? (
@@ -241,7 +243,7 @@ function PersonCard({ person }: { person: PersonStats }) {
 
       <div className="mt-3 flex items-center justify-between text-[12.5px] text-[var(--color-muted)]">
         <span>평가금액 {compactKrw(person.evaluationAmount)}</span>
-        <span>예상 절세 {fmtKrw(Math.round(breakdown.total * PENSION_CREDIT_RATE))}</span>
+        <span>예상 절세 {compactKrw(Math.round(breakdown.total * PENSION_CREDIT_RATE))}</span>
       </div>
     </article>
   )

@@ -22,7 +22,6 @@ export default function GuidePage() {
     <div className="page-container max-w-[1240px]">
       <header className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="page-eyebrow">Household finance guide</p>
           <h1 className="page-title">대시보드 사용 가이드</h1>
           <p className="page-subtitle">매일 쓰는 가계부가 아니라, 가족 자산의 위치와 변화를 월 1회 확인하는 도구입니다.</p>
         </div>

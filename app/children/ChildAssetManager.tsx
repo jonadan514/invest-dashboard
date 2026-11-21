@@ -105,7 +105,6 @@ export default function ChildAssetManager({
   return (
     <section aria-labelledby="child-assets-title" className="app-card overflow-hidden">
       <div className="border-b border-[var(--color-border)] bg-[var(--color-section)] px-5 py-4">
-        <p className="page-eyebrow">Child asset management</p>
         <h2 id="child-assets-title" className="mt-1 text-lg font-extrabold text-[var(--color-ink)]">자녀 자금 운용</h2>
         <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">거래내역 대신 계좌별 평가금액을 월 1회 기록해 납입 원금과 현재 자산을 비교합니다.</p>
       </div>

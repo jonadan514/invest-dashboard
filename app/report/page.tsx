@@ -116,7 +116,6 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
     <div className="page-container max-w-[1240px] print:max-w-none print:p-0">
       <header className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
-          <p className="page-eyebrow">Annual report</p>
           <h1 className="page-title">{year}년 가족 자산 결산</h1>
           <p className="page-subtitle">
             {summary.end ? `${formatMonth(summary.end.month)} 기록까지 반영` : '이 해의 기록이 없어요'}
