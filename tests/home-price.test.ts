@@ -50,3 +50,16 @@ test('금액 고르기: 같은 단지·면적(±1㎡) 해제 안 된 거래의 �
   assert.equal(partialName.amount, null)
   assert.deepEqual(partialName.suggestions, ['래미안퍼스티지', '래미안 퍼스티지'])
 })
+
+test('한 단지가 이름 두 개로 나오면 쉼표로 적은 이름을 모두 같은 단지로 센다', () => {
+  const { trades } = parseAptTrades(`<items>${[
+    item('까치마을(4단지)(롯데)', '84.9', '120,000', '2'),
+    item('까치마을(4단지)(선경)', '84.6', '124,000', '12'),
+    item('까치마을(4단지)(선경)', '84.6', '126,000', '15'),
+    item('까치마을(1단지)(대우)', '84.9', '150,000', '3'),
+  ].join('')}</items>`)
+  const picked = pickHomePrice(trades, '까치마을(4단지)(롯데), 까치마을(4단지)(선경)', 84.7)
+  assert.equal(picked.count, 3)
+  assert.equal(picked.amount, 1_240_000_000)
+  assert.equal(pickHomePrice(trades, '까치마을(4단지)(롯데)', 84.7).count, 1)
+})
