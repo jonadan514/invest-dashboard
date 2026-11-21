@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ChevronRight } from 'lucide-react'
 import { pensionRoom, yearEndSchedule } from '@/lib/calc/pension'
 import { compactKrw, formatMonth } from '@/lib/labels'
 
@@ -39,6 +40,15 @@ function staleNote(recordMonth: string | null, today: string) {
 export function PensionYearEndBanner({ persons, today, recordMonth, embedded = false }: Props & { embedded?: boolean }) {
   const { schedule, remaining, credit } = summarize(persons, today)
   if (!schedule.isYearEndSeason || remaining <= 0) return null
+  if (embedded) {
+    return (
+      <Link href="/pension" className="flex min-h-11 items-center gap-2 px-4 py-2 text-[13px] hover:bg-[var(--color-section)]">
+        <span className="shrink-0 rounded bg-[var(--color-primary-soft)] px-1.5 py-0.5 text-[11.5px] font-bold text-[var(--color-primary)]">세액공제 마감 {dDay(schedule.daysLeft)}</span>
+        <span className="min-w-0 truncate"><span className="font-semibold text-[var(--color-ink)]">부부 합계 {compactKrw(remaining)} 더 넣으면 약 {compactKrw(credit)} 환급</span><span className="hidden text-[var(--color-muted)] sm:inline"> · {staleNote(recordMonth, today)}</span></span>
+        <ChevronRight size={14} aria-hidden="true" className="ml-auto shrink-0 text-[var(--color-subtle)]" />
+      </Link>
+    )
+  }
   return (
     <section aria-label="연금 세액공제 연말 알림" className={`${embedded ? '' : 'app-card '}relative flex flex-col gap-3 overflow-hidden px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:py-3`}>
       <span className="absolute inset-y-0 left-0 w-1 bg-[var(--color-primary)]" aria-hidden="true" />

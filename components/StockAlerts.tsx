@@ -9,7 +9,7 @@ export default function StockAlerts({ alerts, limit = 4, label = '주식 알림'
   if (compact) {
     // 알림 하나를 한 줄로: [구분] 제목 · 설명(넓은 화면에서만) ›
     return (
-      <section aria-label={label} className="app-card overflow-hidden">
+      <section aria-label={label} className={embedded ? 'overflow-hidden' : 'app-card overflow-hidden'}>
         <ul className="divide-y divide-[var(--color-border)]">
           {shown.map(alert => (
             <li key={alert.id}>
