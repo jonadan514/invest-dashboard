@@ -151,8 +151,10 @@ function TrendArea({ data, width }: { data: TrendPoint[]; width: number }) {
   const pad = Math.max((rawMax - rawMin) * 0.08, Math.abs(rawMax) * 0.02, 1)
   const max = rawMax + pad
   const min = rawMin - pad
-  const left = compact ? 4 : 6
-  const x = (index: number) => left + index / (data.length - 1) * (width - left * 2)
+  // 왼쪽에 금액 표시 칸을 따로 두어 선과 겹치지 않게 한다.
+  const left = compact ? 40 : 46
+  const right = 8
+  const x = (index: number) => left + index / (data.length - 1) * (width - left - right)
   const y = (value: number) => top + (max - value) / (max - min) * (height - top - bottom)
   const line = (key: 'netWorth' | 'assets' | 'liabilities') => data.map((point, index) => `${x(index).toFixed(1)},${y(point[key]).toFixed(1)}`).join(' ')
   const netLine = line('netWorth')
@@ -178,8 +180,8 @@ function TrendArea({ data, width }: { data: TrendPoint[]; width: number }) {
         const lineY = y(value)
         return (
           <g key={ratio}>
-            <line x1="0" x2={width} y1={lineY} y2={lineY} stroke="rgb(255 255 255 / 0.07)" />
-            <text x="2" y={lineY - 4} fill="rgb(255 255 255 / 0.38)" fontSize="11.5">{compactKrw(value)}</text>
+            <line x1={left} x2={width - right} y1={lineY} y2={lineY} stroke="rgb(255 255 255 / 0.07)" />
+            <text x={left - 6} y={lineY + 4} textAnchor="end" fill="rgb(255 255 255 / 0.45)" fontSize="11">{compactKrw(value)}</text>
           </g>
         )
       })}

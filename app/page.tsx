@@ -216,7 +216,7 @@ export default async function DashboardPage() {
         {/* 월말 기록·주식·연금 마감 알림을 한 상자로 묶는다. 알림이 하나도 없으면 상자도 보이지 않는다(empty:hidden). */}
         <section aria-label="알림" className="app-card divide-y divide-[var(--color-border)] overflow-hidden empty:hidden">
           <MonthEndBanner reminder={reminder} embedded />
-          {stockAlerts.length > 0 ? <StockAlerts alerts={stockAlerts} limit={3} embedded /> : null}
+          {stockAlerts.length > 0 ? <StockAlerts alerts={stockAlerts} limit={3} embedded compact /> : null}
           {pensionAccounts.length > 0 ? (
             <PensionYearEndBanner
               embedded

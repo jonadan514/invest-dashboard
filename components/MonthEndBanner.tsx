@@ -6,6 +6,19 @@ import { formatMonth } from '@/lib/labels'
 export default function MonthEndBanner({ reminder, embedded = false }: { reminder: MonthEndReminder | null; embedded?: boolean }) {
   if (!reminder) return null
   const overdue = reminder.kind === 'overdue'
+  if (embedded) {
+    // 홈 알림 상자 안에서는 한 줄로: [배지] 문장 · 기록하기 ›
+    return (
+      <div className="flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2 text-[13px]">
+        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[11.5px] font-bold ${overdue ? 'bg-[var(--color-negative-soft)] text-[var(--color-negative)]' : 'bg-[var(--color-positive-soft)] text-[var(--color-positive-strong)]'}`}>
+          {overdue ? '기록 필요' : reminder.daysLeft === 0 ? '오늘 말일' : `말일까지 ${reminder.daysLeft}일`}
+        </span>
+        <span className="min-w-0 flex-1 truncate font-semibold text-[var(--color-ink)]">{overdue ? `${formatMonth(reminder.month)} 월말 기록이 아직 끝나지 않았어요` : `${formatMonth(reminder.month)} 월말 기록할 때예요`}</span>
+        <a href="/api/calendar/month-end" download className="hidden shrink-0 text-[12.5px] font-semibold text-[var(--color-muted)] hover:text-[var(--color-primary)] sm:inline">캘린더 알림</a>
+        <Link href={`/budget?month=${reminder.month}`} className="shrink-0 rounded-md bg-[var(--color-primary)] px-2.5 py-1 text-[12.5px] font-semibold text-white hover:bg-[var(--color-primary-strong)]">기록하기</Link>
+      </div>
+    )
+  }
   return (
     <section
       aria-label="월말 기록 알림"

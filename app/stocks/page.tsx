@@ -137,6 +137,8 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
   const tradeAssets = assets.map(asset => ({ id: asset.id, name: asset.name, symbol: asset.symbol, currency: asset.currency, asset_class: asset.asset_class }))
   const accountSlices = allocate(holdings, holding => holding.account_id, holding => holding.account_name)
   const classSlices = allocate(holdings, holding => holding.asset_class, holding => classLabel(holding.asset_class))
+  // 계좌가 하나(또는 계좌를 골랐을 때)는 계좌별 도넛 대신 종목별 도넛을 보여 준다.
+  const assetSlices = allocate(holdings, holding => holding.asset_id, holding => holding.name)
   const priceAsOf = new Map<string, string>()
   for (const [assetId, row] of priceMap) if (row.as_of) priceAsOf.set(assetId, row.as_of)
   const recordedByAccount = new Map<string, { name: string; amount: number }>()
@@ -257,10 +259,13 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
               {accountSlices.length > 0 ? (
                 <section className="app-card p-5" aria-label="비중">
                   <h2 className="mb-3 flex items-center gap-1 text-[15px] font-bold">비중 <Hint text="현재가가 있는 종목의 평가금액 기준이에요. 오른쪽 숫자는 투자원금 대비 수익률, 계좌 아래 작은 글씨는 월간 기록에 적은 계좌 평가금액(예수금 포함)이에요." /></h2>
-                  <div className={`grid justify-items-start gap-x-10 gap-y-6 ${!selectedAccount && accountSlices.length > 1 ? 'lg:grid-cols-2' : ''}`}>
+                  <div className="grid justify-items-start gap-x-10 gap-y-6 lg:grid-cols-2">
                     {!selectedAccount && accountSlices.length > 1 ? (
                       <Donut title="계좌별" slices={accountSlices} center={`${accountSlices.length}개 계좌`} format={wonShort} href={slice => href({ account: slice.key })}
                         note={slice => { const recorded = latestEvaluations.get(slice.key); return recorded ? `${formatMonth(recorded.month)} 기록 ${wonShort(Number(recorded.evaluation_amount))}` : null }} />
+                    ) : null}
+                    {selectedAccount || accountSlices.length <= 1 ? (
+                      <Donut title="종목별" slices={assetSlices} center={`${assetSlices.length}종목`} format={wonShort} href={slice => `/stocks/${slice.key}`} />
                     ) : null}
                     <Donut title="종목 구분별" slices={classSlices} colorOf={slice => classColor(slice.key)} center={wonShort(classSlices.reduce((sum, slice) => sum + slice.value, 0))} format={wonShort} />
                   </div>

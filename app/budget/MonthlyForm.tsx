@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { Check, Circle } from 'lucide-react'
 import MonthNavigator from '@/components/MonthNavigator'
+import Hint from '@/components/Hint'
 import type { FinancialPlanSettings } from '@/lib/calc/budget'
 import type { Account } from '@/lib/types'
 import { ownerLabel, stageLabel, type AccountRecordState } from '@/lib/calc/monthly-record'
@@ -175,26 +176,45 @@ export default function MonthlyForm({
       </div>
 
       <form onSubmit={handleSubmit} className={`space-y-4 transition-opacity ${navigating ? 'pointer-events-none opacity-50' : ''}`} aria-busy={navigating}>
-        <section className="app-card p-5" aria-label="이달 자금">
-          <h2 className="mb-4 text-base font-bold text-[var(--color-ink)]"><StepNo n={1} />이달 자금</h2>
-          <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <section className="app-card p-4" aria-label="이달 자금">
+            <h2 className="mb-3 text-[15px] font-bold text-[var(--color-ink)]"><StepNo n={1} />이달 자금</h2>
+            <div className="grid grid-cols-2 gap-3">
               <MoneyInput label="매월 공금 납입금" value={jointContribution} onChange={setJointContribution} placeholder="7,000,000" />
-              <p className="-mt-2 text-[12.5px] text-[var(--color-subtle)]">고정비를 제외한 정기 잉여금은 {formatKrw(regularSurplus)}입니다.</p>
               <MoneyInput label="성과급·일시 수입" value={bonusTotal} onChange={value => { setBonusTotal(value); setBonusToPlan(current => Math.min(current, value)) }} placeholder="0" />
-              {bonusTotal > 0 ? <MoneyInput label="이번 달 배분에 포함할 성과급" value={bonusToPlan} onChange={value => setBonusToPlan(Math.min(value, bonusTotal))} placeholder="0" /> : null}
-              {emergencyAccounts.length === 0 ? (
-                <div className="border-t border-[var(--color-section)] pt-4">
-                  <MoneyInput label="현재 비상금 (임시 수동 입력)" value={manualEmergencyFund} onChange={setManualEmergencyFund} placeholder="13,000,000" />
-                  <p className="mt-1 text-[12.5px] text-[var(--color-accent)]">밸런스 시트에서 공동계좌나 MMF를 비상금으로 지정하면 자동 합산됩니다.</p>
-                </div>
-              ) : null}
+              {bonusTotal > 0 ? <MoneyInput label="배분에 포함할 성과급" value={bonusToPlan} onChange={value => setBonusToPlan(Math.min(value, bonusTotal))} placeholder="0" /> : null}
+              {emergencyAccounts.length === 0 ? <MoneyInput label="현재 비상금(직접 입력)" value={manualEmergencyFund} onChange={setManualEmergencyFund} placeholder="13,000,000" /> : null}
             </div>
-        </section>
+            <p className="mt-2 text-[12.5px] text-[var(--color-muted)]">고정비 뺀 정기 잉여금 {formatKrw(regularSurplus)}{emergencyAccounts.length === 0 ? ' · 비상금 계좌를 지정하면 자동 합산돼요' : ''}</p>
+          </section>
+
+          <section className="app-card p-4" aria-label="주택담보대출 납부">
+            <h2 className="mb-3 flex items-center gap-1 text-[15px] font-bold text-[var(--color-ink)]"><StepNo n={2} />주택담보대출 납부 <Hint text="이자와 정기 원금은 고정비의 구성 내역이라 다시 비용으로 빼지 않아요. 원금(정기+추가)만 대출 잔액을 줄여요. 추가 원금은 저장하면 잔액에서 바로 빠지고 다음 달부터 이자도 줄어요." /></h2>
+            {mortgageDefaults && (mortgageInterest !== mortgageDefaults.interest || (mortgageDefaults.principal !== null && mortgagePrincipal !== mortgageDefaults.principal)) ? (
+              <p className="mb-2 flex flex-wrap items-center gap-x-2 rounded-lg bg-[var(--color-primary-soft)] px-3 py-1.5 text-[12.5px] text-[var(--color-primary)]">
+                계산값: 이자 {formatKrw(mortgageDefaults.interest)}{mortgageDefaults.principal !== null ? ` · 원금 ${formatKrw(mortgageDefaults.principal)}` : ''}
+                <button type="button" onClick={() => { setMortgageInterest(mortgageDefaults.interest); if (mortgageDefaults.principal !== null) setMortgagePrincipal(mortgageDefaults.principal) }} className="min-h-7 font-semibold underline">채우기</button>
+              </p>
+            ) : null}
+            <div className="grid grid-cols-3 gap-3">
+              <MoneyInput label="이자" value={mortgageInterest} onChange={setMortgageInterest} placeholder="0" />
+              <MoneyInput label="정기 원금" value={mortgagePrincipal} onChange={setMortgagePrincipal} placeholder="0" />
+              <MoneyInput label="추가 원금" value={mortgageExtraPrincipal} onChange={setMortgageExtraPrincipal} placeholder="0" />
+            </div>
+            <p className="mt-2 text-[12.5px] tabular-nums text-[var(--color-muted)]">
+              납부 {formatKrw(mortgageInterest + mortgagePrincipal)} · 잔액 감소 {formatKrw(mortgagePrincipal + mortgageExtraPrincipal)}
+              {mortgageBalance ? <> · 납부 후 잔액 <strong className="text-[var(--color-ink)]">{formatKrw(Math.max(mortgageBalance.previous - mortgagePrincipal - mortgageExtraPrincipal, 0))}</strong></> : null}
+            </p>
+            {mortgageBalance?.manualThisMonth ? (
+              <p className="mt-1 text-[12.5px] text-[var(--color-accent)]">이 달 잔액을 직접 입력해 두어서 원금이 잔액에 반영되지 않아요(밸런스 시트 잔액 이력).</p>
+            ) : null}
+          </section>
+        </div>
 
         <section className="app-card overflow-hidden" aria-label="계좌 월말 잔액">
           <div className="flex flex-col justify-between gap-2 border-b border-[var(--color-border)] bg-[var(--color-section)] px-5 py-4 sm:flex-row sm:items-center">
             <div>
-              <h2 className="text-base font-bold text-[var(--color-ink)]"><StepNo n={2} />계좌 월말 잔액</h2>
+              <h2 className="text-base font-bold text-[var(--color-ink)]"><StepNo n={3} />계좌 월말 잔액</h2>
               <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">월말 앱 잔액을 적어요. 바뀐 계좌만 고치면 돼요.</p>
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -268,42 +288,6 @@ export default function MonthlyForm({
               })}
             </ul>
           )}
-        </section>
-
-        <section className="app-card p-5" aria-label="주택담보대출 납부">
-          <h2 className="mb-1 text-base font-bold text-[var(--color-ink)]"><StepNo n={3} />주택담보대출 납부</h2>
-            <p className="mb-4 text-[12.5px] leading-5 text-[var(--color-muted)]">이자와 정기 원금은 고정비의 구성 내역입니다. 다시 비용으로 차감하지 않으며, 원금만 밸런스 시트의 대출 잔액을 줄입니다.</p>
-            <div className="space-y-4">
-              {mortgageDefaults ? (
-                <div className="rounded-lg bg-[var(--color-primary-soft)] px-3 py-2 text-[12.5px] leading-5 text-[var(--color-primary)]">
-                  <p>
-                    대출 정보로 계산한 이번 달 납부: 이자 <strong className="tabular-nums">{formatKrw(mortgageDefaults.interest)}</strong>
-                    {mortgageDefaults.principal !== null ? <> · 원금 <strong className="tabular-nums">{formatKrw(mortgageDefaults.principal)}</strong></> : null}
-                  </p>
-                  {mortgageInterest !== mortgageDefaults.interest || (mortgageDefaults.principal !== null && mortgagePrincipal !== mortgageDefaults.principal) ? (
-                    <button type="button" onClick={() => { setMortgageInterest(mortgageDefaults.interest); if (mortgageDefaults.principal !== null) setMortgagePrincipal(mortgageDefaults.principal) }} className="mt-1 min-h-8 font-semibold underline">
-                      계산값으로 채우기
-                    </button>
-                  ) : <p className="text-[12.5px] opacity-80">아래 칸에 채워져 있어요. 실제 납부액이 다르면 고쳐서 저장하세요.</p>}
-                </div>
-              ) : null}
-              <MoneyInput label="이번 달 이자" value={mortgageInterest} onChange={setMortgageInterest} placeholder="2,500,000" />
-              <MoneyInput label="이번 달 정기 원금" value={mortgagePrincipal} onChange={setMortgagePrincipal} placeholder="450,000" />
-              <MoneyInput label="추가 원금 상환" value={mortgageExtraPrincipal} onChange={setMortgageExtraPrincipal} placeholder="0" />
-              <div className="space-y-1 rounded-xl bg-[var(--color-section)] px-3 py-2.5 text-[12.5px] text-[var(--color-muted)]">
-                <p className="flex justify-between gap-2"><span>납부액(이자+정기 원금)</span><strong className="tabular-nums text-[var(--color-ink)]">{formatKrw(mortgageInterest + mortgagePrincipal)}</strong></p>
-                <p className="flex justify-between gap-2"><span>대출 잔액 감소</span><strong className="tabular-nums text-[var(--color-ink)]">{formatKrw(mortgagePrincipal + mortgageExtraPrincipal)}</strong></p>
-                {mortgageBalance ? (
-                  <p className="flex justify-between gap-2 border-t border-[var(--color-border)] pt-1"><span>납부 후 잔액</span><strong className="tabular-nums text-[var(--color-ink)]">{formatKrw(Math.max(mortgageBalance.previous - mortgagePrincipal - mortgageExtraPrincipal, 0))}</strong></p>
-                ) : null}
-              </div>
-              {mortgageExtraPrincipal > 0 && !mortgageBalance?.manualThisMonth ? (
-                <p className="text-[12.5px] leading-5 text-[var(--color-positive-strong)]">저장하면 추가 원금 {formatKrw(mortgageExtraPrincipal)}이 대출 잔액에서 바로 빠지고, 다음 달부터 줄어든 잔액으로 이자를 계산해요.</p>
-              ) : null}
-              {mortgageBalance?.manualThisMonth ? (
-                <p className="text-[12.5px] leading-5 text-[var(--color-accent)]">이 달 대출 잔액을 잔액 이력에 직접 입력해 두어서, 여기 적은 원금은 잔액에 반영되지 않아요. 은행 잔액을 그대로 쓰려면 그대로 두고, 원금으로 깎으려면 밸런스 시트 잔액 이력에서 이 달 기록을 지우세요.</p>
-              ) : null}
-            </div>
         </section>
 
         <section className="app-card p-5">
