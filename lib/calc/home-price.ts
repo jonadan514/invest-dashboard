@@ -63,6 +63,8 @@ export function parseAptTrades(xml: string) {
   const authError = tag(xml, 'returnAuthMsg')
   if (authError) throw new Error(`실거래가 API 오류: ${authError}`)
   const code = tag(xml, 'resultCode')
+  // 예전 서비스는 거래가 하나도 없는 달을 오류 코드 03(NODATA)으로 돌려준다. 빈 달로 본다.
+  if (code === '03' || /NO_?DATA/i.test(tag(xml, 'resultMsg'))) return { trades: [] as AptTrade[], totalCount: 0 }
   if (code && !/^0+$/.test(code)) throw new Error(`실거래가 API 오류: ${tag(xml, 'resultMsg') || code}`)
 
   const trades: AptTrade[] = []
