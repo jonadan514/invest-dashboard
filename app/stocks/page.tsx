@@ -202,7 +202,7 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
 
               <RefreshPricesButton lastUpdated={lastPriceUpdate} />
 
-              <StockAlerts alerts={alerts} limit={8} />
+              <StockAlerts alerts={alerts} limit={8} compact />
 
               {missingPrices > 0 || (usdKrw === null && holdings.some(holding => holding.currency === 'USD')) ? (
                 <p className="rounded-xl bg-[var(--color-accent-soft)] px-4 py-3 text-[13px] text-[var(--color-accent)]">
@@ -210,7 +210,7 @@ export default async function StocksPage({ searchParams }: { searchParams: Promi
                 </p>
               ) : null}
 
-              <section className="app-card overflow-hidden" aria-label="종목별 보유 현황">
+              <section className="app-card" aria-label="종목별 보유 현황">
                 <div className="border-b border-[var(--color-border)] px-5 py-4">
                   <h2 className="flex items-center gap-1 text-[15px] font-bold">종목별 보유 현황 <Hint text="평균 단가는 수수료·세금을 포함한 이동평균이에요. 달러 종목의 원가는 매수 당시 환율로 계산해요. 표 제목(종목·평가금액·평가손익·수익률)을 누르면 정렬돼요." /></h2>
                 </div>
